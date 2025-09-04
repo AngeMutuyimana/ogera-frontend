@@ -1,6 +1,6 @@
 import { styled } from "@mui/material/styles";
 import logo from "../assets/Logo.png";
-import Button from "../components/Button";
+import Button from "../components/button";
 
 type InputField = {
   label?: string;

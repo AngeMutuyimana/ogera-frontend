@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { styled } from "@mui/material/styles";
 import logo from "../assets/logoWhite.png";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
@@ -6,23 +6,31 @@ import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import TextField from "@mui/material/TextField";
 import { registerValidationSchema } from "../validation/Index";
-import type { RegisterFormValues } from "../type/index";
+import type { RegisterFormValues } from "../type/Index";
 import { useFormik } from "formik";
-import Button from "../components/Button";
+import Button from "../components/button";
+import { useRegisterUserMutation } from "../features/api/authApi";
+import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
+import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 
 const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
+
+  const [registerUser, { data, isError, isLoading, isSuccess, error }] =
+    useRegisterUserMutation();
 
   const handleClickShowPassword = () => setShowPassword((prev) => !prev);
 
   const initialValues: RegisterFormValues = {
     accountType: "student",
-    fullName: "",
+    full_name: "",
     email: "",
     password: "",
-    nationalId: "",
+    national_id_number: "",
     businessId: "",
-    phone: "",
+    mobile_number: "",
     terms: false,
     privacy: false,
   };
@@ -32,28 +40,67 @@ const Register = () => {
     validationSchema: registerValidationSchema,
     onSubmit: async (values) => {
       try {
-        if (values.accountType === "student") {
-          console.log("Student registered:");
-        } else {
-          console.log("Employer registered:");
-        }
-        alert("Registration successful!");
-      } catch (error) {
-        console.error("Registration error:", error);
+        await registerUser(values).unwrap();
+      } catch (err) {
+        console.error("Registration error:", err);
       }
     },
   });
 
+  const { resetForm } = formik;
+
+  useEffect(() => {
+    if (isError && error) {
+      const err = error as FetchBaseQueryError & { data?: { message?: string } };
+      toast.error(err?.data?.message || "Something went wrong");
+    }
+
+    if (data && isSuccess) {
+      toast.success(data?.message || "You're Registered Successfully!");
+      resetForm();
+      navigate("/auth/login");
+    }
+  }, [isError, error, data, isSuccess, resetForm, navigate]);
 
   return (
     <RegisterMainContainer>
       {/* Left Section */}
-      <RegisterLeftContainer> <Logo /> <LeftTextContainer> <TextContainer> <Heading>Your Success Story Starts Here</Heading> <SubHeading> Connect with trusted employers, earn money instantly via mobile payments, and maintain your academic excellence – all in one platform designed for African students. </SubHeading> </TextContainer> <TestimonialCard> <p> I earned $500 last month while maintaining my 3.8 GPA! Ogera's academic tracking kept me focused. </p> <UserInfo> <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="User testimonial" /> <div> <span>Daphne Park</span> <span>Computer Science Student</span> </div> </UserInfo> </TestimonialCard> </LeftTextContainer> </RegisterLeftContainer>
+      <RegisterLeftContainer>
+        <Logo />
+        <LeftTextContainer>
+          <TextContainer>
+            <Heading>Your Success Story Starts Here</Heading>
+            <SubHeading>
+              Connect with trusted employers, earn money instantly via mobile
+              payments, and maintain your academic excellence – all in one
+              platform designed for African students.
+            </SubHeading>
+          </TextContainer>
+          <TestimonialCard>
+            <p>
+              I earned $500 last month while maintaining my 3.8 GPA! Ogera's
+              academic tracking kept me focused.
+            </p>
+            <UserInfo>
+              <img
+                src="https://randomuser.me/api/portraits/women/44.jpg"
+                alt="User testimonial"
+              />
+              <div>
+                <span>Daphne Park</span>
+                <span>Computer Science Student</span>
+              </div>
+            </UserInfo>
+          </TestimonialCard>
+        </LeftTextContainer>
+      </RegisterLeftContainer>
+
+      {/* Right Section */}
       <RegisterRightContainer>
-        <RegisterFormContainer as="form" onSubmit={formik.handleSubmit}>
+        <RegisterFormContainer onSubmit={formik.handleSubmit}>
           <Head>Create your account with us below</Head>
           <SmallText>
-            Already have an account? <a href="#">Sign In</a>
+            Already have an account? <a href="/auth/login">Sign In</a>
           </SmallText>
 
           {/* Account Type Toggle */}
@@ -67,24 +114,26 @@ const Register = () => {
                   checked={formik.values.accountType === type}
                   onChange={formik.handleChange}
                 />
-                <span>{type === "student" ? "As a Student" : "As an Employer"}</span>
+                <span>
+                  {type === "student" ? "As a Student" : "As an Employer"}
+                </span>
               </ToggleOption>
             ))}
           </ToggleGroup>
 
           {/* Full Name */}
           <FormGroup>
-            <Label htmlFor="fullName">Full Name</Label>
+            <Label htmlFor="full_name">Full Name</Label>
             <Input
-              id="fullName"
-              name="fullName"
+              id="full_name"
+              name="full_name"
               placeholder="Enter your full name"
-              value={formik.values.fullName}
+              value={formik.values.full_name}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
             />
-            {formik.touched.fullName && formik.errors.fullName && (
-              <ErrorText>{formik.errors.fullName}</ErrorText>
+            {formik.touched.full_name && formik.errors.full_name && (
+              <ErrorText>{formik.errors.full_name}</ErrorText>
             )}
           </FormGroup>
 
@@ -123,7 +172,11 @@ const Register = () => {
                 style: { borderRadius: "8px", fontSize: "14px" },
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton onClick={handleClickShowPassword} edge="end">
+                    <IconButton
+                      onClick={handleClickShowPassword}
+                      edge="end"
+                      type="button" // prevent form submit
+                    >
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
@@ -138,18 +191,19 @@ const Register = () => {
           {/* Conditional Fields */}
           {formik.values.accountType === "student" ? (
             <FormGroup>
-              <Label htmlFor="nationalId">National ID Number</Label>
+              <Label htmlFor="national_id_number">National ID Number</Label>
               <Input
-                id="nationalId"
-                name="nationalId"
+                id="national_id_number"
+                name="national_id_number"
                 placeholder="Enter your national ID number"
-                value={formik.values.nationalId}
+                value={formik.values.national_id_number}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
               />
-              {formik.touched.nationalId && formik.errors.nationalId && (
-                <ErrorText>{formik.errors.nationalId}</ErrorText>
-              )}
+              {formik.touched.national_id_number &&
+                formik.errors.national_id_number && (
+                  <ErrorText>{formik.errors.national_id_number}</ErrorText>
+                )}
             </FormGroup>
           ) : (
             <FormGroup>
@@ -168,19 +222,19 @@ const Register = () => {
             </FormGroup>
           )}
 
-          {/* Phone */}
+          {/* Mobile Number */}
           <FormGroup>
-            <Label htmlFor="phone">Phone Number</Label>
+            <Label htmlFor="mobile_number">Mobile Number</Label>
             <Input
-              id="phone"
-              name="phone"
-              placeholder="Enter your phone number"
-              value={formik.values.phone}
+              id="mobile_number"
+              name="mobile_number"
+              placeholder="Enter your mobile number"
+              value={formik.values.mobile_number}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
             />
-            {formik.touched.phone && formik.errors.phone && (
-              <ErrorText>{formik.errors.phone}</ErrorText>
+            {formik.touched.mobile_number && formik.errors.mobile_number && (
+              <ErrorText>{formik.errors.mobile_number}</ErrorText>
             )}
           </FormGroup>
 
@@ -197,7 +251,9 @@ const Register = () => {
               <label htmlFor="terms">
                 I agree to the <a href="#">Terms of Service</a>
               </label>
-              {formik.touched.terms && formik.errors.terms && <ErrorText>{formik.errors.terms}</ErrorText>}
+              {formik.touched.terms && formik.errors.terms && (
+                <ErrorText>{formik.errors.terms}</ErrorText>
+              )}
             </TermsItem>
 
             <TermsItem>
@@ -211,12 +267,18 @@ const Register = () => {
               <label htmlFor="privacy">
                 I agree to the <a href="#">Privacy Policy</a>
               </label>
-              {formik.touched.privacy && formik.errors.privacy && <ErrorText>{formik.errors.privacy}</ErrorText>}
+              {formik.touched.privacy && formik.errors.privacy && (
+                <ErrorText>{formik.errors.privacy}</ErrorText>
+              )}
             </TermsItem>
           </TermsContainer>
 
-          <Button backgroundcolor=" #7f56d9" type="submit" text=" Sign In" disabled={formik.isSubmitting} />
-
+          <Button
+            backgroundcolor="#7f56d9"
+            type="submit"
+            text={isLoading ? "Submitting..." : "Submit"}
+            disabled={isLoading}
+          />
         </RegisterFormContainer>
       </RegisterRightContainer>
     </RegisterMainContainer>
@@ -232,8 +294,8 @@ const RegisterMainContainer = styled("div")`
   height: 100vh;
   display: flex;
   @media (max-width: 768px) {
-    flex-direction: column; /* stack on mobile */
-    height: 100vh; /* still full height */
+    flex-direction: column;
+    height: 100vh;
   }
 `;
 
@@ -244,7 +306,7 @@ const RegisterLeftContainer = styled("div")`
   margin: 5px;
   border-radius: 20px;
   @media (max-width: 768px) {
-    display: none; /* 👈 hide on mobile */
+    display: none;
   }
 `;
 
@@ -296,22 +358,18 @@ const UserInfo = styled("div")`
   display: flex;
   align-items: center;
   gap: 6px;
-
   img {
     width: 40px;
     height: 40px;
     border-radius: 50%;
   }
-
   div {
     display: flex;
     flex-direction: column;
-
     span:first-of-type {
       font-weight: bold;
       font-size: 0.9rem;
     }
-
     span:last-of-type {
       font-size: 0.8rem;
       color: #ddd;
@@ -330,9 +388,8 @@ const RegisterRightContainer = styled("div")`
   justify-content: center;
   align-items: center;
   @media (max-width: 768px) {
-    flex: unset;
-    width: 100%;   /* full width on mobile */
-    height: 100%;  /* full height on mobile */
+    width: 100%;
+    height: 100%;
     padding: 20px;
   }
 `;
@@ -391,30 +448,6 @@ const ToggleOption = styled("label")`
   }
 `;
 
-const RadioInput = styled("input")`
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  border: 2px solid #7f56d9;
-  border-radius: 50%;
-  position: relative;
-  cursor: pointer;
-  &:checked {
-    background-color: #ffffffff;
-    border-color: #7f56d9;
-  }
-  &:checked::after {
-    content: "";
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 8px;
-    height: 8px;
-    background: #fff;
-    border-radius: 50%;
-  }
-`;
-
 const FormGroup = styled("div")`
   display: flex;
   flex-direction: column;
@@ -435,61 +468,39 @@ const Input = styled("input")`
   font-size: 14px;
 `;
 
-const SignInButton = styled("button")`
-  padding: 12px;
-  border-radius: 8px;
-  border: none;
-  background: #7f56d9;
-  color: white;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  margin-top: 10px;
-  transition: background 0.3s ease;
-
-  &:hover {
-    background: #6e47c4;
-  }
-`;
-
 const ErrorText = styled("div")`
   font-size: 12px;
   color: red;
   margin-top: 4px;
 `;
 
-const TermsContainer = styled("div")(({ theme }) => ({
-  display: "flex",
-  flexDirection: "column",
-  gap: "12px",
-  margin: "15px 0",
-}));
+const TermsContainer = styled("div")`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 15px 0;
+`;
 
-const TermsItem = styled("div")(({ theme }) => ({
-  display: "flex",
-  alignItems: "flex-start",
-  gap: "8px",
-  fontSize: "14px",
-  color: theme.palette.text.primary,   // ✅ from palette
-  "& input": {
-    width: "18px",
-    height: "18px",
-    cursor: "pointer",
-  },
-  "& label": {
-    lineHeight: 1.4,
-  },
-  "& a": {
-    color: theme.palette.primary.main, 
-    textDecoration: "none",
-    fontWeight: 500,
-    "&:hover": {
-      textDecoration: "underline",
-      color: theme.palette.primary.dark, 
-    },
-  },
-  "& .required": {
-    color: theme.palette.error.main,    
-    marginLeft: "4px",
-  },
-}));
+const TermsItem = styled("div")`
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+  & input {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+  & label {
+    line-height: 1.4;
+  }
+  & a {
+    color: #7f56d9;
+    text-decoration: none;
+    font-weight: 500;
+    &:hover {
+      text-decoration: underline;
+      color: #6e47c4;
+    }
+  }
+`;

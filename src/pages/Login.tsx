@@ -6,13 +6,22 @@ import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import TextField from "@mui/material/TextField";
 import { useFormik } from "formik";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { loginValidationSchema } from "../validation/Index";
-import type { LoginFormValues } from "../type/index";
-import Button from "../components/Button";
+import type { LoginFormValues } from "../type/Index";
+import ReuseButton from "../components/button";
+import { useLoginUserMutation } from "../features/api/authApi";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
+
+  const [loginUser, { data, isError, isLoading, isSuccess, error }] =
+    useLoginUserMutation();
+
+  const navigate = useNavigate();
 
   const handleClickShowPassword = () => setShowPassword((prev) => !prev);
   const formik = useFormik<LoginFormValues>({
@@ -23,19 +32,28 @@ const Login = () => {
       privacy: false,
     },
     validationSchema: loginValidationSchema,
-    onSubmit: async (values, { setSubmitting }) => {
+    onSubmit: async (values) => {
       try {
-
-        console.log("Login Success ✅");
-        alert("Login successful!");
+        await loginUser(values).unwrap();
       } catch (error) {
-        console.error("Login Error:", error);
-        alert("Login failed. Please check your credentials.");
-      } finally {
-        setSubmitting(false);
+        console.error("Login error:", error);
       }
     },
   });
+
+  useEffect(() => {
+
+    if (isError && error) {
+      const err = error as FetchBaseQueryError & { data?: { message?: string } };
+      toast.error(err?.data?.message || "Something went wrong");
+    }
+
+    if (data && isSuccess) {
+      toast.success(data?.message || "You're Logged In Successfully !");
+      formik.resetForm();
+      navigate("/auth/register");
+    }
+  }, [isError, error, data, isSuccess]);
   return (
     <LoginMainContainer>
       {/* Left Section */}
@@ -45,7 +63,8 @@ const Login = () => {
           <WelcomeTextContainer>
             <Heading>Welcome to Ogera 👋</Heading>
             <SubHeading>
-              Sign in to access your Ogera account and continue earning while you learn.
+              Sign in to access your Ogera account and continue earning while
+              you learn.
             </SubHeading>
           </WelcomeTextContainer>
 
@@ -97,7 +116,7 @@ const Login = () => {
               )}
             </FormGroup>
 
-            <ForgotPassword href="#">Forgot Password?</ForgotPassword>
+            <ForgotPassword href="/auth/forgot-password">Forgot Password?</ForgotPassword>
 
             {/* Terms & Privacy */}
             <TermsContainer>
@@ -134,7 +153,12 @@ const Login = () => {
               </TermsItem>
             </TermsContainer>
 
-            <Button backgroundcolor=" #7f56d9" type="submit" text=" Sign In" disabled={formik.isSubmitting} />
+            <ReuseButton
+              backgroundcolor=" #7f56d9"
+              type="submit"
+              text={isLoading ? "Please Wait ..." : "Sign In"}
+              disabled={isLoading}
+            />
 
             <SignUpText>
               Don’t have an account? <a href="/auth/register">Sign Up</a>
@@ -397,7 +421,7 @@ const TermsItem = styled("div")(({ theme }) => ({
   alignItems: "flex-start",
   gap: "8px",
   fontSize: "14px",
-  color: theme.palette.text.primary,   // ✅ from palette
+  color: theme.palette.text.primary, 
 
   "& input": {
     width: "18px",
@@ -410,7 +434,7 @@ const TermsItem = styled("div")(({ theme }) => ({
   },
 
   "& a": {
-    color: theme.palette.primary.main,   // ✅ link uses primary color
+    color: theme.palette.primary.main, // ✅ link uses primary color
     textDecoration: "none",
     fontWeight: 500,
 
@@ -421,7 +445,7 @@ const TermsItem = styled("div")(({ theme }) => ({
   },
 
   "& .required": {
-    color: theme.palette.error.main,     // ✅ required * in error color
+    color: theme.palette.error.main, // ✅ required * in error color
     marginLeft: "4px",
   },
 }));
