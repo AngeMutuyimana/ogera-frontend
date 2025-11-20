@@ -6,6 +6,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import VerifyOtp from "./pages/VerifyOtp";
 import ChangePassword from "./pages/ChangePassword";
+import TestRefresh from "./pages/TestRefresh";
 
 function App() {
   const router = createBrowserRouter([
@@ -32,6 +33,10 @@ function App() {
     {
       path: "/auth/change-password",
       Component: ChangePassword,
+    },
+    {
+      path: "/auth/me",
+      Component: TestRefresh
     },
     {
       path: "/dashboard",

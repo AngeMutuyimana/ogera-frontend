@@ -6,24 +6,24 @@ import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import TextField from "@mui/material/TextField";
 import { useFormik } from "formik";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { loginValidationSchema } from "../validation/Index";
 import type { LoginFormValues } from "../type/Index";
 import ReuseButton from "../components/button";
-import { useLoginUserMutation } from "../features/api/authApi";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+import { useDispatch } from "react-redux";
+import { loginApi } from "../services/api/loginApi";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
-
-  const [loginUser, { data, isError, isLoading, isSuccess, error }] =
-    useLoginUserMutation();
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const handleClickShowPassword = () => setShowPassword((prev) => !prev);
+
   const formik = useFormik<LoginFormValues>({
     initialValues: {
       email: "",
@@ -34,32 +34,29 @@ const Login = () => {
     validationSchema: loginValidationSchema,
     onSubmit: async (values) => {
       try {
-        await loginUser(values).unwrap();
-      } catch (error) {
-        console.error("Login error:", error);
+        setLoading(true);
+
+        const result: any = await dispatch<any>(loginApi(values));
+
+        toast.success(result?.message || "You’re logged in!");
+        formik.resetForm();
+
+        navigate("/dashboard"); // redirect after login
+      } catch (error: any) {
+        toast.error(error?.response?.data?.message || "Login failed");
+      } finally {
+        setLoading(false);
       }
     },
   });
 
-  useEffect(() => {
-
-    if (isError && error) {
-      const err = error as FetchBaseQueryError & { data?: { message?: string } };
-      toast.error(err?.data?.message || "Something went wrong");
-    }
-
-    if (data && isSuccess) {
-      toast.success(data?.message || "You're Logged In Successfully !");
-      formik.resetForm();
-      navigate("/auth/register");
-    }
-  }, [isError, error, data, isSuccess]);
   return (
     <LoginMainContainer>
       {/* Left Section */}
       <LoginLeftContainer>
         <LeftContent>
           <Logo />
+
           <WelcomeTextContainer>
             <Heading>Welcome to Ogera 👋</Heading>
             <SubHeading>
@@ -116,7 +113,9 @@ const Login = () => {
               )}
             </FormGroup>
 
-            <ForgotPassword href="/auth/forgot-password">Forgot Password?</ForgotPassword>
+            <ForgotPassword href="/auth/forgot-password">
+              Forgot Password?
+            </ForgotPassword>
 
             {/* Terms & Privacy */}
             <TermsContainer>
@@ -154,10 +153,10 @@ const Login = () => {
             </TermsContainer>
 
             <ReuseButton
-              backgroundcolor=" #7f56d9"
+              backgroundcolor="#7f56d9"
               type="submit"
-              text={isLoading ? "Please Wait ..." : "Sign In"}
-              disabled={isLoading}
+              text={loading ? "Please Wait ..." : "Sign In"}
+              disabled={loading}
             />
 
             <SignUpText>
@@ -167,7 +166,7 @@ const Login = () => {
         </LeftContent>
       </LoginLeftContainer>
 
-      {/* Right Section (hidden on mobile) */}
+      {/* Right Section */}
       <LoginRightContainer>
         <Overlay />
         <RightContent>
@@ -175,15 +174,13 @@ const Login = () => {
             <h2>Empowering Africa's Students</h2>
             <p>
               Ogera is Africa’s premier student job platform that connects
-              ambitious students with flexible, trusted part-time opportunities
-              while ensuring academic excellence through performance tracking
-              and instant mobile money payments.
+              ambitious students with flexible opportunities and instant mobile
+              money payments.
             </p>
           </RightCard>
 
           <BottomText>
-            Ogera is dedicated to solving the critical challenge facing African
-            students
+            Ogera is dedicated to solving the challenges students face.
           </BottomText>
         </RightContent>
       </LoginRightContainer>
@@ -192,8 +189,6 @@ const Login = () => {
 };
 
 export default Login;
-
-/* ================== Styled Components ================== */
 
 const LoginMainContainer = styled("div")(({ theme }) => ({
   width: "100vw",

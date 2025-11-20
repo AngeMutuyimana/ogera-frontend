@@ -9,7 +9,7 @@ import { registerValidationSchema } from "../validation/Index";
 import type { RegisterFormValues } from "../type/Index";
 import { useFormik } from "formik";
 import Button from "../components/button";
-import { useRegisterUserMutation } from "../features/api/authApi";
+import { useRegisterUserMutation } from "../services/api/authApi";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
@@ -40,7 +40,22 @@ const Register = () => {
     validationSchema: registerValidationSchema,
     onSubmit: async (values) => {
       try {
-        await registerUser(values).unwrap();
+        // ⭐ Build payload EXACTLY as backend expects
+        const payload = {
+          full_name: values.full_name,
+          email: values.email,
+          mobile_number: values.mobile_number,
+          password: values.password,
+          role: values.accountType, // ⭐ IMPORTANT
+          national_id_number:
+            values.accountType === "student"
+              ? values.national_id_number
+              : null,
+          business_registration_id:
+            values.accountType === "employer" ? values.businessId : null,
+        };
+
+        await registerUser(payload).unwrap();
       } catch (err) {
         console.error("Registration error:", err);
       }
@@ -175,7 +190,7 @@ const Register = () => {
                     <IconButton
                       onClick={handleClickShowPassword}
                       edge="end"
-                      type="button" // prevent form submit
+                      type="button"
                     >
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
