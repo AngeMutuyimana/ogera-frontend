@@ -14,6 +14,8 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import { loginApi } from "../services/api/loginApi";
+import { jwtDecode } from "jwt-decode";
+import { setCredentials } from "../features/auth/authSlice";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -36,12 +38,35 @@ const Login = () => {
       try {
         setLoading(true);
 
+        // Call login API
         const result: any = await dispatch<any>(loginApi(values));
 
-        toast.success(result?.message || "You’re logged in!");
+        const accessToken = result.data.accessToken;
+
+        // Decode token
+        const decoded: any = jwtDecode(accessToken);
+
+        const role = decoded.role;
+        const user = { id: decoded.user_id };
+
+        // Save in Redux
+        dispatch(
+          setCredentials({
+            user,
+            accessToken,
+            role,
+          })
+        );
+
+        toast.success("You’re logged in!");
         formik.resetForm();
 
-        navigate("/dashboard"); // redirect after login
+        // Role-based redirect
+        if (role === "admin") navigate("/dashboard");
+        else if (role === "student") navigate("/dashboard");
+        else if (role === "employer") navigate("/dashboard");
+        else navigate("/unauthorized");
+
       } catch (error: any) {
         toast.error(error?.response?.data?.message || "Login failed");
       } finally {
@@ -60,8 +85,7 @@ const Login = () => {
           <WelcomeTextContainer>
             <Heading>Welcome to Ogera 👋</Heading>
             <SubHeading>
-              Sign in to access your Ogera account and continue earning while
-              you learn.
+              Sign in to access your Ogera account and continue earning while you learn.
             </SubHeading>
           </WelcomeTextContainer>
 
@@ -113,9 +137,7 @@ const Login = () => {
               )}
             </FormGroup>
 
-            <ForgotPassword href="/auth/forgot-password">
-              Forgot Password?
-            </ForgotPassword>
+            <ForgotPassword href="/auth/forgot-password">Forgot Password?</ForgotPassword>
 
             {/* Terms & Privacy */}
             <TermsContainer>
@@ -130,9 +152,6 @@ const Login = () => {
                 <label htmlFor="terms">
                   I agree to the <a href="#">Terms of Service</a>
                 </label>
-                {formik.touched.terms && formik.errors.terms && (
-                  <ErrorText>{formik.errors.terms}</ErrorText>
-                )}
               </TermsItem>
 
               <TermsItem>
@@ -146,10 +165,12 @@ const Login = () => {
                 <label htmlFor="privacy">
                   I agree to the <a href="#">Privacy Policy</a>
                 </label>
-                {formik.touched.privacy && formik.errors.privacy && (
-                  <ErrorText>{formik.errors.privacy}</ErrorText>
-                )}
               </TermsItem>
+
+              {(formik.touched.terms && formik.errors.terms) ||
+              (formik.touched.privacy && formik.errors.privacy) ? (
+                <ErrorText>Please accept all policies.</ErrorText>
+              ) : null}
             </TermsContainer>
 
             <ReuseButton
@@ -173,15 +194,12 @@ const Login = () => {
           <RightCard>
             <h2>Empowering Africa's Students</h2>
             <p>
-              Ogera is Africa’s premier student job platform that connects
-              ambitious students with flexible opportunities and instant mobile
-              money payments.
+              Ogera is Africa’s premier student job platform that connects ambitious students
+              with flexible opportunities and instant mobile money payments.
             </p>
           </RightCard>
 
-          <BottomText>
-            Ogera is dedicated to solving the challenges students face.
-          </BottomText>
+          <BottomText>Ogera is dedicated to solving the challenges students face.</BottomText>
         </RightContent>
       </LoginRightContainer>
     </LoginMainContainer>
@@ -190,16 +208,15 @@ const Login = () => {
 
 export default Login;
 
+/* ---------------- Styled Components (unchanged) ---------------- */
+
 const LoginMainContainer = styled("div")(({ theme }) => ({
   width: "100vw",
   height: "100vh",
   display: "flex",
   flexDirection: "row",
   fontFamily: "Inter, sans-serif",
-
-  [theme.breakpoints.down("sm")]: {
-    flexDirection: "column", // stack on small devices
-  },
+  [theme.breakpoints.down("sm")]: { flexDirection: "column" },
 }));
 
 const LoginLeftContainer = styled("div")(({ theme }) => ({
@@ -209,11 +226,8 @@ const LoginLeftContainer = styled("div")(({ theme }) => ({
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-
   [theme.breakpoints.down("sm")]: {
-    width: "100%",
-    height: "100%",
-    padding: "20px",
+    width: "100%", height: "100%", padding: "20px",
   },
 }));
 
@@ -222,11 +236,7 @@ const LeftContent = styled("div")(({ theme }) => ({
   display: "flex",
   flexDirection: "column",
   gap: "30px",
-
-  [theme.breakpoints.down("sm")]: {
-    width: "100%",
-    gap: "20px",
-  },
+  [theme.breakpoints.down("sm")]: { width: "100%", gap: "20px" },
 }));
 
 const Logo = styled("div")`
@@ -247,21 +257,13 @@ const Heading = styled("p")(({ theme }) => ({
   fontSize: "26px",
   fontWeight: 600,
   color: theme.palette.text.primary,
-
-  [theme.breakpoints.down("sm")]: {
-    fontSize: "20px",
-    textAlign: "center",
-  },
+  [theme.breakpoints.down("sm")]: { fontSize: "20px", textAlign: "center" },
 }));
 
 const SubHeading = styled("p")(({ theme }) => ({
   fontSize: "15px",
   color: theme.palette.text.secondary,
-
-  [theme.breakpoints.down("sm")]: {
-    fontSize: "13px",
-    textAlign: "center",
-  },
+  [theme.breakpoints.down("sm")]: { fontSize: "13px", textAlign: "center" },
 }));
 
 const LoginFormContainer = styled("form")`
@@ -288,10 +290,7 @@ const Input = styled("input")(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
   fontSize: "14px",
   outline: "none",
-  transition: "border-color 0.2s ease",
-  "&:focus": {
-    borderColor: theme.palette.primary.main,
-  },
+  "&:focus": { borderColor: theme.palette.primary.main },
 }));
 
 const ForgotPassword = styled("a")(({ theme }) => ({
@@ -300,24 +299,7 @@ const ForgotPassword = styled("a")(({ theme }) => ({
   cursor: "pointer",
   alignSelf: "flex-end",
   textDecoration: "none",
-  "&:hover": {
-    textDecoration: "underline",
-  },
-}));
-
-const SignInButton = styled("button")(({ theme }) => ({
-  backgroundColor: theme.palette.primary.main,
-  color: theme.palette.primary.contrastText,
-  padding: "12px",
-  border: "none",
-  borderRadius: "8px",
-  fontSize: "14px",
-  cursor: "pointer",
-  marginTop: "10px",
-  fontWeight: 500,
-  "&:hover": {
-    backgroundColor: theme.palette.primary.dark,
-  },
+  "&:hover": { textDecoration: "underline" },
 }));
 
 const SignUpText = styled("p")(({ theme }) => ({
@@ -329,38 +311,28 @@ const SignUpText = styled("p")(({ theme }) => ({
     color: theme.palette.primary.main,
     textDecoration: "none",
     fontWeight: 500,
-    "&:hover": {
-      textDecoration: "underline",
-    },
+    "&:hover": { textDecoration: "underline" },
   },
 }));
-
-/* ================== Right Section ================== */
 
 const LoginRightContainer = styled("div")(({ theme }) => ({
   width: "50vw",
   height: "100vh",
   position: "relative",
+  background: `url(${loginImage}) no-repeat center center`,
+  backgroundSize: "cover",
   borderTopLeftRadius: "30px",
   borderBottomLeftRadius: "30px",
   overflow: "hidden",
-  background: `url(${loginImage}) no-repeat center center`,
-  backgroundSize: "cover",
-
-  [theme.breakpoints.down("sm")]: {
-    display: "none", // ✅ Hide on mobile
-  },
+  [theme.breakpoints.down("sm")]: { display: "none" },
 }));
 
-const Overlay = styled("div")(({ theme }) => ({
-  position: "absolute",
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  background: theme.palette.primary.main,
-  opacity: 0.5,
-}));
+const Overlay = styled("div")`
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #7f56d9;
+  opacity: 0.5;
+`;
 
 const RightContent = styled("div")`
   position: relative;
@@ -404,43 +376,31 @@ const ErrorText = styled("div")(({ theme }) => ({
   marginTop: "4px",
 }));
 
-const TermsContainer = styled("div")(({ theme }) => ({
-  display: "flex",
-  flexDirection: "column",
-  gap: "12px",
-  margin: "15px 0",
-}));
+const TermsContainer = styled("div")`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 15px 0;
+`;
 
-const TermsItem = styled("div")(({ theme }) => ({
-  display: "flex",
-  alignItems: "flex-start",
-  gap: "8px",
-  fontSize: "14px",
-  color: theme.palette.text.primary, 
+const TermsItem = styled("div")`
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
 
-  "& input": {
-    width: "18px",
-    height: "18px",
-    cursor: "pointer",
-  },
+  & input {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
 
-  "& label": {
-    lineHeight: 1.4,
-  },
-
-  "& a": {
-    color: theme.palette.primary.main, // ✅ link uses primary color
-    textDecoration: "none",
-    fontWeight: 500,
-
-    "&:hover": {
-      textDecoration: "underline",
-      color: theme.palette.primary.dark, // ✅ hover from palette
-    },
-  },
-
-  "& .required": {
-    color: theme.palette.error.main, // ✅ required * in error color
-    marginLeft: "4px",
-  },
-}));
+  & a {
+    color: #7f56d9;
+    text-decoration: none;
+    font-weight: 500;
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+`;

@@ -1,22 +1,13 @@
 import api from "./axiosInstance";
-import { setCredentials } from "../../features/auth/authSlice";
 
-interface LoginResponse {
+export interface LoginApiResponse {
   data: {
-    user: any;
     accessToken: string;
+    user: any;
   };
 }
 
-export const loginApi = (values: any) => async (dispatch: any) => {
-  const res = await api.post<LoginResponse>("/auth/login", values);
-
-  dispatch(
-    setCredentials({
-      user: res.data.data.user,
-      accessToken: res.data.data.accessToken,
-    })
-  );
-
-  return res.data;
+export const loginApi = (values: any) => async () => {
+  const res = await api.post<LoginApiResponse>("/auth/login", values);
+  return res.data; // now strongly typed
 };

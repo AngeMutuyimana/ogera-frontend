@@ -1,5 +1,10 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";  
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { useSelector } from "react-redux";
+
 import AdminLayout from "./layouts/adminLayout";
+import StudentLayout from "./layouts/StudentLayout";
+import EmployerLayout from "./layouts/EmployerLayout";
+
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -7,45 +12,49 @@ import ResetPassword from "./pages/ResetPassword";
 import VerifyOtp from "./pages/VerifyOtp";
 import ChangePassword from "./pages/ChangePassword";
 import TestRefresh from "./pages/TestRefresh";
+import Dashboard from "./pages/Dashboard";
+
+import useRefreshOnLoad from "./hooks/useRefreshOnLoad";
 
 function App() {
+  useRefreshOnLoad();
+
+  const role = useSelector((state: any) => state.auth.role);
+
+  // Decide layout based on role
+  const DashboardLayout =
+    role === "admin"
+      ? AdminLayout
+      : role === "student"
+      ? StudentLayout
+      : role === "employer"
+      ? EmployerLayout
+      : Login; // No role → go to login
+
   const router = createBrowserRouter([
-    {
-      path: "/auth/login",
-      Component: Login,
-    },
-    {
-      path: "/auth/register",
-      Component: Register,
-    },
-    {
-      path: "/auth/forgot-password",
-      Component: ForgotPassword,
-    },
-    {
-      path: "/auth/reset-password",
-      Component: ResetPassword,
-    },
-    {
-      path: "/auth/verify-otp",
-      Component: VerifyOtp,
-    },
-    {
-      path: "/auth/change-password",
-      Component: ChangePassword,
-    },
-    {
-      path: "/auth/me",
-      Component: TestRefresh
-    },
+    /** ---------------- PUBLIC ROUTES ---------------- **/
+    { path: "/auth/login", Component: Login },
+    { path: "/auth/register", Component: Register },
+    { path: "/auth/forgot-password", Component: ForgotPassword },
+    { path: "/auth/reset-password", Component: ResetPassword },
+    { path: "/auth/verify-otp", Component: VerifyOtp },
+    { path: "/auth/change-password", Component: ChangePassword },
+    { path: "/auth/me", Component: TestRefresh },
+
+    /** ---------------- DASHBOARD (role-based) ---------------- **/
     {
       path: "/dashboard",
-      Component: AdminLayout,
+      Component: DashboardLayout,
+      children: [
+        {
+          index: true,
+          Component: Dashboard,
+        },
+      ],
     },
-    {
-      path: "*",
-      element: <NotFound />,
-    },
+
+    /** ---------------- 404 ---------------- **/
+    { path: "*", Component: NotFound },
   ]);
 
   return <RouterProvider router={router} />;
@@ -53,7 +62,7 @@ function App() {
 
 export default App;
 
-// Simple 404 fallback
+/** 404 PAGE **/
 const NotFound = () => (
   <div
     style={{
