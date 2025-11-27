@@ -52,8 +52,8 @@ const Dashboard: React.FC = () => {
       {/* Welcome Section */}
       {/* ----------------------------- */}
       <div>
-        <h1 className="text-4xl font-extrabold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 mt-2">
+        <h1 className="text-2xl md:text-4xl font-extrabold text-gray-900">Dashboard</h1>
+        <p className="text-sm md:text-base text-gray-500 mt-2">
           Insights across students, employers, jobs & overall activity.
         </p>
       </div>
@@ -61,7 +61,7 @@ const Dashboard: React.FC = () => {
       {/* ----------------------------- */}
       {/* Stats Cards */}
       {/* ----------------------------- */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-8">
         {stats.map((item, index) => (
           <div
             key={index}

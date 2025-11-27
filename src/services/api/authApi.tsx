@@ -34,6 +34,22 @@ export const authApi = apiSlice.injectEndpoints({
         body: values,
       }),
     }),
+
+    getUserProfile: builder.query({
+      query: () => ({
+        url: "/auth/profile",
+        method: "GET",
+      }),
+      providesTags: ["User"],
+    }),
+
+    logout: builder.mutation({
+      query: () => ({
+        url: "/auth/logout",
+        method: "POST",
+      }),
+      invalidatesTags: ["User"],
+    }),
   }),
 });
 
@@ -42,4 +58,6 @@ export const {
   useForgotPasswordMutation,
   useVerifyOtpMutation,
   useResetPasswordMutation,
+  useGetUserProfileQuery,
+  useLogoutMutation,
 } = authApi;

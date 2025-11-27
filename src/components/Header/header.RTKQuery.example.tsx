@@ -1,19 +1,28 @@
+/**
+ * Alternative Header Implementation using RTK Query
+ * This file shows how to use the RTK Query hook approach for logout
+ * You can use this instead of the current header.tsx if you prefer RTK Query
+ */
+
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { BellIcon, Bars3Icon } from "@heroicons/react/24/outline";
-import { logoutApi } from "../../services/api/logoutApi";
+import { useLogoutMutation } from "../../services/api/authApi";
+import { logout as logoutAction } from "../../features/auth/authSlice";
 
 interface HeaderProps {
   onMenuClick: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
+const HeaderRTKQuery: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  // RTK Query logout mutation
+  const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -31,23 +40,25 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     };
   }, []);
 
-  // Handle logout
+  // Handle logout with RTK Query
   const handleLogout = async () => {
     try {
-      setIsLoggingOut(true);
       setIsDropdownOpen(false);
 
-      // Call logout API
-      await dispatch(logoutApi() as any);
+      // Call logout API via RTK Query
+      await logout(undefined).unwrap();
+
+      // Clear Redux state
+      dispatch(logoutAction());
 
       // Navigate to login page
       navigate("/login");
     } catch (error) {
       console.error("Logout failed:", error);
-      // Navigate to login even if logout API fails
+
+      // Even if API fails, clear local state and navigate
+      dispatch(logoutAction());
       navigate("/login");
-    } finally {
-      setIsLoggingOut(false);
     }
   };
 
@@ -100,11 +111,33 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                 Profile
               </button>
               <button
-                className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between"
                 onClick={handleLogout}
                 disabled={isLoggingOut}
               >
-                {isLoggingOut ? "Logging out..." : "Logout"}
+                <span>{isLoggingOut ? "Logging out..." : "Logout"}</span>
+                {isLoggingOut && (
+                  <svg
+                    className="animate-spin h-4 w-4 text-gray-600"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                )}
               </button>
             </div>
           )}
@@ -114,4 +147,5 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   );
 };
 
-export default Header;
+export default HeaderRTKQuery;
+
