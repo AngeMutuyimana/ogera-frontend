@@ -5,7 +5,10 @@ import CustomTable, {
   type TableAction,
 } from "../components/Table/CustomTable";
 import { Chip, Box, Typography } from "@mui/material";
-import { Visibility as ViewIcon, Receipt as ReceiptIcon } from "@mui/icons-material";
+import {
+  Visibility as ViewIcon,
+  Receipt as ReceiptIcon,
+} from "@mui/icons-material";
 
 interface Transaction {
   id: number;
@@ -78,7 +81,9 @@ const Transactions: React.FC = () => {
       label: "Transaction ID",
       minWidth: 150,
       format: (value) => (
-        <Typography sx={{ fontFamily: "monospace", fontWeight: 600, color: "#374151" }}>
+        <Typography
+          sx={{ fontFamily: "monospace", fontWeight: 600, color: "#374151" }}
+        >
           {value}
         </Typography>
       ),
@@ -99,7 +104,9 @@ const Transactions: React.FC = () => {
       minWidth: 120,
       align: "right",
       format: (value) => (
-        <Typography sx={{ fontWeight: 700, fontSize: "1rem", color: "#111827" }}>
+        <Typography
+          sx={{ fontWeight: 700, fontSize: "1rem", color: "#111827" }}
+        >
           {value}
         </Typography>
       ),
@@ -199,15 +206,21 @@ const Transactions: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 shadow-md border border-purple-200">
           <p className="text-sm text-purple-700 font-medium">Total Volume</p>
-          <p className="text-2xl md:text-3xl font-bold text-purple-900 mt-2">$124,500</p>
+          <p className="text-2xl md:text-3xl font-bold text-purple-900 mt-2">
+            $124,500
+          </p>
         </div>
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow-md border border-green-200">
           <p className="text-sm text-green-700 font-medium">Completed</p>
-          <p className="text-2xl md:text-3xl font-bold text-green-900 mt-2">1,245</p>
+          <p className="text-2xl md:text-3xl font-bold text-green-900 mt-2">
+            1,245
+          </p>
         </div>
         <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 shadow-md border border-orange-200">
           <p className="text-sm text-orange-700 font-medium">Pending</p>
-          <p className="text-2xl md:text-3xl font-bold text-orange-900 mt-2">38</p>
+          <p className="text-2xl md:text-3xl font-bold text-orange-900 mt-2">
+            38
+          </p>
         </div>
         <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-6 shadow-md border border-red-200">
           <p className="text-sm text-red-700 font-medium">Failed</p>
@@ -230,4 +243,3 @@ const Transactions: React.FC = () => {
 };
 
 export default Transactions;
-
