@@ -52,11 +52,11 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   };
 
   return (
-    <header className="w-full bg-white h-16 shadow-sm flex items-center justify-between px-4 md:px-6 relative">
+    <header className="w-full bg-white/80 backdrop-blur-lg h-16 shadow-md border-b border-gray-200/50 flex items-center justify-between px-4 md:px-6 relative z-30">
       {/* Left side - Mobile menu button */}
       <button
         onClick={onMenuClick}
-        className="lg:hidden text-gray-700 hover:text-gray-900 transition-colors"
+        className="lg:hidden text-gray-700 hover:text-gray-900 transition-colors p-2 rounded-lg hover:bg-gray-100"
       >
         <Bars3Icon className="h-6 w-6" />
       </button>
@@ -65,11 +65,11 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
       <div className="text-gray-700 font-medium text-lg"></div>
 
       {/* Right side (notification + profile) */}
-      <div className="flex items-center gap-4 md:gap-6">
+      <div className="flex items-center gap-3 md:gap-6">
         {/* Notification icon */}
-        <div className="relative cursor-pointer">
-          <BellIcon className="h-6 w-6 text-gray-600 hover:text-gray-800 transition" />
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold rounded-full h-4 w-4 flex items-center justify-center">
+        <div className="relative cursor-pointer p-2 rounded-lg hover:bg-gray-100 transition-colors group">
+          <BellIcon className="h-6 w-6 text-gray-600 group-hover:text-purple-600 transition-colors" />
+          <span className="absolute top-0 right-0 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-semibold rounded-full h-5 w-5 flex items-center justify-center shadow-lg">
             2
           </span>
         </div>
@@ -78,33 +78,35 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
         <div className="relative" ref={dropdownRef}>
           <div
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center cursor-pointer border border-purple-200 hover:shadow-md transition"
+            className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center cursor-pointer border-2 border-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 ring-2 ring-purple-200"
           >
             <img
               src="https://i.pravatar.cc/100?img=3"
               alt="User"
-              className="h-8 w-8 rounded-full"
+              className="h-full w-full rounded-full object-cover"
             />
           </div>
 
           {/* Dropdown menu */}
           {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50">
+            <div className="absolute right-0 mt-2 w-48 bg-white/95 backdrop-blur-lg border border-gray-200/50 rounded-xl shadow-2xl py-2 z-50 animate-fadeIn overflow-hidden">
               <button
-                className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 transition"
+                className="w-full text-left px-4 py-2.5 text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-indigo-50 transition-all duration-200 flex items-center gap-2 group"
                 onClick={() => {
                   setIsDropdownOpen(false);
                   navigate("/dashboard/profile");
                 }}
               >
-                Profile
+                <span className="group-hover:text-purple-600 transition-colors">Profile</span>
               </button>
               <button
-                className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full text-left px-4 py-2.5 text-gray-700 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 group"
                 onClick={handleLogout}
                 disabled={isLoggingOut}
               >
-                {isLoggingOut ? "Logging out..." : "Logout"}
+                <span className="group-hover:text-red-600 transition-colors">
+                  {isLoggingOut ? "Logging out..." : "Logout"}
+                </span>
               </button>
             </div>
           )}

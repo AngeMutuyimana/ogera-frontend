@@ -200,10 +200,23 @@ function CustomTable<T extends Record<string, any>>({
     !isAllSelected;
 
   return (
-    <Paper elevation={0} sx={{ width: "100%", border: "1px solid #e5e7eb" }}>
+    <Paper
+      elevation={0}
+      sx={{
+        width: "100%",
+        maxWidth: "100%",
+        border: "1px solid #e5e7eb",
+        borderRadius: "12px",
+        overflow: "hidden",
+        boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+      }}
+      className="table-responsive"
+    >
       {/* Search Bar */}
       {searchable && (
-        <Box sx={{ p: 2, borderBottom: "1px solid #e5e7eb" }}>
+        <Box
+          sx={{ p: 2, borderBottom: "1px solid #e5e7eb", bgcolor: "#fafafa" }}
+        >
           <TextField
             fullWidth
             size="small"
@@ -223,6 +236,7 @@ function CustomTable<T extends Record<string, any>>({
             sx={{
               "& .MuiOutlinedInput-root": {
                 borderRadius: "8px",
+                bgcolor: "white",
                 "&:hover fieldset": {
                   borderColor: "#9333ea",
                 },
@@ -236,7 +250,7 @@ function CustomTable<T extends Record<string, any>>({
       )}
 
       {/* Table Container */}
-      <TableContainer sx={{ maxHeight }}>
+      <TableContainer sx={{ maxHeight, overflowX: "auto", width: "100%" }}>
         <Table stickyHeader={stickyHeader} size={dense ? "small" : "medium"}>
           {/* Table Header */}
           <TableHead>
