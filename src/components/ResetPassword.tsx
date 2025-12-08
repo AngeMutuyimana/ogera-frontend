@@ -9,11 +9,14 @@ type InputField = {
   placeholder?: string;
   name?: string;
   value?: string;
-  onChange?: React.ChangeEventHandler<HTMLInputElement>;
+  onChange?: React.ChangeEventHandler<HTMLInputElement> | ((e: React.ChangeEvent<HTMLInputElement>, index: number) => void);
   onBlur?: React.FocusEventHandler<HTMLInputElement>;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>, index: number) => void;
+  onPaste?: (e: React.ClipboardEvent<HTMLInputElement>) => void;
   error?: string | boolean;
   names?: string[];
   values?: string[];
+  refs?: React.RefObject<HTMLInputElement>[];
 };
 
 interface RestPasswordTemplateProps {
@@ -50,12 +53,16 @@ const RestPasswordTemplate: React.FC<RestPasswordTemplateProps> = ({
                   {field.names?.map((name, i) => (
                     <OtpInput
                       key={name}
+                      ref={field.refs?.[i]}
                       name={name}
                       value={field.values?.[i] || ""}
-                      onChange={field.onChange}
+                      onChange={(e) => field.onChange?.(e, i)}
+                      onKeyDown={(e) => field.onKeyDown?.(e, i)}
+                      onPaste={i === 0 ? field.onPaste : undefined}
                       onBlur={field.onBlur}
                       maxLength={1}
                       inputMode="numeric"
+                      autoComplete="off"
                     />
                   ))}
                 </OtpContainer>
@@ -68,7 +75,7 @@ const RestPasswordTemplate: React.FC<RestPasswordTemplateProps> = ({
                   type={field.type || "text"}
                   placeholder={field.placeholder || ""}
                   value={field.value}
-                  onChange={field.onChange}
+                  onChange={field.onChange as React.ChangeEventHandler<HTMLInputElement>}
                   onBlur={field.onBlur}
                 />
                 {!!field.error && <ErrorText>{String(field.error)}</ErrorText>}
@@ -179,6 +186,11 @@ const OtpInput = styled("input")(({ theme }) => ({
   borderRadius: "8px",
   border: `2px solid ${theme.palette.divider}`,
   outline: "none",
+  transition: "border-color 0.2s",
+  "&:focus": {
+    borderColor: theme.palette.primary.main,
+    borderWidth: "2px",
+  },
 }));
 
 const ResendClick = styled("div")(({ theme }) => ({

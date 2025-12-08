@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { UsersIcon } from "@heroicons/react/24/outline";
 import CustomTable, {
   type Column,
@@ -10,7 +10,7 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
 } from "@mui/icons-material";
-import { useGetAllStudentsQuery, useGetAllEmployersQuery } from "../../services/api/usersApi";
+import { useGetAllUsersQuery, useGetAllStudentsQuery, useGetAllEmployersQuery } from "../../services/api/usersApi";
 import type { UserProfile } from "../../services/api/profileApi";
 
 interface User {
@@ -27,59 +27,36 @@ const AllUsers: React.FC = () => {
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
 
-  // Fetch students and employers separately - these endpoints include role information
+  // Use getAllUsers API with server-side pagination - this endpoint uses roleType from roles table
   const { 
-    data: studentsData, 
-    isLoading: isLoadingStudents, 
-    isError: isErrorStudents 
+    data: usersData, 
+    isLoading, 
+    isError 
+  } = useGetAllUsersQuery({
+    page: page + 1, // Backend uses 1-based pagination
+    limit: limit,
+  });
+
+  // Fetch counts for stats (students and employers separately for accurate counts)
+  const { 
+    data: studentsData
   } = useGetAllStudentsQuery({
-    page: 1, // Fetch all pages - we'll do client-side pagination
-    limit: 1000, // Fetch a large number to get all users
+    page: 1,
+    limit: 1, // Just to get the total count
   });
 
   const { 
-    data: employersData, 
-    isLoading: isLoadingEmployers, 
-    isError: isErrorEmployers 
+    data: employersData
   } = useGetAllEmployersQuery({
     page: 1,
-    limit: 1000, // Fetch a large number to get all users
+    limit: 1, // Just to get the total count
   });
 
-  const isLoading = isLoadingStudents || isLoadingEmployers;
-  const isError = isErrorStudents || isErrorEmployers;
-
-  // Combine students and employers into a single array
-  // Role differentiation:
-  // - "student" - Regular student users (from getAllStudents)
-  // - "employer" - Employer/business users (from getAllEmployers)
-  const allUsers: UserProfile[] = useMemo(() => {
-    const students = (studentsData?.data || []).map((user) => ({
-      ...user,
-      role: { roleName: "student", id: user.role?.id || "" },
-    }));
-    const employers = (employersData?.data || []).map((user) => ({
-      ...user,
-      role: { roleName: "employer", id: user.role?.id || "" },
-    }));
-    
-    // Combine and sort by created_at descending (most recent first)
-    return [...students, ...employers].sort((a, b) => {
-      const dateA = new Date(a.created_at || 0).getTime();
-      const dateB = new Date(b.created_at || 0).getTime();
-      return dateB - dateA;
-    });
-  }, [studentsData?.data, employersData?.data]);
-
-  // Apply client-side pagination to the combined results
-  const paginatedUsers = useMemo(() => {
-    const startIndex = page * limit;
-    const endIndex = startIndex + limit;
-    return allUsers.slice(startIndex, endIndex);
-  }, [allUsers, page, limit]);
+  const allUsers: UserProfile[] = usersData?.data || [];
 
   const mapUser = (user: UserProfile, index: number): User => {
-    const roleName = user.role?.roleName?.toLowerCase() || "";
+    // Use roleType from the role object (now available from the API)
+    const roleType = user.role?.roleType?.toLowerCase() || user.role?.roleName?.toLowerCase() || "";
     const startIndex = page * limit;
     return {
       index: startIndex + index + 1,
@@ -87,9 +64,9 @@ const AllUsers: React.FC = () => {
       name: user.full_name,
       email: user.email,
       role:
-        roleName === "student"
+        roleType === "student"
           ? "Student"
-          : roleName === "employer"
+          : roleType === "employer"
           ? "Employer"
           : "Student",
       status: "Active",
@@ -103,14 +80,14 @@ const AllUsers: React.FC = () => {
     };
   };
 
-  const users: User[] = paginatedUsers.map((user, index) =>
+  const users: User[] = allUsers.map((user, index) =>
     mapUser(user, index)
   );
   
-  // Calculate counts
-  const totalCount = allUsers.length;
-  const studentCount = (studentsData?.data || []).length;
-  const employerCount = (employersData?.data || []).length;
+  // Calculate counts from pagination metadata
+  const totalCount = usersData?.pagination?.total || 0;
+  const studentCount = studentsData?.pagination?.total || 0;
+  const employerCount = employersData?.pagination?.total || 0;
 
   const columns: Column<User>[] = [
     {
@@ -297,7 +274,7 @@ const AllUsers: React.FC = () => {
         searchPlaceholder="Search users by name, email..."
         rowsPerPageOptions={[5, 10, 25, 50]}
         defaultRowsPerPage={limit}
-        serverSidePagination={false}
+        serverSidePagination={true}
         totalCount={totalCount}
         page={page}
         onPageChange={(newPage) => setPage(newPage)}
