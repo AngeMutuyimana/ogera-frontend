@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useFormik } from "formik";
-import { useCreateAdminMutation } from "../../services/api/adminApi";
+import { useCreateAdminMutation, useGetAllRolesQuery } from "../../services/api/adminApi";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { UserPlusIcon } from "@heroicons/react/24/outline";
@@ -16,7 +16,7 @@ import * as Yup from "yup";
 interface CreateAdminFormValues {
   email: string;
   password: string;
-  role: "admin" | "subadmin";
+  role: string; // roleName from roles table
   full_name: string;
   mobile_number: string;
 }
@@ -29,7 +29,6 @@ const validationSchema = Yup.object({
     .min(8, "Password must be at least 8 characters")
     .required("Password is required"),
   role: Yup.string()
-    .oneOf(["admin", "subadmin"], "Role must be either admin or subadmin")
     .required("Role is required"),
   full_name: Yup.string()
     .min(2, "Full name must be at least 2 characters")
@@ -47,12 +46,23 @@ const CreateAdmin: React.FC = () => {
   const [createAdmin, { isLoading, isError, error, isSuccess, data }] =
     useCreateAdminMutation();
 
+  // Fetch all roles
+  const { data: rolesData, isLoading: isLoadingRoles } = useGetAllRolesQuery();
+
+  // Filter roles to only show those with roleType "admin"
+  const adminRoles = useMemo(() => {
+    if (!rolesData || !Array.isArray(rolesData)) return [];
+    return rolesData.filter((role: any) => 
+      role.roleType === "admin"
+    );
+  }, [rolesData]);
+
   const handleClickShowPassword = () => setShowPassword((prev) => !prev);
 
   const initialValues: CreateAdminFormValues = {
     email: "",
     password: "",
-    role: "subadmin",
+    role: "",
     full_name: "",
     mobile_number: "",
   };
@@ -100,34 +110,30 @@ const CreateAdmin: React.FC = () => {
           <IconWrapper>
             <UserPlusIcon className="h-8 w-8 text-purple-600" />
           </IconWrapper>
-          <Title>Create Admin / Subadmin</Title>
+          <Title>Create Admin</Title>
           <Subtitle>
-            Create a new admin or subadmin account. Only superadmin can create
-            admin accounts.
+            Create a new admin account. Only superadmin can create admin accounts.
           </Subtitle>
         </Header>
 
         {/* Role Selection */}
         <FormGroup>
-          <Label>Role *</Label>
-          <ToggleGroup>
-            {(["admin", "subadmin"] as const).map((type) => (
-              <ToggleOption key={type}>
-                <input
-                  type="radio"
-                  name="role"
-                  value={type}
-                  checked={formik.values.role === type}
-                  onChange={formik.handleChange}
-                />
-                <span>
-                  {type === "admin"
-                    ? "Admin"
-                    : "Subadmin"}
-                </span>
-              </ToggleOption>
+          <Label htmlFor="role">Role Name *</Label>
+          <Select
+            id="role"
+            name="role"
+            value={formik.values.role}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            disabled={isLoadingRoles}
+          >
+            <option value="">Select a role</option>
+            {adminRoles.map((role: any) => (
+              <option key={role.id} value={role.roleName}>
+                {role.roleName}
+              </option>
             ))}
-          </ToggleGroup>
+          </Select>
           {formik.touched.role && formik.errors.role && (
             <ErrorText>{formik.errors.role}</ErrorText>
           )}
@@ -307,40 +313,28 @@ const ErrorText = styled("div")`
   margin-top: 4px;
 `;
 
-const ToggleGroup = styled("div")`
-  display: flex;
-  gap: 12px;
-  margin-bottom: 8px;
-`;
-
-const ToggleOption = styled("label")`
-  flex: 1;
-  padding: 14px;
-  border-radius: 10px;
-  border: 2px solid #e5e7eb;
-  background: #fff;
+const Select = styled("select")`
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
   font-size: 14px;
-  font-weight: 500;
+  background: white;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.3s ease;
+  transition: border-color 0.2s;
+  width: 100%;
 
-  input {
-    display: none;
-  }
-
-  &:has(input:checked) {
-    background: #f3ebff;
+  &:focus {
+    outline: none;
     border-color: #7f56d9;
-    color: #7f56d9;
-    font-weight: 600;
   }
 
-  span {
-    user-select: none;
+  &:disabled {
+    background: #f3f4f6;
+    cursor: not-allowed;
+  }
+
+  option {
+    padding: 8px;
   }
 `;
 

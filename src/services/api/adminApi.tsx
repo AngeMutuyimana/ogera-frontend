@@ -3,7 +3,7 @@ import { apiSlice } from "./apiSlice";
 export interface CreateAdminRequest {
   email: string;
   password: string;
-  role: "admin" | "subadmin";
+  role: string; // roleName from the roles table
   full_name?: string;
   mobile_number?: string;
 }
@@ -59,7 +59,39 @@ export interface UpdateAdminRequest {
   email?: string;
   mobile_number?: string;
   password?: string;
-  role?: "admin" | "subadmin";
+  role?: string;
+}
+
+export interface Role {
+  id: string;
+  roleName: string;
+  roleType: string;
+  permission_json: any;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface RolesResponse {
+  success?: boolean;
+  status?: number;
+  data?: Role[];
+  message?: string;
+}
+
+export interface CreateRoleRequest {
+  roleName: string;
+  roleType: "student" | "employer" | "superAdmin" | "admin";
+  permission_json?: any[];
+}
+
+export interface CreateRoleResponse {
+  message: string;
+  data: Role;
+}
+
+export interface UpdateRoleRequest {
+  roleName?: string;
+  permission_json?: any[];
 }
 
 export const adminApi = apiSlice.injectEndpoints({
@@ -123,6 +155,56 @@ export const adminApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["User"],
     }),
+
+    // Get all roles (for dropdown selection)
+    getAllRoles: builder.query<Role[], void>({
+      query: () => ({
+        url: "/roles",
+        method: "GET",
+      }),
+      providesTags: ["Role"],
+    }),
+
+    // Get role by ID
+    getRoleById: builder.query<Role, string>({
+      query: (id) => ({
+        url: `/roles/${id}`,
+        method: "GET",
+      }),
+      providesTags: ["Role"],
+    }),
+
+    // Create role (superadmin only)
+    createRole: builder.mutation<CreateRoleResponse, CreateRoleRequest>({
+      query: (data) => ({
+        url: "/roles/create",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Role"],
+    }),
+
+    // Update role (superadmin only)
+    updateRole: builder.mutation<
+      { message: string; data: Role },
+      { id: string; data: UpdateRoleRequest }
+    >({
+      query: ({ id, data }) => ({
+        url: `/roles/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["Role"],
+    }),
+
+    // Delete role (superadmin only)
+    deleteRole: builder.mutation<{ message: string }, string>({
+      query: (id) => ({
+        url: `/roles/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Role"],
+    }),
   }),
 });
 
@@ -132,6 +214,9 @@ export const {
   useGetAdminByIdQuery,
   useUpdateAdminMutation,
   useDeleteAdminMutation,
+  useGetAllRolesQuery,
+  useGetRoleByIdQuery,
+  useCreateRoleMutation,
+  useUpdateRoleMutation,
+  useDeleteRoleMutation,
 } = adminApi;
-
-

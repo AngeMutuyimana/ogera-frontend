@@ -15,6 +15,7 @@ export interface UserProfile {
   role: {
     id: string;
     roleName: string;
+    roleType: 'student' | 'employer' | 'superAdmin' | 'admin';
   };
 }
 

@@ -57,6 +57,10 @@ import Transactions from "./pages/Transactions";
 import CreateAdmin from "./pages/Admin/CreateAdmin";
 import ViewAdmins from "./pages/Admin/ViewAdmins";
 
+// Role Pages
+import CreateRole from "./pages/Role/CreateRole";
+import ViewRoles from "./pages/Role/ViewRoles";
+
 import useRefreshOnLoad from "./hooks/useRefreshOnLoad";
 
 function App() {
@@ -77,7 +81,7 @@ function App() {
 
   // Decide layout based on role
   const DashboardLayout =
-    role === "admin" || role === "superadmin"
+    role === "admin" || role === "superadmin" || role === "verifyDocAdmin"
       ? AdminLayout
       : role === "student"
       ? StudentLayout
@@ -174,6 +178,21 @@ function App() {
                 {
                   path: "view",
                   Component: ViewAdmins,
+                },
+              ],
+            },
+            // Role Routes (SuperAdmin Only)
+            {
+              path: "role",
+              element: <ProtectedRoute allowedRoles={["superadmin"]} />,
+              children: [
+                {
+                  path: "create",
+                  Component: CreateRole,
+                },
+                {
+                  path: "view",
+                  Component: ViewRoles,
                 },
               ],
             },
