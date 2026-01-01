@@ -2,8 +2,11 @@ import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { getUserProfile } from "../services/api/profileApi";
 import type { UserProfile } from "../services/api/profileApi";
+import { useGetMyTrustScoreQuery } from "../services/api/trustScoreApi";
 import ChangePasswordModal from "../components/ChangePasswordModal";
 import EditProfileModal from "../components/EditProfileModal";
+import TrustScoreCard from "../components/TrustScoreCard";
+import PhoneVerificationModal from "../components/PhoneVerificationModal";
 
 const Profile: React.FC = () => {
   // Get user data from Redux store (fallback)
@@ -17,6 +20,17 @@ const Profile: React.FC = () => {
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] =
     useState(false);
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
+  const [isPhoneVerificationModalOpen, setIsPhoneVerificationModalOpen] =
+    useState(false);
+
+  // Fetch TrustScore
+  const {
+    data: trustScoreResponse,
+    isLoading: isTrustScoreLoading,
+    refetch: refetchTrustScore,
+  } = useGetMyTrustScoreQuery(undefined, {
+    skip: !profileData, // Skip if profile data is not loaded
+  });
 
   // Fetch user profile from API
   const fetchProfile = async () => {
@@ -42,6 +56,13 @@ const Profile: React.FC = () => {
   // Handle profile update success
   const handleProfileUpdateSuccess = () => {
     fetchProfile(); // Refresh profile data
+    refetchTrustScore(); // Refresh TrustScore
+  };
+
+  // Handle phone verification success
+  const handlePhoneVerificationSuccess = () => {
+    fetchProfile(); // Refresh profile data
+    refetchTrustScore(); // Refresh TrustScore
   };
 
   // Use API data if available, otherwise fallback to Redux data
@@ -187,9 +208,91 @@ const Profile: React.FC = () => {
               <label className="text-sm font-medium text-purple-600 mb-1 block">
                 Phone Number
               </label>
-              <p className="text-gray-900 font-semibold text-lg">
-                {displayData.phoneNumber}
-              </p>
+              <div className="flex items-center gap-3">
+                <p className="text-gray-900 font-semibold text-lg">
+                  {displayData.phoneNumber}
+                </p>
+                {profileData?.phone_verified ? (
+                  <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    Verified
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => setIsPhoneVerificationModalOpen(true)}
+                    className="inline-flex items-center gap-1 bg-yellow-100 text-yellow-700 hover:bg-yellow-200 px-3 py-1 rounded-full text-xs font-semibold transition"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      />
+                    </svg>
+                    Verify
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Email Verification Status */}
+            <div>
+              <label className="text-sm font-medium text-purple-600 mb-1 block">
+                Email Verification
+              </label>
+              {profileData?.email_verified ? (
+                <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  Verified
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm font-semibold">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                  Not Verified
+                </span>
+              )}
             </div>
 
             {/* Email */}
@@ -316,6 +419,16 @@ const Profile: React.FC = () => {
         </div>
       )}
 
+      {/* TrustScore Section */}
+      {trustScoreResponse?.data && (
+        <div className="mb-6">
+          <TrustScoreCard
+            trustScore={trustScoreResponse.data}
+            isLoading={isTrustScoreLoading}
+          />
+        </div>
+      )}
+
       {/* Additional Info Section (Optional) */}
       <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">
@@ -345,9 +458,23 @@ const Profile: React.FC = () => {
             <label className="text-sm font-medium text-gray-500 mb-1 block">
               Verification Status
             </label>
-            <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold">
-              Verified
-            </span>
+            <div className="flex flex-wrap gap-2">
+              {profileData?.email_verified && (
+                <span className="inline-block bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
+                  Email ✓
+                </span>
+              )}
+              {profileData?.phone_verified && (
+                <span className="inline-block bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
+                  Phone ✓
+                </span>
+              )}
+              {!profileData?.email_verified && !profileData?.phone_verified && (
+                <span className="inline-block bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-semibold">
+                  Pending
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -366,6 +493,14 @@ const Profile: React.FC = () => {
         profileData={profileData}
         onUpdateSuccess={handleProfileUpdateSuccess}
         userRole={userRole || ""}
+      />
+
+      {/* Phone Verification Modal */}
+      <PhoneVerificationModal
+        isOpen={isPhoneVerificationModalOpen}
+        onClose={() => setIsPhoneVerificationModalOpen(false)}
+        onSuccess={handlePhoneVerificationSuccess}
+        phoneNumber={profileData?.mobile_number}
       />
     </div>
   );
