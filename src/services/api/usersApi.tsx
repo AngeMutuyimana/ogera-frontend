@@ -75,6 +75,31 @@ export const usersApi = apiSlice.injectEndpoints({
       providesTags: ["User"],
     }),
 
+    // Get user by ID (admin/superadmin only)
+    getUserById: builder.query<
+      { success: boolean; status: number; data: UserProfile; message: string },
+      string
+    >({
+      query: (id) => ({
+        url: `/auth/users/${id}`,
+        method: "GET",
+      }),
+      providesTags: ["User"],
+    }),
+
+    // Update user by ID (admin/superadmin only)
+    updateUserById: builder.mutation<
+      { success: boolean; status: number; data: UserProfile; message: string },
+      { id: string; data: Partial<UserProfile> }
+    >({
+      query: ({ id, data }) => ({
+        url: `/auth/users/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["User"],
+    }),
+
     // Delete user (admin/superadmin only)
     deleteUser: builder.mutation<
       { success: boolean; status: number; message: string },
@@ -93,5 +118,7 @@ export const {
   useGetAllUsersQuery,
   useGetAllStudentsQuery,
   useGetAllEmployersQuery,
+  useGetUserByIdQuery,
+  useUpdateUserByIdMutation,
   useDeleteUserMutation,
 } = usersApi;
