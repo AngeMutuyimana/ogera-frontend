@@ -27,9 +27,10 @@ import {
   Close as CloseIcon,
 } from "@mui/icons-material";
 import { 
-  useGetAllEmployersQuery,
+  // useGetAllEmployersQuery,
   useGetUserByIdQuery,
   useUpdateUserByIdMutation,
+  useGetAllUsersQuery,
 } from "../../services/api/usersApi";
 import type { UserProfile } from "../../services/api/profileApi";
 import toast from "react-hot-toast";
@@ -60,9 +61,10 @@ const Employers: React.FC = () => {
   
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserByIdMutation();
 
-  const { data, isLoading, isError } = useGetAllEmployersQuery({
+  const { data, isLoading, isError } = useGetAllUsersQuery({
     page: page + 1,
-    limit,
+    limit: limit,
+    type: "Employer",
   });
 
   // Fetch full employer details when viewing/editing

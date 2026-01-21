@@ -27,7 +27,8 @@ import {
   Close as CloseIcon,
 } from "@mui/icons-material";
 import { 
-  useGetAllStudentsQuery,
+ // useGetAllStudentsQuery,
+ useGetAllUsersQuery,
   useGetUserByIdQuery,
   useUpdateUserByIdMutation,
 } from "../../services/api/usersApi";
@@ -61,10 +62,12 @@ const Students: React.FC = () => {
   
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserByIdMutation();
 
-  const { data, isLoading, isError } = useGetAllStudentsQuery({
+  const { data, isLoading, isError } = useGetAllUsersQuery({
     page: page + 1,
-    limit,
+    limit: limit,
+    type: "Student",
   });
+
 
   // Fetch full student details when viewing/editing
   const { data: studentDetails, isLoading: isLoadingStudentDetails } = useGetUserByIdQuery(

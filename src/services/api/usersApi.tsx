@@ -4,6 +4,7 @@ import type { UserProfile } from "./profileApi";
 export interface PaginationParams {
   page?: number;
   limit?: number;
+  type?: string; // "all", "Student", or "Employer"
 }
 
 export interface PaginationMeta {
@@ -28,52 +29,59 @@ export interface UsersListResponse {
 export const usersApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Get all users (admin / superadmin)
+    // This single endpoint handles all user types based on the 'type' parameter
+    // type: undefined or "all" = all users, "Student" = students only, "Employer" = employers only
     getAllUsers: builder.query<UsersListResponse, PaginationParams | void>({
       query: (params = {}) => {
-        const { page = 1, limit = 10 } = params || {};
+        const { page = 1, limit = 10, type } = params || {};
+        const queryParams: Record<string, any> = {
+          page,
+          limit,
+        };
+        // Only add type parameter if it's provided and not "all"
+        if (type && type !== "all") {
+          queryParams.type = type;
+        }
         return {
           url: "/auth/get-user",
           method: "GET",
-          params: {
-            page,
-            limit,
-          },
+          params: queryParams,
         };
       },
       providesTags: ["User"],
     }),
 
     // Get all students
-    getAllStudents: builder.query<UsersListResponse, PaginationParams | void>({
-      query: (params = {}) => {
-        const { page = 1, limit = 10 } = params || {};
-        return {
-          url: "/auth/get-students",
-          method: "GET",
-          params: {
-            page,
-            limit,
-          },
-        };
-      },
-      providesTags: ["User"],
-    }),
+    // getAllStudents: builder.query<UsersListResponse, PaginationParams | void>({
+    //   query: (params = {}) => {
+    //     const { page = 1, limit = 10 } = params || {};
+    //     return {
+    //       url: "/auth/get-students",
+    //       method: "GET",
+    //       params: {
+    //         page,
+    //         limit,
+    //       },
+    //     };
+    //   },
+    //   providesTags: ["User"],
+    // }),
 
-    // Get all employers
-    getAllEmployers: builder.query<UsersListResponse, PaginationParams | void>({
-      query: (params = {}) => {
-        const { page = 1, limit = 10 } = params || {};
-        return {
-          url: "/auth/get-employers",
-          method: "GET",
-          params: {
-            page,
-            limit,
-          },
-        };
-      },
-      providesTags: ["User"],
-    }),
+    // // Get all employers
+    // getAllEmployers: builder.query<UsersListResponse, PaginationParams | void>({
+    //   query: (params = {}) => {
+    //     const { page = 1, limit = 10 } = params || {};
+    //     return {
+    //       url: "/auth/get-employers",
+    //       method: "GET",
+    //       params: {
+    //         page,
+    //         limit,
+    //       },
+    //     };
+    //   },
+    //   providesTags: ["User"],
+    // }),
 
     // Get user by ID (admin/superadmin only)
     getUserById: builder.query<
@@ -111,14 +119,36 @@ export const usersApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["User"],
     }),
+
+    // Add user (admin/superadmin only)
+    addUser: builder.mutation<
+      { success: boolean; status: number; data: UserProfile; message: string },
+      {
+        full_name: string;
+        email: string;
+        password: string;
+        role: string;
+        mobile_number: string;
+        national_id_number?: string;
+        business_registration_id?: string;
+      }
+    >({
+      query: (data) => ({
+        url: "/auth/add-user",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["User"],
+    }),
   }),
 });
 
 export const {
   useGetAllUsersQuery,
-  useGetAllStudentsQuery,
-  useGetAllEmployersQuery,
+  // useGetAllStudentsQuery,
+  // useGetAllEmployersQuery,
   useGetUserByIdQuery,
   useUpdateUserByIdMutation,
   useDeleteUserMutation,
+  useAddUserMutation,
 } = usersApi;

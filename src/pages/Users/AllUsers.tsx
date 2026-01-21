@@ -31,6 +31,7 @@ import {
 import { useGetAllUsersQuery, useGetUserByIdQuery, useUpdateUserByIdMutation, useDeleteUserMutation } from "../../services/api/usersApi";
 import type { UserProfile } from "../../services/api/profileApi";
 import toast from "react-hot-toast";
+import AddUserDialog from "../../components/AddUserDialog";
 
 interface User {
   index: number;
@@ -45,14 +46,16 @@ interface User {
 
 const AllUsers: React.FC = () => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmallMobile = isMobile; // Alias for consistency with existing code
   
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [userToView, setUserToView] = useState<User | null>(null);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
@@ -85,6 +88,7 @@ const AllUsers: React.FC = () => {
 
   // Use getAllUsers API with server-side pagination - this endpoint uses roleType from roles table
   // Now includes counts for students and employers in a single API call
+  // No type parameter means fetch all users (students and employers)
   const { 
     data: usersData, 
     isLoading, 
@@ -92,6 +96,7 @@ const AllUsers: React.FC = () => {
   } = useGetAllUsersQuery({
     page: page + 1, // Backend uses 1-based pagination
     limit: limit,
+    // No type parameter = fetch all users
   });
 
   const allUsers: UserProfile[] = usersData?.data || [];
@@ -123,14 +128,25 @@ const AllUsers: React.FC = () => {
     };
   };
 
-  const users: User[] = allUsers.map((user, index) =>
-    mapUser(user, index)
-  );
+  const users: User[] = allUsers.map((user, index) => mapUser(user, index));
   
   // Calculate counts from pagination metadata and counts from API
   const totalCount = usersData?.pagination?.total || 0;
   const studentCount = usersData?.counts?.students || 0;
   const employerCount = usersData?.counts?.employers || 0;
+
+  // Lock body scroll when any full-screen dialog (view/edit/add user) is open
+  useEffect(() => {
+    const anyDialogOpen = viewDialogOpen || editDialogOpen || addUserDialogOpen;
+    if (!anyDialogOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [viewDialogOpen, editDialogOpen, addUserDialogOpen]);
 
   const handleCloseDeleteDialog = useCallback(() => {
     setDeleteDialogOpen(false);
@@ -359,7 +375,10 @@ const AllUsers: React.FC = () => {
             View and manage all students and employers in the platform
           </p>
         </div>
-        <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 md:px-6 py-2.5 rounded-lg font-semibold transition shadow-md hover:shadow-lg whitespace-nowrap self-start md:self-auto">
+        <button
+          onClick={() => setAddUserDialogOpen(true)}
+          className="bg-purple-600 hover:bg-purple-700 text-white px-4 md:px-6 py-2.5 rounded-lg font-semibold transition shadow-md hover:shadow-lg whitespace-nowrap self-start md:self-auto"
+        >
           + Add User
         </button>
       </div>
@@ -430,105 +449,41 @@ const AllUsers: React.FC = () => {
       <Dialog
         open={viewDialogOpen}
         onClose={handleCloseViewDialog}
+        fullScreen={fullScreen}
         maxWidth="sm"
         fullWidth
-        fullScreen={isMobile}
-        scroll="paper"
         PaperProps={{
           sx: {
-            m: isMobile ? 0 : "48px auto",
-            width: isMobile ? "100%" : "auto",
-            maxWidth: isMobile ? "100%" : "500px",
-            maxHeight: isMobile ? "100vh" : "calc(100vh - 96px)",
-            height: isMobile ? "100vh" : "auto",
-            borderRadius: isMobile ? 0 : 1,
-            display: "flex",
-            flexDirection: "column",
-          },
-        }}
-        sx={{
-          "& .MuiDialog-container": {
-            alignItems: isMobile ? "flex-end" : "center",
-            padding: isMobile ? 0 : "24px",
-          },
-          "& .MuiDialogContent-root": {
-            overflowY: "auto",
-            WebkitOverflowScrolling: "touch",
-            padding: isSmallMobile ? "12px" : isMobile ? "16px" : "20px",
-            flex: "1 1 auto",
-            "&::-webkit-scrollbar": {
-              width: "8px",
-            },
-            "&::-webkit-scrollbar-thumb": {
-              backgroundColor: "rgba(0, 0, 0, 0.2)",
-              borderRadius: "4px",
-            },
+            borderRadius: isMobile ? 0 : 2,
+            m: isMobile ? 0 : 2,
+            maxHeight: isMobile ? "100vh" : "90vh",
           },
         }}
       >
-        <DialogTitle 
-          sx={{ 
-            display: "flex", 
-            alignItems: "center", 
+        <DialogTitle
+          sx={{
+            display: "flex",
             justifyContent: "space-between",
-            gap: 1,
-            px: isSmallMobile ? 1.5 : isMobile ? 2 : 3,
-            py: isSmallMobile ? 1 : isMobile ? 1.5 : 2,
-            fontSize: isSmallMobile ? "0.875rem" : isMobile ? "1rem" : "1.25rem",
-            position: isMobile ? "sticky" : "relative",
-            top: 0,
-            backgroundColor: "background.paper",
-            zIndex: 2,
-            borderBottom: isMobile ? "1px solid rgba(0, 0, 0, 0.12)" : "none",
+            alignItems: "center",
+            pb: 1,
+            borderBottom: "1px solid #e5e7eb",
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, flex: 1 }}>
-            <ViewIcon 
-              color="primary" 
-              fontSize={isSmallMobile ? "small" : isMobile ? "medium" : "medium"}
-              sx={{ fontSize: isSmallMobile ? "18px" : isMobile ? "20px" : "24px" }}
-            />
-            <Typography 
-              variant={isSmallMobile ? "body1" : isMobile ? "subtitle1" : "h6"} 
-              component="span"
-              sx={{ 
-                fontWeight: 600,
-                fontSize: isSmallMobile ? "0.875rem" : isMobile ? "1rem" : "1.25rem",
-              }}
-            >
-              {userDetails?.data?.role?.roleType === "student" ? "Student" : userDetails?.data?.role?.roleType === "employer" ? "Employer" : "User"} Details
-            </Typography>
-          </Box>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            {userDetails?.data?.role?.roleType === "student" ? "Student" : userDetails?.data?.role?.roleType === "employer" ? "Employer" : "User"} Details
+          </Typography>
           <IconButton
             onClick={handleCloseViewDialog}
             size="small"
             sx={{
               color: "text.secondary",
-              "&:hover": {
-                backgroundColor: "rgba(0, 0, 0, 0.04)",
-                color: "text.primary",
-              },
-              width: isSmallMobile ? 28 : isMobile ? 32 : 36,
-              height: isSmallMobile ? 28 : isMobile ? 32 : 36,
-              position: "absolute",
-              right: isSmallMobile ? 8 : isMobile ? 12 : 16,
-              top: "50%",
-              transform: "translateY(-50%)",
+              "&:hover": { backgroundColor: "action.hover" },
             }}
           >
-            <CloseIcon 
-              fontSize={isSmallMobile ? "small" : isMobile ? "medium" : "medium"}
-              sx={{ fontSize: isSmallMobile ? "18px" : isMobile ? "20px" : "24px" }}
-            />
+            <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent 
-          sx={{ 
-            px: isSmallMobile ? 1.5 : isMobile ? 2 : 2.5, 
-            pb: isSmallMobile ? 1 : isMobile ? 1.25 : 1.5,
-            pt: isSmallMobile ? 1.25 : isMobile ? 1.5 : 2,
-          }}
-        >
+        <DialogContent sx={{ pt: 3, px: { xs: 2, sm: 3 } }}>
           {isLoadingUserDetails ? (
             <Box sx={{ display: "flex", justifyContent: "center", p: isMobile ? 2 : 4 }}>
               <CircularProgress size={isMobile ? 32 : 40} />
@@ -1053,108 +1008,51 @@ const AllUsers: React.FC = () => {
         </DialogActions>
       </Dialog>
 
+      {/* Add User Dialog */}
+      <AddUserDialog
+        open={addUserDialogOpen}
+        onClose={() => setAddUserDialogOpen(false)}
+      />
+
       {/* Edit User Dialog */}
       <Dialog
         open={editDialogOpen}
         onClose={handleCloseEditDialog}
-        maxWidth="md"
+        fullScreen={fullScreen}
+        maxWidth="sm"
         fullWidth
-        fullScreen={isMobile}
-        scroll="paper"
         PaperProps={{
           sx: {
+            borderRadius: isMobile ? 0 : 2,
             m: isMobile ? 0 : 2,
-            width: isMobile ? "100%" : "auto",
-            maxWidth: isMobile ? "100%" : "600px",
             maxHeight: isMobile ? "100vh" : "90vh",
-            height: isMobile ? "100vh" : "auto",
-            borderRadius: isMobile ? 0 : 1,
-            margin: isMobile ? 0 : "32px",
-          },
-        }}
-        sx={{
-          "& .MuiDialog-container": {
-            alignItems: isMobile ? "flex-end" : "center",
-          },
-          "& .MuiDialogContent-root": {
-            overflowY: "auto",
-            WebkitOverflowScrolling: "touch",
-            padding: isSmallMobile ? "16px" : isMobile ? "20px" : "24px",
           },
         }}
       >
-        <DialogTitle 
-          sx={{ 
-            display: "flex", 
-            alignItems: "center", 
+        <DialogTitle
+          sx={{
+            display: "flex",
             justifyContent: "space-between",
-            gap: 1,
-            px: isSmallMobile ? 1.5 : isMobile ? 2 : 3,
-            py: isSmallMobile ? 1 : isMobile ? 1.5 : 2,
-            fontSize: isSmallMobile ? "0.875rem" : isMobile ? "1rem" : "1.25rem",
-            position: isMobile ? "sticky" : "relative",
-            top: 0,
-            backgroundColor: "background.paper",
-            zIndex: 2,
-            borderBottom: isMobile ? "1px solid rgba(0, 0, 0, 0.12)" : "none",
+            alignItems: "center",
+            pb: 1,
+            borderBottom: "1px solid #e5e7eb",
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, flex: 1 }}>
-            <EditIcon 
-              color="primary" 
-              fontSize={isSmallMobile ? "small" : isMobile ? "medium" : "medium"}
-              sx={{ fontSize: isSmallMobile ? "18px" : isMobile ? "20px" : "24px" }}
-            />
-            <Typography 
-              variant={isSmallMobile ? "body1" : isMobile ? "subtitle1" : "h6"} 
-              component="span"
-              sx={{ 
-                fontWeight: 600,
-                fontSize: isSmallMobile ? "0.875rem" : isMobile ? "1rem" : "1.25rem",
-              }}
-            >
-              Edit {userDetails?.data?.role?.roleType === "student" ? "Student" : userDetails?.data?.role?.roleType === "employer" ? "Employer" : "User"}
-            </Typography>
-          </Box>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            Edit {userDetails?.data?.role?.roleType === "student" ? "Student" : userDetails?.data?.role?.roleType === "employer" ? "Employer" : "User"}
+          </Typography>
           <IconButton
             onClick={handleCloseEditDialog}
             size="small"
             sx={{
               color: "text.secondary",
-              "&:hover": {
-                backgroundColor: "rgba(0, 0, 0, 0.04)",
-                color: "text.primary",
-              },
-              width: isSmallMobile ? 28 : isMobile ? 32 : 36,
-              height: isSmallMobile ? 28 : isMobile ? 32 : 36,
-              position: "absolute",
-              right: isSmallMobile ? 8 : isMobile ? 12 : 16,
-              top: "50%",
-              transform: "translateY(-50%)",
+              "&:hover": { backgroundColor: "action.hover" },
             }}
           >
-            <CloseIcon 
-              fontSize={isSmallMobile ? "small" : isMobile ? "medium" : "medium"}
-              sx={{ fontSize: isSmallMobile ? "18px" : isMobile ? "20px" : "24px" }}
-            />
+            <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent 
-          sx={{ 
-            px: isSmallMobile ? 1.5 : isMobile ? 2 : 3, 
-            pb: isSmallMobile ? 1 : isMobile ? 1.5 : 2,
-            pt: isSmallMobile ? 1.5 : isMobile ? 2 : 3,
-            overflowY: "auto",
-            maxHeight: isMobile ? "calc(100vh - 240px)" : "none",
-            "&::-webkit-scrollbar": {
-              width: isMobile ? "4px" : "8px",
-            },
-            "&::-webkit-scrollbar-thumb": {
-              backgroundColor: "rgba(0, 0, 0, 0.2)",
-              borderRadius: "4px",
-            },
-          }}
-        >
+        <DialogContent sx={{ pt: 3, px: { xs: 2, sm: 3 } }}>
           {isLoadingUserDetails ? (
             <Box sx={{ display: "flex", justifyContent: "center", p: isMobile ? 2 : 4 }}>
               <CircularProgress size={isMobile ? 32 : 40} />
