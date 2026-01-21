@@ -28,7 +28,7 @@ export const usersApi = apiSlice.injectEndpoints({
       query: (params = {}) => {
         const { page = 1, limit = 10 } = params || {};
         return {
-          url: "/auth/get-user",
+          url: "/users",
           method: "GET",
           params: {
             page,
@@ -44,7 +44,7 @@ export const usersApi = apiSlice.injectEndpoints({
       query: (params = {}) => {
         const { page = 1, limit = 10 } = params || {};
         return {
-          url: "/auth/get-students",
+          url: "/users/students",
           method: "GET",
           params: {
             page,
@@ -60,7 +60,7 @@ export const usersApi = apiSlice.injectEndpoints({
       query: (params = {}) => {
         const { page = 1, limit = 10 } = params || {};
         return {
-          url: "/auth/get-employers",
+          url: "/users/employers",
           method: "GET",
           params: {
             page,
