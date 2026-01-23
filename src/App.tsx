@@ -75,6 +75,9 @@ import CreatePermission from "./pages/Permission/CreatePermission";
 import ViewPermissions from "./pages/Permission/ViewPermissions";
 
 import useRefreshOnLoad from "./hooks/useRefreshOnLoad";
+import AddCourse from "./pages/Courses/AddCourse";
+import ViewCourse from "./pages/Courses/ViewCourse";
+import CourseDetail from "./pages/Courses/CourseDetail";
 
 function App() {
   const isLoading = useRefreshOnLoad();
@@ -359,6 +362,18 @@ function App() {
             {
               path: "transactions",
               Component: Transactions,
+            },
+            {
+              path: "courses/add",
+              Component: AddCourse,
+            },
+            {
+              path: "courses/view",
+              Component: ViewCourse,
+            },
+            {
+              path: "courses/:id",
+              Component: CourseDetail,
             },
           ],
         },
