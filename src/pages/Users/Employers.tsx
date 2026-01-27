@@ -490,7 +490,7 @@ const Employers: React.FC = () => {
               {/* Details Section */}
               <Grid container spacing={isSmallMobile ? 1.5 : isMobile ? 2 : 2}>
                 {/* Email */}
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box
                     sx={{
                       p: isSmallMobile ? 1.25 : isMobile ? 1.5 : 1.75,
@@ -529,7 +529,7 @@ const Employers: React.FC = () => {
                 </Grid>
 
                 {/* Mobile Number */}
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box
                     sx={{
                       p: isSmallMobile ? 1.25 : isMobile ? 1.5 : 1.75,
@@ -567,7 +567,7 @@ const Employers: React.FC = () => {
                 </Grid>
 
                 {/* Business Registration ID */}
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box
                     sx={{
                       p: isSmallMobile ? 1.25 : isMobile ? 1.5 : 1.75,
@@ -605,7 +605,7 @@ const Employers: React.FC = () => {
                 </Grid>
 
                 {/* Preferred Location */}
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box
                     sx={{
                       p: isSmallMobile ? 1.25 : isMobile ? 1.5 : 1.75,
@@ -643,7 +643,7 @@ const Employers: React.FC = () => {
                 </Grid>
 
                 {/* Email Verification */}
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box
                     sx={{
                       p: isSmallMobile ? 1.25 : isMobile ? 1.5 : 1.75,
@@ -696,7 +696,7 @@ const Employers: React.FC = () => {
                 </Grid>
 
                 {/* Phone Verification */}
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box
                     sx={{
                       p: isSmallMobile ? 1.25 : isMobile ? 1.5 : 1.75,
@@ -749,7 +749,7 @@ const Employers: React.FC = () => {
                 </Grid>
 
                 {/* Account Created */}
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box
                     sx={{
                       p: isSmallMobile ? 1.25 : isMobile ? 1.5 : 1.75,
@@ -1006,7 +1006,7 @@ const Employers: React.FC = () => {
               </Box>
 
               <Grid container spacing={isSmallMobile ? 2 : isMobile ? 2.5 : 3}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Full Name"
@@ -1033,7 +1033,7 @@ const Employers: React.FC = () => {
                     }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Email"
@@ -1061,7 +1061,7 @@ const Employers: React.FC = () => {
                     }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Mobile Number"
@@ -1088,7 +1088,7 @@ const Employers: React.FC = () => {
                     }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Business Registration ID"
@@ -1115,7 +1115,7 @@ const Employers: React.FC = () => {
                     }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Preferred Location"

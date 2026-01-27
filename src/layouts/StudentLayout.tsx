@@ -10,12 +10,12 @@ const StudentLayout = () => {
     <div className="flex min-h-screen  from-gray-50 via-white to-gray-50 overflow-hidden">
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-      <div className="flex-1 w-full lg:ml-64 transition-all duration-300 overflow-x-hidden">
-        {/* Header */}
+      <div className="flex-1 flex flex-col w-full lg:ml-64 transition-all duration-300 h-screen overflow-hidden">
+        {/* Header - fixed at top */}
         <Header onMenuClick={() => setIsSidebarOpen(true)} />
 
-        {/* Page Content */}
-        <div className="p-4 md:p-6 lg:p-8 max-w-full overflow-x-hidden">
+        {/* Page Content - scrollable */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 lg:p-8 max-w-full">
           <Outlet />
         </div>
       </div>

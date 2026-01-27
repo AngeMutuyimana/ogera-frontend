@@ -55,6 +55,22 @@ html, body {
   animation: fadeIn 0.3s ease-out;
 }
 
+/* Trend badge pulse */
+@keyframes trendPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.05);
+  }
+}
+
+.animate-trend {
+  animation: trendPulse 2s ease-in-out infinite;
+}
+
 /* Hide scrollbar but keep functionality */
 .scrollbar-hide {
   -ms-overflow-style: none;

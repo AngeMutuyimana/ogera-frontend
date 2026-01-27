@@ -128,7 +128,7 @@ export const jobsApi = apiSlice.injectEndpoints({
         url: `/jobs/${id}`,
         method: "GET",
       }),
-      providesTags: (result, error, id) => [{ type: "Job", id }],
+      providesTags: (_result, _error, id) => [{ type: "Job", id }],
     }),
 
     // Create job
@@ -148,7 +148,7 @@ export const jobsApi = apiSlice.injectEndpoints({
         method: "PUT",
         body: data,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: "Job", id }, "Job"],
+      invalidatesTags: (_result, _error, { id }) => [{ type: "Job", id }, "Job"],
     }),
 
     // Delete job
@@ -157,7 +157,7 @@ export const jobsApi = apiSlice.injectEndpoints({
         url: `/jobs/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, id) => [{ type: "Job", id }, "Job"],
+      invalidatesTags: (_result, _error, id) => [{ type: "Job", id }, "Job"],
     }),
 
     // Toggle job status (Active/Inactive)
@@ -166,7 +166,7 @@ export const jobsApi = apiSlice.injectEndpoints({
         url: `/jobs/${id}/toggle-status`,
         method: "PATCH",
       }),
-      invalidatesTags: (result, error, id) => [{ type: "Job", id }, "Job"],
+      invalidatesTags: (_result, _error, id) => [{ type: "Job", id }, "Job"],
     }),
   }),
 });

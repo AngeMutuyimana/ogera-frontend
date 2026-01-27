@@ -170,8 +170,10 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
         <Bars3Icon className="h-6 w-6" />
       </button>
 
-      {/* Center - Can add breadcrumbs or title here */}
-      <div className="text-gray-700 font-medium text-lg"></div>
+      {/* Center - Role + Dashboard title */}
+      <div className="text-gray-700 font-semibold text-lg capitalize hidden sm:block">
+        {role ? `${role} Dashboard` : "Dashboard"}
+      </div>
 
       {/* Right side (notification + profile) */}
       <div className="flex items-center gap-3 md:gap-6">

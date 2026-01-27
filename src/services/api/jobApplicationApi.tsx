@@ -75,7 +75,7 @@ export const jobApplicationApi = apiSlice.injectEndpoints({
         method: "POST",
         body: data,
       }),
-      invalidatesTags: (result, error, { job_id }) => [
+      invalidatesTags: (_result, _error, { job_id }) => [
         { type: "Job", id: job_id },
         "Job",
         "JobApplication",
@@ -88,7 +88,7 @@ export const jobApplicationApi = apiSlice.injectEndpoints({
         url: `/jobs/${job_id}/applications`,
         method: "GET",
       }),
-      providesTags: (result, error, job_id) => [
+      providesTags: (_result, _error, job_id) => [
         { type: "Job", id: job_id },
         "Job",
       ],
@@ -121,7 +121,7 @@ export const jobApplicationApi = apiSlice.injectEndpoints({
         url: `/applications/${application_id}`,
         method: "GET",
       }),
-      providesTags: (result, error, application_id) => [
+      providesTags: (_result, _error, application_id) => [
         { type: "Job", id: application_id },
       ],
     }),
@@ -135,7 +135,7 @@ export const jobApplicationApi = apiSlice.injectEndpoints({
         url: `/jobs/${job_id}/check-application`,
         method: "GET",
       }),
-      providesTags: (result, error, job_id) => [
+      providesTags: (_result, _error, job_id) => [
         { type: "Job", id: job_id },
         "Job",
       ],

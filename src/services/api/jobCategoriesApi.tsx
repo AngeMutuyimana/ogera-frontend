@@ -68,7 +68,7 @@ export const jobCategoriesApi = apiSlice.injectEndpoints({
         url: `/job-categories/${id}`,
         method: "GET",
       }),
-      providesTags: (result, error, id) => [{ type: "JobCategory", id }],
+      providesTags: (_result, _error, id) => [{ type: "JobCategory", id }],
     }),
 
     // Create category
@@ -88,7 +88,7 @@ export const jobCategoriesApi = apiSlice.injectEndpoints({
         method: "PUT",
         body: data,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: "JobCategory", id }, "JobCategory"],
+      invalidatesTags: (_result, _error, { id }) => [{ type: "JobCategory", id }, "JobCategory"],
     }),
 
     // Delete category
@@ -97,7 +97,7 @@ export const jobCategoriesApi = apiSlice.injectEndpoints({
         url: `/job-categories/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, id) => [{ type: "JobCategory", id }, "JobCategory"],
+      invalidatesTags: (_result, _error, id) => [{ type: "JobCategory", id }, "JobCategory"],
     }),
   }),
 });

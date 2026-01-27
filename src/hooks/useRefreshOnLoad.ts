@@ -71,9 +71,11 @@ const useRefreshOnLoad = () => {
         }
 
         setIsLoading(false);
-      } catch (err) {
-        console.error("Refresh failed:", err);
-        // Clear everything and redirect to login
+      } catch (err: any) {
+        // 401 is expected when no session exists (e.g. first visit / logged out)
+        if (err?.response?.status !== 401) {
+          console.error("Refresh failed:", err);
+        }
         dispatch(logout());
         setIsLoading(false);
       }

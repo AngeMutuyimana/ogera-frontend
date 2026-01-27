@@ -75,7 +75,7 @@ export const coursesApi = apiSlice.injectEndpoints({
         url: `/courses/${id}`,
         method: "GET",
       }),
-      providesTags: (result, error, id) => [{ type: "Course", id }],
+      providesTags: (_result, _error, id) => [{ type: "Course", id }],
     }),
 
     // Create course
@@ -95,7 +95,7 @@ export const coursesApi = apiSlice.injectEndpoints({
         method: "PUT",
         body: data,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: "Course", id }, "Course"],
+      invalidatesTags: (_result, _error, { id }) => [{ type: "Course", id }, "Course"],
     }),
 
     // Delete course
@@ -104,7 +104,7 @@ export const coursesApi = apiSlice.injectEndpoints({
         url: `/courses/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, id) => [{ type: "Course", id }, "Course"],
+      invalidatesTags: (_result, _error, id) => [{ type: "Course", id }, "Course"],
     }),
   }),
 });
