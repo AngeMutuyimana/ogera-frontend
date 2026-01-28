@@ -44,7 +44,7 @@ const AddCourse: React.FC = () => {
   const navigate = useNavigate();
   const [steps, setSteps] = useState<CourseStep[]>([]);
   const [stepUploadStates, setStepUploadStates] = useState<Record<number, StepUploadState>>({});
-  const [createCourse, { isLoading: isSubmitting, isError, error, isSuccess, data }] = useCreateCourseMutation();
+  const [createCourse, { isLoading: isSubmitting,  isSuccess, data }] = useCreateCourseMutation();
 
   const initialValues: AddCourseFormValues = {
     course_name: "",
