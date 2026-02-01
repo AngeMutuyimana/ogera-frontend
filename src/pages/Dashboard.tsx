@@ -36,34 +36,46 @@ const getGreeting = (): string => {
 
 const Dashboard: React.FC = () => {
   const user = useSelector((state: any) => state.auth.user);
-  const role = useSelector((state: any) => state.auth.role);
+  const roleRaw = useSelector((state: any) => state.auth.role);
+  const accessToken = useSelector((state: any) => state.auth.accessToken);
+  const role = roleRaw ? String(roleRaw).toLowerCase().trim() : undefined;
   const greeting = getGreeting();
 
   // State for dashboard metrics
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [metricsLoading, setMetricsLoading] = useState(false);
+  const [metricsError, setMetricsError] = useState<string | null>(null);
 
   // Fetch dashboard metrics for superadmin
   useEffect(() => {
-    if (role === "superAdmin") {
+    // Only superadmin should fetch these metrics
+    if (role === "superadmin") {
       setMetricsLoading(true);
-      console.log("[Dashboard] Fetching metrics for superAdmin...");
-      fetch("/api/dashboard/metrics")
+      setMetricsError(null);
+      console.log("[Dashboard] Fetching metrics for superadmin...");
+      fetch("/api/dashboard/metrics", {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      })
         .then((res) => {
           console.log("[Dashboard] Response status:", res.status);
           return res.json();
         })
         .then((data) => {
           console.log("[Dashboard] Response data:", data);
-          if (data.success && data.data) {
-            console.log("[Dashboard] Setting metrics:", data.data);
-            setMetrics(data.data);
+          if (data && data.success && data.data) {
+            // Ensure the backend returned numeric values; do not coerce here.
+            const d = data.data as DashboardMetrics;
+            setMetrics(d);
           } else {
             console.warn("[Dashboard] Invalid response format:", data);
+            setMetrics(null);
+            setMetricsError("Invalid response format from server");
           }
         })
         .catch((error) => {
           console.error("[Dashboard] Failed to fetch dashboard metrics:", error);
+          setMetrics(null);
+          setMetricsError(String(error));
         })
         .finally(() => {
           setMetricsLoading(false);
@@ -161,10 +173,19 @@ const Dashboard: React.FC = () => {
       ];
     }
     // superadmin / default
+    const formatNumber = (v: unknown) => {
+      if (v === null || v === undefined) return "N/A";
+      if (typeof v === "number") return v.toLocaleString();
+      // if value is a numeric string, still show it raw
+      if (!Number.isNaN(Number(v))) return String(v);
+      return String(v);
+    };
+
     return [
       {
         title: "Total Users",
-        value: metricsLoading ? "..." : (metrics?.totalUsers?.toLocaleString() || "0"),
+        // Show loading indicator while loading. When loaded, show exact number returned by API.
+        value: metricsLoading ? "..." : (metrics ? formatNumber(metrics.totalUsers) : (metricsError ? "Error" : "N/A")),
         change: "+12.5%",
         trending: "up" as const,
         icon: <UserGroupIcon className="h-4 w-4" />,
@@ -174,7 +195,7 @@ const Dashboard: React.FC = () => {
       },
       {
         title: "Total Students",
-        value: metricsLoading ? "..." : (metrics?.totalStudents?.toLocaleString() || "0"),
+        value: metricsLoading ? "..." : (metrics ? formatNumber(metrics.totalStudents) : (metricsError ? "Error" : "N/A")),
         change: "+8.2%",
         trending: "up" as const,
         icon: <AcademicCapIcon className="h-4 w-4" />,
@@ -184,7 +205,7 @@ const Dashboard: React.FC = () => {
       },
       {
         title: "Active Jobs",
-        value: metricsLoading ? "..." : (metrics?.activeJobs?.toLocaleString() || "0"),
+        value: metricsLoading ? "..." : (metrics ? formatNumber(metrics.activeJobs) : (metricsError ? "Error" : "N/A")),
         change: "-3.1%",
         trending: "down" as const,
         icon: <BriefcaseIcon className="h-4 w-4" />,
@@ -194,7 +215,7 @@ const Dashboard: React.FC = () => {
       },
       {
         title: "Total Earnings",
-        value: metricsLoading ? "..." : (`$${(metrics?.totalEarnings || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`),
+        value: metricsLoading ? "..." : (metrics ? (`$${formatNumber(metrics.totalEarnings)}`) : (metricsError ? "Error" : "N/A")),
         change: "+18.7%",
         trending: "up" as const,
         icon: <ChartBarIcon className="h-4 w-4" />,

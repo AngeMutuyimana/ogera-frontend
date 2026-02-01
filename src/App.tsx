@@ -82,7 +82,8 @@ import CourseAnalytics from "./pages/Courses/CourseAnalytics";
 
 function App() {
   const isLoading = useRefreshOnLoad();
-  const role = useSelector((state: any) => state.auth.role);
+  const roleRaw = useSelector((state: any) => state.auth.role);
+  const role = roleRaw ? String(roleRaw).toLowerCase().trim() : undefined;
 
   // Show loading spinner while checking authentication
   if (isLoading) {
@@ -98,7 +99,7 @@ function App() {
 
   // Decide layout based on role
   const DashboardLayout =
-    role === "admin" || role === "superadmin" || role === "verifyDocAdmin"
+    role === "admin" || role === "superadmin" || role === "verifydocadmin"
       ? AdminLayout
       : role === "student"
       ? StudentLayout

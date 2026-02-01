@@ -43,13 +43,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const isActive = (path: string) => location.pathname === path;
   const isActiveGroup = (prefix: string) => location.pathname.startsWith(prefix);
 
-  const role = useSelector((state: any) => state.auth.role);
+  const roleRaw = useSelector((state: any) => state.auth.role);
   const permissions = useSelector((state: any) => state.auth.permissions);
+  const role = roleRaw ? String(roleRaw).toLowerCase().trim() : "";
 
   // Check if this is a built-in admin role (superadmin or exact "admin" roleName) that bypasses permissions
   // Note: Custom admin roles like "admin1", "admin2" etc. are NOT built-in admins and must check permissions
   const isBuiltInAdmin = role === "superadmin" || role === "admin";
-  
+
   // Check if this is a custom admin role (has roleType "admin" but roleName is not exactly "admin")
   // For custom admin roles, we only check permissions, not role-based checks
   const isCustomAdmin = !isBuiltInAdmin && permissions && Array.isArray(permissions) && permissions.length > 0;
@@ -127,8 +128,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               <h2 className="text-white font-bold text-lg">
                 Ogera
               </h2>
-              <p className="text-xs text-white/50 uppercase font-medium">
-                {role}
+                <p className="text-xs text-white/50 uppercase font-medium">
+                {String(roleRaw || "").toUpperCase()}
               </p>
             </div>
           </div>
