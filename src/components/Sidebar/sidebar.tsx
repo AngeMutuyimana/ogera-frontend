@@ -28,6 +28,8 @@ import {
   ShieldCheckIcon,
   PlusIcon,
   EyeIcon,
+  DocumentTextIcon,
+  BanknotesIcon,
 } from "@heroicons/react/24/outline";
 
 interface SidebarProps {
@@ -1132,14 +1134,78 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           {/* Transaction - All roles with permission check (not verifyDocAdmin) */}
           {role !== "verifyDocAdmin" &&
             (isBuiltInAdmin || hasAnyPermission(permissions, "/transactions", role)) && (
-              <div
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 group ${isActive("/dashboard/transactions") ? "bg-[#9F7AEA]/15 text-white border-l-2 border-[#9F7AEA]" : "hover:bg-[#9F7AEA]/10"}`}
-                onClick={() => handleNavigation("/dashboard/transactions")}
-              >
-                <CreditCardIcon className="h-5 w-5 text-white/70 group-hover:text-white transition-colors" />
-                <span className="font-medium group-hover:text-white transition-colors">
-                  Transaction
-                </span>
+              <div>
+                <div
+                  className={`flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 group ${isActiveGroup("/dashboard/transactions") ? "bg-[#9F7AEA]/15 border-l-2 border-[#9F7AEA]" : "hover:bg-[#9F7AEA]/10"}`}
+                  onClick={() => toggleMenu("transactions")}
+                >
+                  <div className="flex items-center gap-3">
+                    <CreditCardIcon className="h-5 w-5 text-white/70 group-hover:text-white transition-colors" />
+                    <div className="flex flex-col">
+                      <span className="font-medium group-hover:text-white transition-colors">
+                        Transaction
+                      </span>
+                      {isActiveGroup("/dashboard/transactions") && openMenu !== "transactions" && (
+                        <span className="text-xs text-[#9F7AEA] font-medium">
+                          {location.pathname === "/dashboard/transactions" && "Transactions"}
+                          {location.pathname === "/dashboard/transactions/pay" && "Pay"}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <ChevronDownIcon
+                    className={`h-4 w-4 transition-transform duration-200 text-white/50 group-hover:text-white ${
+                      openMenu === "transactions" ? "rotate-180 text-white" : ""
+                    }`}
+                  />
+                </div>
+
+                {openMenu === "transactions" && (
+                  <ul className="pl-11 space-y-1 text-sm mt-2 animate-fadeIn">
+                    <li
+                      className={`flex items-center gap-2 cursor-pointer py-2 px-2 rounded-md transition-all duration-200 group/item ${
+                        isActive("/dashboard/transactions")
+                          ? "bg-[#9F7AEA]/20 text-[#9F7AEA]"
+                          : "hover:text-purple-300 hover:bg-[#9F7AEA]/10 text-white/60"
+                      }`}
+                      onClick={() => handleNavigation("/dashboard/transactions")}
+                    >
+                      <DocumentTextIcon className={`h-4 w-4 transition-colors ${
+                        isActive("/dashboard/transactions")
+                          ? "text-[#9F7AEA]"
+                          : "text-white/40 group-hover/item:text-[#9F7AEA]"
+                      }`} />
+                      <span className={`transition-colors ${
+                        isActive("/dashboard/transactions")
+                          ? "text-white font-medium"
+                          : "group-hover/item:text-white"
+                      }`}>
+                        Transactions
+                      </span>
+                    </li>
+                    <li
+                      className={`flex items-center gap-2 cursor-pointer py-2 px-2 rounded-md transition-all duration-200 group/item ${
+                        isActive("/dashboard/transactions/pay")
+                          ? "bg-[#9F7AEA]/20 text-[#9F7AEA]"
+                          : "hover:text-purple-300 hover:bg-[#9F7AEA]/10 text-white/60"
+                      }`}
+                      onClick={() => handleNavigation("/dashboard/transactions/pay")}
+                    >
+                      <BanknotesIcon className={`h-4 w-4 transition-colors ${
+                        isActive("/dashboard/transactions/pay")
+                          ? "text-[#9F7AEA]"
+                          : "text-white/40 group-hover/item:text-[#9F7AEA]"
+                      }`} />
+                      <span className={`transition-colors ${
+                        isActive("/dashboard/transactions/pay")
+                          ? "text-white font-medium"
+                          : "group-hover/item:text-white"
+                      }`}>
+                        Pay
+                      </span>
+                    </li>
+                  </ul>
+                )}
               </div>
             )}
 
