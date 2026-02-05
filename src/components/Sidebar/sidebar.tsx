@@ -29,6 +29,7 @@ import {
   ShieldCheckIcon,
   PlusIcon,
   EyeIcon,
+  ListBulletIcon,
 } from "@heroicons/react/24/outline";
 
 interface SidebarProps {
@@ -1044,9 +1045,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             )}
 
           {/* Disputes - Student, Admin (not verifyDocAdmin, not employer) */}
-          {((role === "student" || isBuiltInAdmin) &&
+          {((role === "student" || role === "employer" || isBuiltInAdmin) &&
             role !== "verifyDocAdmin" &&
-            role !== "employer" &&
             (isBuiltInAdmin || hasAnyPermission(permissions, "/disputes", role))) && (
               <div>
                 <div
@@ -1061,9 +1061,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                       </span>
                       {isActiveGroup("/dashboard/disputes") && openMenu !== "disputes" && (
                         <span className="text-xs text-[#9F7AEA] font-medium">
+                          {location.pathname === "/dashboard/disputes" && "All Disputes"}
                           {location.pathname === "/dashboard/disputes/open" && "Open Disputes"}
                           {location.pathname === "/dashboard/disputes/in-progress" && "In Progress"}
                           {location.pathname === "/dashboard/disputes/resolved" && "Resolved"}
+                          {location.pathname === "/dashboard/disputes/create" && "Create Dispute"}
+                          {location.pathname.startsWith("/dashboard/disputes/detail") && "Dispute Detail"}
+                          {location.pathname === "/dashboard/disputes/my-disputes" && "My Disputes"}
                         </span>
                       )}
                     </div>
@@ -1112,6 +1116,36 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                         Resolved
                       </span>
                     </li>
+                    <li
+                    className="flex items-center gap-2 hover:text-purple-300 cursor-pointer py-2 px-2 rounded-md hover:bg-[#9F7AEA]/10 transition-all duration-200 group/item"
+                    onClick={() => handleNavigation("/dashboard/disputes")}
+                    >
+                      <ListBulletIcon className="h-4 w-4 text-white/40 group-hover/item:text-purple-400 transition-colors" />
+                      <span className="text-white/60 group-hover/item:text-white transition-colors">
+                     All Disputes
+                     </span>
+                    </li>
+
+                   <li
+                    className="flex items-center gap-2 hover:text-purple-300 cursor-pointer py-2 px-2 rounded-md hover:bg-[#9F7AEA]/10 transition-all duration-200 group/item"
+                   onClick={() => handleNavigation("/dashboard/disputes/create")}
+                   >
+                     <PlusIcon className="h-4 w-4 text-white/40 group-hover/item:text-purple-400 transition-colors" />
+                      <span className="text-white/60 group-hover/item:text-white transition-colors">
+                     Create Dispute
+                     </span>
+                   </li>
+
+                  <li
+                   className="flex items-center gap-2 hover:text-purple-300 cursor-pointer py-2 px-2 rounded-md hover:bg-[#9F7AEA]/10 transition-all duration-200 group/item"
+                  onClick={() => handleNavigation("/dashboard/disputes/my-disputes")}
+                  >
+                    <UsersIcon className="h-4 w-4 text-white/40 group-hover/item:text-purple-400 transition-colors" />
+                      <span className="text-white/60 group-hover/item:text-white transition-colors">
+                   My Disputes
+                   </span>
+                  </li>
+
                   </ul>
                 )}
               </div>
