@@ -1,12 +1,36 @@
 import { apiSlice } from "./apiSlice";
 
+/** SRS: Micro-courses – video, quizzes, resources. */
+export type CourseStepType =
+  | "video"
+  | "link"
+  | "pdf"
+  | "image"
+  | "text"
+  | "quiz";
+
 export interface CourseStep {
   step_id?: string;
-  step_type: "video" | "link" | "pdf" | "image" | "text";
+  step_type: CourseStepType;
   step_content: string;
   step_title?: string;
   step_order: number;
 }
+
+/** SRS: Free core skills vs paid (RWF 2,000–10,000). Category = trending topics. */
+export const COURSE_CATEGORIES = [
+  "Digital Marketing",
+  "Data Entry/Analysis",
+  "Graphic Design",
+  "Virtual Assistance",
+  "Coding Basics",
+  "Customer Service",
+  "Content Writing",
+  "Academic Research Skills",
+  "Digital Literacy",
+  "CV Writing",
+  "Other",
+] as const;
 
 export interface Course {
   course_id: string;
@@ -14,6 +38,14 @@ export interface Course {
   type: string;
   tag: string;
   description?: string;
+  estimated_hours?: number | null;
+  category?: string | null;
+  is_free: boolean;
+  price_amount?: number | null;
+  price_currency?: string | null;
+  discount_trust_score_min?: number | null;
+  discount_percent?: number | null;
+  created_by?: string | null;
   steps?: CourseStep[];
   created_at: string;
   updated_at: string;
@@ -24,6 +56,13 @@ export interface CreateCourseRequest {
   type: string;
   tag: string;
   description?: string;
+  estimated_hours?: number | null;
+  category?: string | null;
+  is_free?: boolean;
+  price_amount?: number | null;
+  price_currency?: string | null;
+  discount_trust_score_min?: number | null;
+  discount_percent?: number | null;
   steps?: CourseStep[];
 }
 
@@ -32,7 +71,36 @@ export interface UpdateCourseRequest {
   type?: string;
   tag?: string;
   description?: string;
+  estimated_hours?: number | null;
+  category?: string | null;
+  is_free?: boolean;
+  price_amount?: number | null;
+  price_currency?: string | null;
+  discount_trust_score_min?: number | null;
+  discount_percent?: number | null;
   steps?: CourseStep[];
+}
+
+/** SRS: Complete → admin review → certificate. Employers see completed courses (certificate view gated). */
+export type CertificateStatus =
+  | "none"
+  | "pending_payment"
+  | "pending_review"
+  | "approved";
+
+export interface CourseEnrollment {
+  enrollment_id: string;
+  user_id: string;
+  course_id: string;
+  enrolled_at: string;
+  completed_at?: string | null;
+  certificate_status: CertificateStatus;
+  amount_due?: number | null;
+  amount_paid?: number | null;
+  funded?: boolean | null;
+  course?: Course;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CourseResponse {
@@ -89,13 +157,19 @@ export const coursesApi = apiSlice.injectEndpoints({
     }),
 
     // Update course
-    updateCourse: builder.mutation<CourseResponse, { id: string; data: UpdateCourseRequest }>({
+    updateCourse: builder.mutation<
+      CourseResponse,
+      { id: string; data: UpdateCourseRequest }
+    >({
       query: ({ id, data }) => ({
         url: `/courses/${id}`,
         method: "PUT",
         body: data,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: "Course", id }, "Course"],
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Course", id },
+        "Course",
+      ],
     }),
 
     // Delete course
@@ -104,7 +178,84 @@ export const coursesApi = apiSlice.injectEndpoints({
         url: `/courses/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, id) => [{ type: "Course", id }, "Course"],
+      invalidatesTags: (result, error, id) => [
+        { type: "Course", id },
+        "Course",
+      ],
+    }),
+
+    // ---------- Enrollments (SRS: enroll → complete → admin review) ----------
+    enrollCourse: builder.mutation<
+      { data: CourseEnrollment; message: string },
+      string
+    >({
+      query: (courseId) => ({
+        url: `/courses/${courseId}/enroll`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Course", "Enrollment"],
+    }),
+
+    getMyEnrollments: builder.query<
+      { data: CourseEnrollment[]; message: string },
+      void
+    >({
+      query: () => ({
+        url: "/courses/my-enrollments",
+        method: "GET",
+      }),
+      providesTags: ["Enrollment"],
+    }),
+
+    getEnrollment: builder.query<
+      { data: CourseEnrollment; message: string },
+      string
+    >({
+      query: (courseId) => ({
+        url: `/courses/${courseId}/enrollment`,
+        method: "GET",
+      }),
+      providesTags: (result, error, courseId) => [
+        { type: "Enrollment", id: courseId },
+      ],
+    }),
+
+    completeCourse: builder.mutation<
+      { data: CourseEnrollment; message: string },
+      string
+    >({
+      query: (courseId) => ({
+        url: `/courses/${courseId}/complete`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Course", "Enrollment"],
+    }),
+
+    getEnrollmentsPendingReview: builder.query<
+      { data: CourseEnrollment[]; message: string },
+      void
+    >({
+      query: () => ({
+        url: "/courses/enrollments/pending-review",
+        method: "GET",
+      }),
+      providesTags: ["Enrollment"],
+    }),
+
+    updateCertificateStatus: builder.mutation<
+      { data: CourseEnrollment; message: string },
+      {
+        enrollmentId: string;
+        certificate_status: "pending_review" | "approved";
+        funded?: boolean;
+      }
+    >({
+      query: ({ enrollmentId, certificate_status, funded }) => ({
+        url: `/courses/enrollments/${enrollmentId}/certificate`,
+        method: "PUT",
+        body: { certificate_status, funded },
+      }),
+      invalidatesTags: ["Enrollment"],
     }),
   }),
 });
@@ -115,4 +266,10 @@ export const {
   useCreateCourseMutation,
   useUpdateCourseMutation,
   useDeleteCourseMutation,
+  useEnrollCourseMutation,
+  useGetMyEnrollmentsQuery,
+  useGetEnrollmentQuery,
+  useCompleteCourseMutation,
+  useGetEnrollmentsPendingReviewQuery,
+  useUpdateCertificateStatusMutation,
 } = coursesApi;

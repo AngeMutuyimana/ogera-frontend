@@ -6,7 +6,11 @@ import { BookOpenIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { styled } from "@mui/material/styles";
 import Button from "../../components/button";
 import * as Yup from "yup";
-import { useCreateCourseMutation, type CourseStep } from "../../services/api/coursesApi";
+import {
+  useCreateCourseMutation,
+  type CourseStep,
+  COURSE_CATEGORIES,
+} from "../../services/api/coursesApi";
 import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 
 interface AddCourseFormValues {
@@ -14,6 +18,13 @@ interface AddCourseFormValues {
   type: string;
   tag: string;
   description: string;
+  estimated_hours: string;
+  category: string;
+  is_free: boolean;
+  price_amount: string;
+  price_currency: string;
+  discount_trust_score_min: string;
+  discount_percent: string;
   steps: CourseStep[];
 }
 
@@ -22,8 +33,7 @@ const validationSchema = Yup.object({
     .min(3, "Course name must be at least 3 characters")
     .max(255, "Course name must not exceed 255 characters")
     .required("Course name is required"),
-  type: Yup.string()
-    .required("Course type is required"),
+  type: Yup.string().required("Course type is required"),
   tag: Yup.string()
     .min(2, "Tag must be at least 2 characters")
     .max(100, "Tag must not exceed 100 characters")
@@ -31,18 +41,55 @@ const validationSchema = Yup.object({
   description: Yup.string()
     .max(2000, "Description must not exceed 2000 characters")
     .optional(),
+  estimated_hours: Yup.number()
+    .min(2, "SRS: Micro-courses 2–10 hours")
+    .max(10)
+    .nullable()
+    .transform((v) =>
+      v === "" || v === undefined || isNaN(Number(v)) ? undefined : Number(v)
+    )
+    .optional(),
+  category: Yup.string().optional(),
+  is_free: Yup.boolean().required(),
+  price_amount: Yup.number()
+    .min(0)
+    .nullable()
+    .transform((v) => (v === "" || isNaN(v) ? undefined : v))
+    .optional(),
+  price_currency: Yup.string().optional(),
+  discount_trust_score_min: Yup.number()
+    .min(0)
+    .nullable()
+    .transform((v) => (v === "" || isNaN(v) ? undefined : v))
+    .optional(),
+  discount_percent: Yup.number()
+    .min(0)
+    .max(100)
+    .nullable()
+    .transform((v) => (v === "" || isNaN(v) ? undefined : v))
+    .optional(),
 });
 
 const AddCourse: React.FC = () => {
   const navigate = useNavigate();
   const [steps, setSteps] = useState<CourseStep[]>([]);
-  const [createCourse, { isLoading: isSubmitting, isError, error, isSuccess, data }] = useCreateCourseMutation();
+  const [
+    createCourse,
+    { isLoading: isSubmitting, isError, error, isSuccess, data },
+  ] = useCreateCourseMutation();
 
   const initialValues: AddCourseFormValues = {
     course_name: "",
     type: "",
     tag: "",
     description: "",
+    estimated_hours: "",
+    category: "",
+    is_free: true,
+    price_amount: "",
+    price_currency: "RWF",
+    discount_trust_score_min: "",
+    discount_percent: "",
     steps: [],
   };
 
@@ -56,14 +103,33 @@ const AddCourse: React.FC = () => {
           type: values.type,
           tag: values.tag,
           description: values.description || undefined,
-          steps: steps.length > 0 ? steps.map((step, index) => ({
-            step_type: step.step_type,
-            step_content: step.step_content,
-            step_title: step.step_title || undefined,
-            step_order: index + 1,
-          })) : undefined,
+          estimated_hours: values.estimated_hours
+            ? Number(values.estimated_hours)
+            : undefined,
+          category: values.category || undefined,
+          is_free: values.is_free,
+          price_amount:
+            !values.is_free && values.price_amount
+              ? Number(values.price_amount)
+              : undefined,
+          price_currency: values.price_currency || "RWF",
+          discount_trust_score_min: values.discount_trust_score_min
+            ? Number(values.discount_trust_score_min)
+            : undefined,
+          discount_percent: values.discount_percent
+            ? Number(values.discount_percent)
+            : undefined,
+          steps:
+            steps.length > 0
+              ? steps.map((step, index) => ({
+                  step_type: step.step_type,
+                  step_content: step.step_content,
+                  step_title: step.step_title || undefined,
+                  step_order: index + 1,
+                }))
+              : undefined,
         };
-        
+
         await createCourse(payload).unwrap();
       } catch (error: any) {
         console.error("Create course error:", error);
@@ -93,7 +159,9 @@ const AddCourse: React.FC = () => {
             <BookOpenIcon className="h-8 w-8 text-purple-600" />
           </IconWrapper>
           <Title>Add Course</Title>
-          <Subtitle>Create a new course with all the necessary details.</Subtitle>
+          <Subtitle>
+            Create a new course with all the necessary details.
+          </Subtitle>
         </Header>
 
         {/* Course Name */}
@@ -147,12 +215,123 @@ const AddCourse: React.FC = () => {
             onBlur={formik.handleBlur}
           />
           <HelperText>
-            Enter a tag to categorize this course (e.g., Technology, Design, Business)
+            Enter a tag to categorize this course (e.g., Technology, Design,
+            Business)
           </HelperText>
           {formik.touched.tag && formik.errors.tag && (
             <ErrorText>{formik.errors.tag}</ErrorText>
           )}
         </FormGroup>
+
+        {/* Category - SRS: Trending topics Rwanda */}
+        <FormGroup>
+          <Label htmlFor="category">Category (Trending topics)</Label>
+          <Select
+            id="category"
+            name="category"
+            value={formik.values.category}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+          >
+            <option value="">Select category</option>
+            {COURSE_CATEGORIES.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </Select>
+          <HelperText>
+            e.g. Digital Marketing, Data Entry/Analysis, CV Writing (free hook)
+          </HelperText>
+        </FormGroup>
+
+        {/* Estimated hours - SRS: Micro-courses 2–10 hours */}
+        <FormGroup>
+          <Label htmlFor="estimated_hours">Estimated hours (2–10)</Label>
+          <Input
+            id="estimated_hours"
+            name="estimated_hours"
+            type="number"
+            min={2}
+            max={10}
+            placeholder="e.g., 5"
+            value={formik.values.estimated_hours}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+          />
+          <HelperText>Micro-courses: 2–10 hours total</HelperText>
+          {formik.touched.estimated_hours && formik.errors.estimated_hours && (
+            <ErrorText>{formik.errors.estimated_hours}</ErrorText>
+          )}
+        </FormGroup>
+
+        {/* Pricing - SRS: Free vs paid RWF 2,000–10,000 */}
+        <FormGroup>
+          <Label>
+            <input
+              type="checkbox"
+              name="is_free"
+              checked={formik.values.is_free}
+              onChange={(e) =>
+                formik.setFieldValue("is_free", e.target.checked)
+              }
+            />
+            <span style={{ marginLeft: 8 }}>Free course</span>
+          </Label>
+          <HelperText>
+            Free: Digital Literacy, CV Writing. Paid: RWF 2,000–10,000 (e.g.
+            Data Analysis, Digital Marketing)
+          </HelperText>
+        </FormGroup>
+
+        {!formik.values.is_free && (
+          <>
+            <FormGroup>
+              <Label htmlFor="price_amount">Price amount (RWF) *</Label>
+              <Input
+                id="price_amount"
+                name="price_amount"
+                type="number"
+                min={2000}
+                max={100000}
+                placeholder="e.g., 5000"
+                value={formik.values.price_amount}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+              />
+              {formik.touched.price_amount && formik.errors.price_amount && (
+                <ErrorText>{formik.errors.price_amount}</ErrorText>
+              )}
+            </FormGroup>
+            <FormGroup>
+              <Label htmlFor="discount_trust_score_min">
+                Discount: TrustScore ≥ (e.g. 500)
+              </Label>
+              <Input
+                id="discount_trust_score_min"
+                name="discount_trust_score_min"
+                type="number"
+                min={0}
+                placeholder="500"
+                value={formik.values.discount_trust_score_min}
+                onChange={formik.handleChange}
+              />
+            </FormGroup>
+            <FormGroup>
+              <Label htmlFor="discount_percent">Discount % (e.g. 50)</Label>
+              <Input
+                id="discount_percent"
+                name="discount_percent"
+                type="number"
+                min={0}
+                max={100}
+                placeholder="50"
+                value={formik.values.discount_percent}
+                onChange={formik.handleChange}
+              />
+            </FormGroup>
+          </>
+        )}
 
         {/* Description */}
         <FormGroup>
@@ -167,7 +346,8 @@ const AddCourse: React.FC = () => {
             onBlur={formik.handleBlur}
           />
           <HelperText>
-            Provide a detailed description of what students will learn in this course.
+            Provide a detailed description of what students will learn in this
+            course.
           </HelperText>
           {formik.touched.description && formik.errors.description && (
             <ErrorText>{formik.errors.description}</ErrorText>
@@ -179,10 +359,11 @@ const AddCourse: React.FC = () => {
           <StepsHeader>
             <Label>Course Steps (Optional)</Label>
             <HelperText>
-              Add learning steps for this course. Each step can be a video, link, PDF, image, or text content.
+              Add learning steps for this course. Each step can be a video,
+              link, PDF, image, or text content.
             </HelperText>
           </StepsHeader>
-          
+
           {steps.map((step, index) => (
             <StepCard key={index}>
               <StepHeader>
@@ -197,9 +378,11 @@ const AddCourse: React.FC = () => {
                   <TrashIcon className="h-5 w-5" />
                 </DeleteStepButton>
               </StepHeader>
-              
+
               <FormGroup>
-                <Label htmlFor={`step_title_${index}`}>Step Title (Optional)</Label>
+                <Label htmlFor={`step_title_${index}`}>
+                  Step Title (Optional)
+                </Label>
                 <Input
                   id={`step_title_${index}`}
                   value={step.step_title || ""}
@@ -219,12 +402,14 @@ const AddCourse: React.FC = () => {
                   value={step.step_type}
                   onChange={(e) => {
                     const newSteps = [...steps];
-                    newSteps[index].step_type = e.target.value as CourseStep["step_type"];
+                    newSteps[index].step_type = e.target
+                      .value as CourseStep["step_type"];
                     newSteps[index].step_content = ""; // Reset content when type changes
                     setSteps(newSteps);
                   }}
                 >
                   <option value="video">Watch YouTube Video</option>
+                  <option value="quiz">Quiz</option>
                   <option value="link">Read Link</option>
                   <option value="pdf">Read PDF</option>
                   <option value="image">View Image</option>
@@ -263,8 +448,8 @@ const AddCourse: React.FC = () => {
                       setSteps(newSteps);
                     }}
                     placeholder={
-                      step.step_type === "video" 
-                        ? "e.g., https://www.youtube.com/watch?v=..." 
+                      step.step_type === "video"
+                        ? "e.g., https://www.youtube.com/watch?v=..."
                         : step.step_type === "link"
                         ? "e.g., https://example.com/article"
                         : step.step_type === "pdf"
@@ -278,7 +463,8 @@ const AddCourse: React.FC = () => {
                   {step.step_type === "link" && "Enter a web page URL"}
                   {step.step_type === "pdf" && "Enter a PDF document URL"}
                   {step.step_type === "image" && "Enter an image URL"}
-                  {step.step_type === "text" && "Enter the text content for this step"}
+                  {step.step_type === "text" &&
+                    "Enter the text content for this step"}
                 </HelperText>
               </FormGroup>
             </StepCard>
@@ -478,7 +664,7 @@ const ButtonContainer = styled("div")`
 
   @media (max-width: 640px) {
     flex-direction: column-reverse;
-    
+
     button {
       width: 100%;
     }
