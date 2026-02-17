@@ -6,7 +6,7 @@ import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import TextField from "@mui/material/TextField";
 import { useFormik } from "formik";
-import { useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { loginValidationSchema } from "../validation/Index";
 import type { LoginFormValues } from "../type/Index";
 import ReuseButton from "../components/button";
@@ -18,13 +18,34 @@ import { jwtDecode } from "jwt-decode";
 import { setCredentials } from "../features/auth/authSlice";
 import axios from "axios";
 
+const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  const reCaptchaRef = useRef<any>(null);
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  // Load reCAPTCHA script only if a valid site key is provided
+  useEffect(() => {
+    if (!RECAPTCHA_SITE_KEY) {
+      return; // Don't load reCAPTCHA if no key is configured
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://www.google.com/recaptcha/api.js';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+
+    return () => {
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
+    };
+  }, []);
 
   const handleClickShowPassword = () => setShowPassword((prev) => !prev);
 
@@ -32,12 +53,27 @@ const Login = () => {
     initialValues: {
       email: "",
       password: "",
-      
+      captchaToken: "",
     },
     validationSchema: loginValidationSchema,
     onSubmit: async (values) => {
       try {
         setLoading(true);
+
+        // Get CAPTCHA token from the checkbox widget (only if reCAPTCHA is enabled)
+        if (RECAPTCHA_SITE_KEY) {
+          if ((window as any).grecaptcha) {
+            const token = (window as any).grecaptcha.getResponse();
+            if (!token) {
+              toast.error('Please complete the reCAPTCHA verification');
+              setLoading(false);
+              return;
+            }
+            values.captchaToken = token;
+          } else {
+            console.warn('reCAPTCHA not loaded');
+          }
+        }
 
         const result: any = await dispatch<any>(loginApi(values));
 
@@ -84,11 +120,30 @@ const Login = () => {
 
         toast.success("You're logged in!");
         formik.resetForm();
+        
+        // Reset reCAPTCHA widget after successful login
+        if (RECAPTCHA_SITE_KEY && (window as any).grecaptcha && reCaptchaRef.current) {
+          (window as any).grecaptcha.reset();
+        }
 
         // Allow navigation for all roles (including custom admin roles)
         navigate("/dashboard");
       } catch (error: any) {
-        toast.error(error?.response?.data?.message || "Login failed");
+        // Log error details for debugging
+        console.log("🔍 Login error:", error);
+        console.log("🔍 Error response:", error?.response);
+        console.log("🔍 Error status:", error?.response?.status);
+        console.log("🔍 Error message:", error?.response?.data?.message);
+        console.log("🔍 Error payload:", error?.payload);
+        console.log("🔍 Error type:", error?.type);
+        
+        const errorMessage = error?.response?.data?.message || error?.payload?.message || error?.message || "";
+        
+        toast.error(errorMessage || "Login failed");
+        // Reset CAPTCHA on error
+        if (RECAPTCHA_SITE_KEY && (window as any).grecaptcha) {
+          (window as any).grecaptcha.reset();
+        }
       } finally {
         setLoading(false);
       }
@@ -159,6 +214,17 @@ const Login = () => {
               </FormGroup>
 
               <ForgotPassword href="/auth/forgot-password">Forgot Password?</ForgotPassword>
+
+              {/* reCAPTCHA */}
+              {RECAPTCHA_SITE_KEY && (
+                <RecaptchaContainer>
+                  <div
+                    ref={reCaptchaRef}
+                    className="g-recaptcha"
+                    data-sitekey={RECAPTCHA_SITE_KEY}
+                  ></div>
+                </RecaptchaContainer>
+              )}
 
               <ReuseButton
                 backgroundcolor="#7f56d9"
@@ -289,6 +355,16 @@ const ForgotPassword = styled("a")(({ theme }) => ({
   alignSelf: "flex-end",
   textDecoration: "none",
   "&:hover": { textDecoration: "underline" },
+}));
+
+const RecaptchaContainer = styled("div")(({ theme }) => ({
+  display: "flex",
+  justifyContent: "center",
+  margin: "10px 0",
+  "& .g-recaptcha": {
+    transform: "scale(0.9)",
+    transformOrigin: "0 0",
+  },
 }));
 
 const SignUpText = styled("p")(({ theme }) => ({
