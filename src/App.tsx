@@ -64,6 +64,9 @@ import MyDisputes from "./pages/Disputes/MyDisputes";
 // Other Pages
 import Analytics from "./pages/Analytics";
 import Transactions from "./pages/Transactions";
+import Pay from "./pages/Transactions/Pay";
+import PaymentCallback from "./pages/PaymentCallback";
+import PaymentCancelled from "./pages/PaymentCancelled";
 
 // Admin Pages
 import CreateAdmin from "./pages/Admin/CreateAdmin";
@@ -136,6 +139,10 @@ function App() {
     { path: "/auth/verify-email", Component: VerifyEmail },
     { path: "/auth/change-password", Component: ChangePassword },
     { path: "/auth/me", Component: TestRefresh },
+
+    /** ---------------- PAYMENT CALLBACK (Public - Pesapal redirect) ---------------- **/
+    { path: "/payment/callback", Component: PaymentCallback },
+    { path: "/payment/cancelled", Component: PaymentCancelled },
 
     /** ---------------- PROTECTED DASHBOARD ROUTES ---------------- **/
     {
@@ -379,6 +386,10 @@ function App() {
             {
               path: "transactions",
               Component: Transactions,
+            },
+            {
+              path: "transactions/pay",
+              Component: Pay,
             },
             {
               path: "courses/add",
