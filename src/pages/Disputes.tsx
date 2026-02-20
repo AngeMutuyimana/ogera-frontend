@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { getAllDisputes, getDisputeStats, type Dispute, type DisputeStats } from "../services/api/disputesApi";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import Loader from "../components/Loader";
 
 const Disputes: React.FC = () => {
@@ -9,6 +10,8 @@ const Disputes: React.FC = () => {
   const [stats, setStats] = useState<DisputeStats>({ open: 0, underReview: 0, resolved: 0, highPriority: 0 });
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const role = useSelector((state: any) => state.auth.role);
+  const user_id = useSelector((state: any) => state.auth.user_id);
 
   useEffect(() => {
     fetchData();
@@ -94,11 +97,23 @@ const Disputes: React.FC = () => {
                   <div className="grid grid-cols-3 gap-4 mt-3">
                     <div>
                       <p className="text-xs text-gray-500 font-medium">Student</p>
-                      <p className="text-sm font-semibold text-gray-900">{dispute.student?.full_name || "N/A"}</p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {role?.toLowerCase() === 'student' && dispute.student_id === user_id
+                          ? dispute.student?.full_name || "N/A"
+                          : role?.toLowerCase() === 'employer' && dispute.employer_id === user_id
+                          ? "-"
+                          : dispute.student?.full_name || "N/A"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 font-medium">Employer</p>
-                      <p className="text-sm font-semibold text-gray-900">{dispute.employer?.full_name || "N/A"}</p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {role?.toLowerCase() === 'employer' && dispute.employer_id === user_id
+                          ? dispute.employer?.full_name || "N/A"
+                          : role?.toLowerCase() === 'student' && dispute.student_id === user_id
+                          ? "-"
+                          : dispute.employer?.full_name || "N/A"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 font-medium">Reported</p>
