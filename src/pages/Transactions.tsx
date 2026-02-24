@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { CreditCardIcon } from "@heroicons/react/24/outline";
 import CustomTable, {
   type Column,
@@ -22,6 +23,7 @@ interface Transaction {
 }
 
 const Transactions: React.FC = () => {
+  const { t } = useTranslation();
   const transactions: Transaction[] = [
     {
       id: 1,
@@ -78,7 +80,7 @@ const Transactions: React.FC = () => {
   const columns: Column<Transaction>[] = [
     {
       id: "transactionId",
-      label: "Transaction ID",
+      label: t("pages.transactions.transactionId"),
       minWidth: 150,
       format: (value) => (
         <Typography
@@ -90,17 +92,17 @@ const Transactions: React.FC = () => {
     },
     {
       id: "student",
-      label: "Student",
+      label: t("pages.transactions.student"),
       minWidth: 150,
     },
     {
       id: "employer",
-      label: "Employer",
+      label: t("pages.transactions.employer"),
       minWidth: 150,
     },
     {
       id: "amount",
-      label: "Amount",
+      label: t("pages.transactions.amount"),
       minWidth: 120,
       align: "right",
       format: (value) => (
@@ -113,7 +115,7 @@ const Transactions: React.FC = () => {
     },
     {
       id: "type",
-      label: "Type",
+      label: t("pages.transactions.type"),
       minWidth: 120,
       format: (value) => (
         <Chip
@@ -139,7 +141,7 @@ const Transactions: React.FC = () => {
     },
     {
       id: "status",
-      label: "Status",
+      label: t("pages.transactions.status"),
       minWidth: 120,
       format: (value) => (
         <Chip
@@ -165,14 +167,14 @@ const Transactions: React.FC = () => {
     },
     {
       id: "date",
-      label: "Date",
+      label: t("pages.transactions.date"),
       minWidth: 120,
     },
   ];
 
   const actions: TableAction<Transaction>[] = [
     {
-      label: "View Details",
+      label: t("pages.transactions.viewDetails"),
       icon: <ViewIcon fontSize="small" />,
       onClick: (row) => {
         console.log("View transaction:", row);
@@ -180,7 +182,7 @@ const Transactions: React.FC = () => {
       color: "primary",
     },
     {
-      label: "Receipt",
+      label: t("pages.transactions.receipt"),
       icon: <ReceiptIcon fontSize="small" />,
       onClick: (row) => {
         console.log("Download receipt:", row);
@@ -195,35 +197,35 @@ const Transactions: React.FC = () => {
       <div>
         <h1 className="text-2xl md:text-4xl font-extrabold text-gray-900 flex items-center gap-2 md:gap-3">
           <CreditCardIcon className="h-8 w-8 md:h-10 md:w-10 text-purple-600" />
-          Transactions
+          {t("pages.transactions.transactions")}
         </h1>
         <p className="text-sm md:text-base text-gray-500 mt-2">
-          View and manage all financial transactions
+          {t("pages.transactions.subtitle")}
         </p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 shadow-md border border-purple-200">
-          <p className="text-sm text-purple-700 font-medium">Total Volume</p>
+          <p className="text-sm text-purple-700 font-medium">{t("pages.transactions.totalVolume")}</p>
           <p className="text-2xl md:text-3xl font-bold text-purple-900 mt-2">
             $124,500
           </p>
         </div>
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow-md border border-green-200">
-          <p className="text-sm text-green-700 font-medium">Completed</p>
+          <p className="text-sm text-green-700 font-medium">{t("pages.transactions.completed")}</p>
           <p className="text-2xl md:text-3xl font-bold text-green-900 mt-2">
             1,245
           </p>
         </div>
         <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 shadow-md border border-orange-200">
-          <p className="text-sm text-orange-700 font-medium">Pending</p>
+          <p className="text-sm text-orange-700 font-medium">{t("pages.transactions.pending")}</p>
           <p className="text-2xl md:text-3xl font-bold text-orange-900 mt-2">
             38
           </p>
         </div>
         <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-6 shadow-md border border-red-200">
-          <p className="text-sm text-red-700 font-medium">Failed</p>
+          <p className="text-sm text-red-700 font-medium">{t("pages.transactions.failed")}</p>
           <p className="text-2xl md:text-3xl font-bold text-red-900 mt-2">12</p>
         </div>
       </div>
@@ -234,7 +236,7 @@ const Transactions: React.FC = () => {
         data={transactions}
         actions={actions}
         searchable={true}
-        searchPlaceholder="Search by transaction ID, student, employer..."
+        searchPlaceholder={t("pages.transactions.searchPlaceholder")}
         rowsPerPageOptions={[10, 25, 50]}
         defaultRowsPerPage={10}
       />

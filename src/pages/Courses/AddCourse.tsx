@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useFormik } from "formik";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { BookOpenIcon, PlusIcon, TrashIcon, CloudArrowUpIcon } from "@heroicons/react/24/outline";
@@ -41,6 +42,7 @@ interface StepUploadState {
 }
 
 const AddCourse: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [steps, setSteps] = useState<CourseStep[]>([]);
   const [stepUploadStates, setStepUploadStates] = useState<Record<number, StepUploadState>>({});
@@ -78,7 +80,7 @@ const AddCourse: React.FC = () => {
         const err = error as FetchBaseQueryError & {
           data?: { message?: string };
         };
-        toast.error(err?.data?.message || "Failed to create course");
+        toast.error(err?.data?.message || t("courses.failedToCreateCourse"));
       }
     },
   });
@@ -86,7 +88,7 @@ const AddCourse: React.FC = () => {
   // Handle success/error states
   useEffect(() => {
     if (isSuccess && data) {
-      toast.success(data?.message || "Course created successfully!");
+      toast.success(data?.message || t("courses.courseCreatedSuccess"));
       formik.resetForm();
       setSteps([]);
       setStepUploadStates({});
@@ -202,17 +204,17 @@ const AddCourse: React.FC = () => {
           <IconWrapper>
             <BookOpenIcon className="h-8 w-8 text-purple-600" />
           </IconWrapper>
-          <Title>Add Course</Title>
-          <Subtitle>Create a new course with all the necessary details.</Subtitle>
+          <Title>{t("courses.addTitle")}</Title>
+          <Subtitle>{t("courses.addSubtitle")}</Subtitle>
         </Header>
 
         {/* Course Name */}
         <FormGroup>
-          <Label htmlFor="course_name">Course Name *</Label>
+          <Label htmlFor="course_name">{t("courses.courseNameLabel")}</Label>
           <Input
             id="course_name"
             name="course_name"
-            placeholder="e.g., Introduction to Web Development"
+            placeholder={t("courses.courseNamePlaceholder")}
             value={formik.values.course_name}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
@@ -224,7 +226,7 @@ const AddCourse: React.FC = () => {
 
         {/* Course Type */}
         <FormGroup>
-          <Label htmlFor="type">Course Type *</Label>
+          <Label htmlFor="type">{t("courses.courseTypeLabel")}</Label>
           <Select
             id="type"
             name="type"
@@ -232,7 +234,7 @@ const AddCourse: React.FC = () => {
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
           >
-            <option value="">Select course type</option>
+            <option value="">{t("courses.selectCourseType")}</option>
             <option value="Online">Online</option>
             <option value="In-Person">In-Person</option>
             <option value="Hybrid">Hybrid</option>
@@ -247,17 +249,17 @@ const AddCourse: React.FC = () => {
 
         {/* Tag */}
         <FormGroup>
-          <Label htmlFor="tag">Tag *</Label>
+          <Label htmlFor="tag">{t("courses.tagLabel")}</Label>
           <Input
             id="tag"
             name="tag"
-            placeholder="e.g., Programming, Design, Business, Marketing"
+            placeholder={t("courses.tagPlaceholder")}
             value={formik.values.tag}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
           />
           <HelperText>
-            Enter a tag to categorize this course (e.g., Technology, Design, Business)
+            {t("courses.tagHelper")}
           </HelperText>
           {formik.touched.tag && formik.errors.tag && (
             <ErrorText>{formik.errors.tag}</ErrorText>
@@ -266,18 +268,18 @@ const AddCourse: React.FC = () => {
 
         {/* Description */}
         <FormGroup>
-          <Label htmlFor="description">Description (Optional)</Label>
+          <Label htmlFor="description">{t("courses.descriptionLabel")}</Label>
           <TextArea
             id="description"
             name="description"
             rows={6}
-            placeholder="Enter course description... (e.g., This course covers the fundamentals of web development including HTML, CSS, and JavaScript)"
+            placeholder={t("courses.descriptionPlaceholder")}
             value={formik.values.description}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
           />
           <HelperText>
-            Provide a detailed description of what students will learn in this course.
+            {t("courses.descriptionHelper")}
           </HelperText>
           {formik.touched.description && formik.errors.description && (
             <ErrorText>{formik.errors.description}</ErrorText>
@@ -287,9 +289,9 @@ const AddCourse: React.FC = () => {
         {/* Course Steps Section */}
         <StepsSection>
           <StepsHeader>
-            <Label>Course Steps (Optional)</Label>
+            <Label>{t("courses.courseStepsLabel")}</Label>
             <HelperText>
-              Add learning steps for this course. Each step can be a video, link, PDF, image, or text content.
+              {t("courses.courseStepsHelper")}
             </HelperText>
           </StepsHeader>
           
@@ -514,12 +516,12 @@ const AddCourse: React.FC = () => {
         {/* Action Buttons */}
         <ButtonContainer>
           <Button
-            text="Cancel"
+            text={t("courses.cancel")}
             onClick={() => navigate("/dashboard/courses/view")}
             disabled={isSubmitting}
           />
           <Button
-            text={isSubmitting ? "Creating..." : "Create Course"}
+            text={isSubmitting ? t("courses.creating") : t("courses.createCourseButton")}
             onClick={() => formik.handleSubmit()}
             disabled={isSubmitting}
           />

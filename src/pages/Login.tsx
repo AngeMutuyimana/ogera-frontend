@@ -1,4 +1,5 @@
 import { styled } from "@mui/material/styles";
+import { useTranslation } from "react-i18next";
 import loginImage from "../assets/login.png";
 import logo from "../assets/Logo.png";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
@@ -23,6 +24,7 @@ import LostAuthenticatorModal from "../components/LostAuthenticatorModal";
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
 const Login = () => {
+  const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const reCaptchaRef = useRef<any>(null);
@@ -93,7 +95,7 @@ const Login = () => {
       );
     }
 
-    toast.success("You're logged in!");
+    toast.success(t("login.loggedInSuccess"));
     formik.resetForm();
 
     // Reset reCAPTCHA widget after successful login
@@ -121,7 +123,7 @@ const Login = () => {
           if ((window as any).grecaptcha) {
             const token = (window as any).grecaptcha.getResponse();
             if (!token) {
-              toast.error('Please complete the reCAPTCHA verification');
+              toast.error(t("login.completeRecaptcha"));
               setLoading(false);
               return;
             }
@@ -137,7 +139,7 @@ const Login = () => {
           setTwoFactorRequired(true);
           setTwoFactorToken(result.data.twoFactorToken || "");
           if (!isLostAuthenticatorClicked) {
-            toast("Enter the 6-digit code from Google Authenticator to complete login.");
+            toast(t("login.enter2FACode"));
           }
           setIsLostAuthenticatorClicked(false); // Reset after use
           return;
@@ -166,7 +168,7 @@ const Login = () => {
           errorMessage.toLowerCase().includes("no recaptcha clients exist");
 
         if (!(twoFactorRequired && isNoRecaptchaClientsError)) {
-          toast.error(errorMessage || "Login failed");
+          toast.error(errorMessage || t("login.loginFailed"));
         }
         // Reset CAPTCHA on error
         if (RECAPTCHA_SITE_KEY && (window as any).grecaptcha) {
@@ -181,12 +183,12 @@ const Login = () => {
   const handleVerify2FALogin = async () => {
     try {
       if (!twoFactorToken) {
-        toast.error("2FA session expired. Please login again.");
+        toast.error(t("login.twoFASessionExpired"));
         setTwoFactorRequired(false);
         return;
       }
       if (!twoFactorCode.trim()) {
-        toast.error("Please enter the 6-digit code");
+        toast.error(t("login.pleaseEnterSixDigit"));
         return;
       }
       setVerifying2FA(true);
@@ -200,7 +202,7 @@ const Login = () => {
       const msg =
         error?.response?.data?.message ||
         error?.message ||
-        "2FA verification failed";
+        t("login.twoFAVerificationFailed");
 
       const isNoRecaptchaClientsError =
         typeof msg === "string" &&
@@ -223,21 +225,21 @@ const Login = () => {
             <Logo />
 
             <WelcomeTextContainer>
-              <Heading>Welcome to Ogera 👋</Heading>
+              <Heading>{t("login.welcome")}</Heading>
               <SubHeading>
-                Sign in to access your Ogera account and continue earning while you learn.
+                {t("login.signInSubtext")}
               </SubHeading>
             </WelcomeTextContainer>
 
             <LoginFormContainer as="form" onSubmit={formik.handleSubmit}>
               {/* Email */}
               <FormGroup>
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="email">{t("login.emailAddress")}</Label>
                 <Input
                   id="email"
                   name="email"
                   type="email"
-                  placeholder="Enter your email address"
+                  placeholder={t("login.enterEmail")}
                   value={formik.values.email}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
@@ -249,12 +251,12 @@ const Login = () => {
 
               {/* Password */}
               <FormGroup>
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t("login.password")}</Label>
                 <TextField
                   id="password"
                   name="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
+                  placeholder={t("login.enterPassword")}
                   variant="outlined"
                   fullWidth
                   size="small"
@@ -277,18 +279,20 @@ const Login = () => {
                 )}
               </FormGroup>
 
-              <ForgotPassword href="/auth/forgot-password">Forgot Password?</ForgotPassword>
+              <ForgotPassword href="/auth/forgot-password">
+                {t("login.forgotPassword")}
+              </ForgotPassword>
 
               {/* 2FA Step (only when required) */}
               {twoFactorRequired && (
                 <FormGroup>
-                  <Label htmlFor="twoFactorCode">2FA Code</Label>
+                  <Label htmlFor="twoFactorCode">{t("login.twoFactorCode")}</Label>
                   <Input
                     id="twoFactorCode"
                     name="twoFactorCode"
                     type="text"
                     inputMode="numeric"
-                    placeholder="Enter 6-digit code"
+                    placeholder={t("login.enterSixDigitCode")}
                     
                   className="mb-3 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-300 focus:border-transparent outline-none transition-all"
                     value={twoFactorCode}
@@ -300,12 +304,12 @@ const Login = () => {
                       setShowLostAuthenticatorModal(true);
                     }}
                   >
-                    Lost Authenticator?
+                    {t("login.lostAuthenticator")}
                   </LostAuthenticatorLink>
                   <ReuseButton
                     backgroundcolor="#16a34a"
                     type="button"
-                    text={verifying2FA ? "Verifying..." : "Verify & Continue"}
+                    text={verifying2FA ? t("login.verifying") : t("login.verifyAndContinue")}
                     disabled={verifying2FA}
                     onClick={handleVerify2FALogin as any}
                   />
@@ -330,12 +334,13 @@ const Login = () => {
                   <ReuseButton
                     backgroundcolor="#7f56d9"
                     type="submit"
-                    text={loading ? "Please Wait ..." : "Sign In"}
+                    text={loading ? t("login.pleaseWait") : t("login.signIn")}
                     disabled={loading}
                   />
 
                   <SignUpText>
-                    Don’t have an account? <a href="/auth/register">Sign Up</a>
+                    {t("login.dontHaveAccount")}{" "}
+                    <a href="/auth/register">{t("login.signUp")}</a>
                   </SignUpText>
                 </>
               )}
@@ -348,15 +353,12 @@ const Login = () => {
           <Overlay />
           <RightContent>
             <RightCard>
-              <h2>Empowering Africa's Students</h2>
-              <p>
-                Ogera is Africa’s premier student job platform that connects ambitious
-                students with flexible opportunities and instant mobile money payments.
-              </p>
+              <h2>{t("login.empoweringAfrica")}</h2>
+              <p>{t("login.ogeraDescription")}</p>
             </RightCard>
 
             <BottomText>
-              Ogera is dedicated to solving the challenges students face.
+              {t("login.ogeraDedicated")}
             </BottomText>
           </RightContent>
         </LoginRightContainer>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { UsersIcon } from "@heroicons/react/24/outline";
 import CustomTable, {
   type Column,
@@ -44,6 +45,7 @@ interface User {
 }
 
 const AllUsers: React.FC = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
@@ -211,10 +213,10 @@ const AllUsers: React.FC = () => {
 
     try {
       await updateUser({ id: userToEdit.userId, data: editFormData }).unwrap();
-      toast.success("User updated successfully");
+      toast.success(t("pages.users.userUpdatedSuccess"));
       handleCloseEditDialog();
     } catch (error: any) {
-      toast.error(error?.data?.message || "Failed to update user");
+      toast.error(error?.data?.message || t("pages.users.failedToUpdateUser"));
     }
   };
 
@@ -268,7 +270,7 @@ const AllUsers: React.FC = () => {
     },
     {
       id: "name",
-      label: "User",
+      label: t("pages.users.user"),
       minWidth: 200,
       format: (value, row) => (
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -291,12 +293,12 @@ const AllUsers: React.FC = () => {
     },
     {
       id: "email",
-      label: "Email",
+      label: t("pages.users.email"),
       minWidth: 200,
     },
     {
       id: "role",
-      label: "Role",
+      label: t("pages.users.role"),
       minWidth: 120,
       format: (value) => (
         <Chip
@@ -312,7 +314,7 @@ const AllUsers: React.FC = () => {
     },
     {
       id: "status",
-      label: "Status",
+      label: t("pages.users.status"),
       minWidth: 120,
       format: (value) => (
         <Chip
@@ -338,14 +340,14 @@ const AllUsers: React.FC = () => {
     },
     {
       id: "joinDate",
-      label: "Join Date",
+      label: t("pages.users.joinDate"),
       minWidth: 120,
     },
   ];
 
   const actions: TableAction<User>[] = [
     {
-      label: "View",
+      label: t("pages.users.view"),
       icon: <ViewIcon fontSize="small" />,
       onClick: (row) => {
         handleViewClick(row);
@@ -353,7 +355,7 @@ const AllUsers: React.FC = () => {
       color: "primary",
     },
     {
-      label: "Edit",
+      label: t("pages.users.edit"),
       icon: <EditIcon fontSize="small" />,
       onClick: (row) => {
         handleEditClick(row);
@@ -361,7 +363,7 @@ const AllUsers: React.FC = () => {
       color: "primary",
     },
     {
-      label: "Delete",
+      label: t("pages.users.delete"),
       icon: <DeleteIcon fontSize="small" />,
       onClick: (row) => {
         handleDeleteClick(row);
@@ -377,51 +379,51 @@ const AllUsers: React.FC = () => {
         <div>
           <h1 className="text-2xl md:text-4xl font-extrabold text-gray-900 flex items-center gap-2 md:gap-3">
             <UsersIcon className="h-8 w-8 md:h-10 md:w-10 text-purple-600" />
-            All Users
+            {t("pages.users.allUsers")}
           </h1>
           <p className="text-sm md:text-base text-gray-500 mt-2">
-            View and manage all students and employers in the platform
+            {t("pages.users.subtitle")}
           </p>
         </div>
         <button
           onClick={() => setAddUserDialogOpen(true)}
           className="bg-purple-600 hover:bg-purple-700 text-white px-4 md:px-6 py-2.5 rounded-lg font-semibold transition shadow-md hover:shadow-lg whitespace-nowrap self-start md:self-auto"
         >
-          + Add User
+          {t("pages.users.addUser")}
         </button>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100">
-          <p className="text-sm text-gray-500 font-medium">Total Users</p>
+          <p className="text-sm text-gray-500 font-medium">{t("pages.users.totalUsers")}</p>
           <p className="text-3xl font-bold text-gray-900 mt-2">
             {isLoading ? "…" : totalCount}
           </p>
           <p className="text-sm text-green-600 mt-2">
-            Students & Employers only
+            {t("pages.users.studentsAndEmployersOnly")}
           </p>
         </div>
         <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100">
-          <p className="text-sm text-gray-500 font-medium">Students</p>
+          <p className="text-sm text-gray-500 font-medium">{t("pages.users.students")}</p>
           <p className="text-3xl font-bold text-gray-900 mt-2">
             {isLoading ? "…" : studentCount}
           </p>
-          <p className="text-sm text-blue-600 mt-2">Student accounts</p>
+          <p className="text-sm text-blue-600 mt-2">{t("pages.users.studentAccounts")}</p>
         </div>
         <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100">
-          <p className="text-sm text-gray-500 font-medium">Employers</p>
+          <p className="text-sm text-gray-500 font-medium">{t("pages.users.employers")}</p>
           <p className="text-3xl font-bold text-gray-900 mt-2">
             {isLoading ? "…" : employerCount}
           </p>
-          <p className="text-sm text-purple-600 mt-2">Employer accounts</p>
+          <p className="text-sm text-purple-600 mt-2">{t("pages.users.employerAccounts")}</p>
         </div>
         <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100">
-          <p className="text-sm text-gray-500 font-medium">On This Page</p>
+          <p className="text-sm text-gray-500 font-medium">{t("pages.users.onThisPage")}</p>
           <p className="text-3xl font-bold text-gray-900 mt-2">
             {isLoading ? "…" : users.length}
           </p>
-          <p className="text-sm text-gray-600 mt-2">Currently displayed</p>
+          <p className="text-sm text-gray-600 mt-2">{t("pages.users.currentlyDisplayed")}</p>
         </div>
       </div>
 
@@ -433,14 +435,14 @@ const AllUsers: React.FC = () => {
         loading={isLoading}
         emptyMessage={
           isError
-            ? "Failed to load users. Please try again."
+            ? t("pages.users.failedToLoad")
             : totalCount === 0
-            ? "No users present"
-            : "No users found"
+            ? t("pages.users.noUsersPresent")
+            : t("pages.users.noUsersFound")
         }
         selectable={true}
         searchable={true}
-        searchPlaceholder="Search users by name, email..."
+        searchPlaceholder={t("pages.users.searchPlaceholder")}
         rowsPerPageOptions={[5, 10, 25, 50]}
         defaultRowsPerPage={limit}
         serverSidePagination={true}
@@ -1047,7 +1049,7 @@ const AllUsers: React.FC = () => {
           }}
         >
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Edit {userDetails?.data?.role?.roleType === "student" ? "Student" : userDetails?.data?.role?.roleType === "employer" ? "Employer" : "User"}
+            {userDetails?.data?.role?.roleType === "student" ? t("pages.users.editStudent") : userDetails?.data?.role?.roleType === "employer" ? t("pages.users.editEmployer") : t("pages.users.editUser")}
           </Typography>
           <IconButton
             onClick={handleCloseEditDialog}
@@ -1309,8 +1311,8 @@ const AllUsers: React.FC = () => {
           }}
         >
           <Button 
-            onClick={handleCloseEditDialog} 
-            variant="outlined" 
+            onClick={handleCloseEditDialog}
+            variant="outlined"
             color="inherit"
             fullWidth={isMobile}
             size={isSmallMobile ? "medium" : isMobile ? "large" : "medium"}
@@ -1320,7 +1322,7 @@ const AllUsers: React.FC = () => {
               fontWeight: isMobile ? 500 : 400,
             }}
           >
-            Cancel
+            {t("pages.users.cancel")}
           </Button>
           <Button
             onClick={handleSaveEdit}
@@ -1336,7 +1338,7 @@ const AllUsers: React.FC = () => {
               fontWeight: isMobile ? 600 : 500,
             }}
           >
-            {isUpdating ? "Saving..." : "Save Changes"}
+            {isUpdating ? t("pages.users.saving") : t("pages.users.saveChanges")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1406,7 +1408,7 @@ const AllUsers: React.FC = () => {
                 fontSize: isSmallMobile ? "0.8125rem" : isMobile ? "0.9375rem" : "1rem",
               }}
             >
-              Delete User
+              {t("pages.users.deleteUser")}
             </Typography>
           </Box>
           <IconButton
@@ -1456,7 +1458,7 @@ const AllUsers: React.FC = () => {
               lineHeight: 1.6,
             }}
           >
-            Are you sure you want to delete <strong>{userToDelete?.name}</strong>?
+            {t("pages.users.deleteConfirm")} <strong>{userToDelete?.name}</strong>?
           </Typography>
           <Box
             sx={{
@@ -1483,7 +1485,7 @@ const AllUsers: React.FC = () => {
                 fontSize: isSmallMobile ? "0.7rem" : isMobile ? "0.75rem" : "0.875rem",
               }}
             >
-              Auto-deleting in {countdown} second{countdown !== 1 ? "s" : ""}...
+              {t("pages.users.autoDeleting", { count: countdown })}
             </Typography>
           </Box>
         </DialogContent>
@@ -1514,7 +1516,7 @@ const AllUsers: React.FC = () => {
               fontWeight: isMobile ? 500 : 400,
             }}
           >
-            Cancel
+            {t("pages.users.cancel")}
           </Button>
           <Button
             onClick={handleConfirmDelete}
@@ -1529,7 +1531,7 @@ const AllUsers: React.FC = () => {
               fontWeight: isMobile ? 600 : 500,
             }}
           >
-            Confirm Delete
+            {t("pages.users.confirmDelete")}
           </Button>
         </DialogActions>
       </Dialog>
