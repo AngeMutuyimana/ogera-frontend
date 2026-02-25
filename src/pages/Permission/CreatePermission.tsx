@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { useFormik } from "formik";
+import { useTranslation } from "react-i18next";
 import {
   useCreatePermissionMutation,
   useGetAllRoutesQuery,
@@ -25,28 +26,29 @@ interface CreatePermissionFormValues {
   };
 }
 
-const validationSchema = Yup.object({
-  api_name: Yup.string()
-    .min(2, "API name must be at least 2 characters")
-    .max(100, "API name must not exceed 100 characters")
-    .required("API name is required")
-    .matches(
-      /^[a-zA-Z0-9_-]+$/,
-      "API name can only contain letters, numbers, underscores, and hyphens"
-    ),
-  route: Yup.string()
-    .required("Route is required")
-    .matches(/^\//, "Route must start with /"),
-  permission: Yup.object({
-    view: Yup.boolean().required(),
-    create: Yup.boolean().required(),
-    edit: Yup.boolean().required(),
-    delete: Yup.boolean().required(),
-  }).required(),
-});
-
 const CreatePermission: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+
+  const validationSchema = Yup.object({
+    api_name: Yup.string()
+      .min(2, t("pages.permission.validationApiNameMin"))
+      .max(100, t("pages.permission.validationApiNameMax"))
+      .required(t("pages.permission.validationApiNameRequired"))
+      .matches(
+        /^[a-zA-Z0-9_-]+$/,
+        t("pages.permission.validationApiNameMatch")
+      ),
+    route: Yup.string()
+      .required(t("pages.permission.validationRouteRequired"))
+      .matches(/^\//, t("pages.permission.validationRouteStart")),
+    permission: Yup.object({
+      view: Yup.boolean().required(),
+      create: Yup.boolean().required(),
+      edit: Yup.boolean().required(),
+      delete: Yup.boolean().required(),
+    }).required(),
+  });
 
   const [createPermission, { isLoading, isError, error, isSuccess, data }] =
     useCreatePermissionMutation();
@@ -91,16 +93,16 @@ const CreatePermission: React.FC = () => {
         data?: { error?: string; message?: string };
       };
       toast.error(
-        err?.data?.error || err?.data?.message || "Failed to create permission"
+        err?.data?.error || err?.data?.message || t("pages.permission.failedToCreatePermission")
       );
     }
 
     if (data && isSuccess) {
-      toast.success(data?.message || "Permission created successfully!");
+      toast.success(data?.message || t("pages.permission.permissionCreatedSuccess"));
       resetForm();
       navigate("/dashboard/permission/view");
     }
-  }, [isError, error, data, isSuccess, resetForm, navigate]);
+  }, [isError, error, data, isSuccess, resetForm, navigate, t]);
 
   const updatePermission = (
     permissionType: "view" | "create" | "edit" | "delete",
@@ -116,19 +118,19 @@ const CreatePermission: React.FC = () => {
           <IconWrapper>
             <ShieldCheckIcon className="h-8 w-8 text-purple-600" />
           </IconWrapper>
-          <Title>Create Permission</Title>
+          <Title>{t("pages.permission.createPermission")}</Title>
           <Subtitle>
-            Create a new permission for an API route. Only superadmin can create permissions.
+            {t("pages.permission.createPermissionSubtitle")}
           </Subtitle>
         </Header>
 
         {/* API Name */}
         <FormGroup>
-          <Label htmlFor="api_name">API Name *</Label>
+          <Label htmlFor="api_name">{t("pages.permission.apiNameLabel")}</Label>
           <Input
             id="api_name"
             name="api_name"
-            placeholder="Enter API name (e.g., job-route, academic-route)"
+            placeholder={t("pages.permission.apiNamePlaceholder")}
             value={formik.values.api_name}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
@@ -137,13 +139,13 @@ const CreatePermission: React.FC = () => {
             <ErrorText>{formik.errors.api_name}</ErrorText>
           )}
           <HelperText>
-            API name can only contain letters, numbers, underscores, and hyphens
+            {t("pages.permission.apiNameHelper")}
           </HelperText>
         </FormGroup>
 
         {/* Route */}
         <FormGroup>
-          <Label htmlFor="route">Route *</Label>
+          <Label htmlFor="route">{t("pages.permission.routeLabel")}</Label>
           <Select
             id="route"
             name="route"
@@ -154,7 +156,7 @@ const CreatePermission: React.FC = () => {
             onBlur={formik.handleBlur}
             disabled={isLoadingRoutes}
           >
-            <option value="">Select a route</option>
+            <option value="">{t("pages.permission.selectRoute")}</option>
             {availableRoutes.map((route: string) => (
               <option key={route} value={route}>
                 {route}
@@ -165,13 +167,13 @@ const CreatePermission: React.FC = () => {
             <ErrorText>{formik.errors.route}</ErrorText>
           )}
           <HelperText>
-            Select a route from available routes (excluding auth routes)
+            {t("pages.permission.routeHelper")}
           </HelperText>
         </FormGroup>
 
         {/* Permissions */}
         <FormGroup>
-          <Label>Permissions *</Label>
+          <Label>{t("pages.permission.permissionsLabel")}</Label>
           <PermissionCheckboxes>
             <CheckboxGroup>
               <CheckboxLabel>
@@ -180,7 +182,7 @@ const CreatePermission: React.FC = () => {
                   checked={formik.values.permission.view}
                   onChange={(e) => updatePermission("view", e.target.checked)}
                 />
-                <span>View</span>
+                <span>{t("pages.permission.view")}</span>
               </CheckboxLabel>
               <CheckboxLabel>
                 <input
@@ -188,7 +190,7 @@ const CreatePermission: React.FC = () => {
                   checked={formik.values.permission.create}
                   onChange={(e) => updatePermission("create", e.target.checked)}
                 />
-                <span>Create</span>
+                <span>{t("pages.permission.create")}</span>
               </CheckboxLabel>
               <CheckboxLabel>
                 <input
@@ -196,7 +198,7 @@ const CreatePermission: React.FC = () => {
                   checked={formik.values.permission.edit}
                   onChange={(e) => updatePermission("edit", e.target.checked)}
                 />
-                <span>Update</span>
+                <span>{t("pages.permission.update")}</span>
               </CheckboxLabel>
               <CheckboxLabel>
                 <input
@@ -204,19 +206,19 @@ const CreatePermission: React.FC = () => {
                   checked={formik.values.permission.delete}
                   onChange={(e) => updatePermission("delete", e.target.checked)}
                 />
-                <span>Delete</span>
+                <span>{t("pages.permission.delete")}</span>
               </CheckboxLabel>
             </CheckboxGroup>
           </PermissionCheckboxes>
           <HelperText>
-            Select which permissions should be available for this API route
+            {t("pages.permission.permissionsHelper")}
           </HelperText>
         </FormGroup>
 
         <Button
           backgroundcolor="#7f56d9"
           type="submit"
-          text={isLoading ? "Creating..." : "Create Permission"}
+          text={isLoading ? t("pages.permission.creating") : t("pages.permission.createPermissionButton")}
           disabled={isLoading}
         />
       </FormContainer>

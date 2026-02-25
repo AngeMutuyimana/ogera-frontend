@@ -34,6 +34,7 @@ import {
 } from "../../services/api/usersApi";
 import type { UserProfile } from "../../services/api/profileApi";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
 interface Student {
   index: number;
@@ -48,6 +49,7 @@ interface Student {
 }
 
 const Students: React.FC = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -121,7 +123,7 @@ const Students: React.FC = () => {
     },
     {
       id: "name",
-      label: "Student",
+      label: t("pages.users.student"),
       minWidth: 200,
       format: (value, row) => (
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -144,17 +146,17 @@ const Students: React.FC = () => {
     },
     {
       id: "email",
-      label: "Email",
+      label: t("pages.users.email"),
       minWidth: 200,
     },
     {
       id: "university",
-      label: "University",
+      label: t("pages.users.university"),
       minWidth: 150,
     },
     {
       id: "gpa",
-      label: "GPA",
+      label: t("pages.users.gpa"),
       minWidth: 100,
       format: (value) => (
         <Chip
@@ -170,12 +172,12 @@ const Students: React.FC = () => {
     },
     {
       id: "verified",
-      label: "Verified",
+      label: t("pages.users.verified"),
       minWidth: 120,
       format: (value) =>
         value ? (
           <Chip
-            label="✓ Verified"
+            label={t("pages.users.verifiedLabel")}
             size="small"
             sx={{
               bgcolor: "#d1fae5",
@@ -185,7 +187,7 @@ const Students: React.FC = () => {
           />
         ) : (
           <Chip
-            label="Pending"
+            label={t("pages.users.pending")}
             size="small"
             sx={{
               bgcolor: "#fed7aa",
@@ -197,7 +199,7 @@ const Students: React.FC = () => {
     },
     {
       id: "status",
-      label: "Status",
+      label: t("pages.users.status"),
       minWidth: 120,
       format: (value) => (
         <Chip
@@ -239,16 +241,16 @@ const Students: React.FC = () => {
 
     try {
       await updateUser({ id: studentToEdit.userId, data: editFormData }).unwrap();
-      toast.success("Student updated successfully");
+      toast.success(t("pages.users.studentUpdatedSuccess"));
       handleCloseEditDialog();
     } catch (error: any) {
-      toast.error(error?.data?.message || "Failed to update student");
+      toast.error(error?.data?.message || t("pages.users.failedToUpdateStudent"));
     }
   };
 
   const actions: TableAction<Student>[] = [
     {
-      label: "View Profile",
+      label: t("pages.users.viewProfile"),
       icon: <ViewIcon fontSize="small" />,
       onClick: (row) => {
         handleViewClick(row);
@@ -256,7 +258,7 @@ const Students: React.FC = () => {
       color: "primary",
     },
     {
-      label: "Edit",
+      label: t("pages.users.edit"),
       icon: <EditIcon fontSize="small" />,
       onClick: (row) => {
         handleEditClick(row);
@@ -271,10 +273,10 @@ const Students: React.FC = () => {
         <div>
           <h1 className="text-2xl md:text-4xl font-extrabold text-gray-900 flex items-center gap-2 md:gap-3">
             <AcademicCapIcon className="h-8 w-8 md:h-10 md:w-10 text-blue-600" />
-            Students
+            {t("pages.users.studentsPageTitle")}
           </h1>
           <p className="text-sm md:text-base text-gray-500 mt-2">
-            Manage all student accounts and their academic information
+            {t("pages.users.studentsSubtitle")}
           </p>
         </div>
       </div>
@@ -282,20 +284,20 @@ const Students: React.FC = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 shadow-md border border-blue-200">
-          <p className="text-sm text-blue-700 font-medium">Total Students</p>
+          <p className="text-sm text-blue-700 font-medium">{t("pages.users.totalStudents")}</p>
           <p className="text-3xl font-bold text-blue-900 mt-2">
             {isLoading ? "…" : totalCount}
           </p>
         </div>
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow-md border border-green-200">
           <p className="text-sm text-green-700 font-medium">
-            Verified Students
+            {t("pages.users.verifiedStudents")}
           </p>
           <p className="text-3xl font-bold text-green-900 mt-2">7,845</p>
         </div>
         <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 shadow-md border border-orange-200">
           <p className="text-sm text-orange-700 font-medium">
-            Pending Verification
+            {t("pages.users.pendingVerification")}
           </p>
           <p className="text-3xl font-bold text-orange-900 mt-2">275</p>
         </div>
@@ -309,13 +311,13 @@ const Students: React.FC = () => {
         loading={isLoading}
         emptyMessage={
           isError
-            ? "Failed to load students. Please try again."
+            ? t("pages.users.failedToLoadStudents")
             : totalCount === 0
-            ? "No students present"
-            : "No students found"
+            ? t("pages.users.noStudentsPresent")
+            : t("pages.users.noStudentsFound")
         }
         searchable={true}
-        searchPlaceholder="Search students..."
+        searchPlaceholder={t("pages.users.searchStudents")}
         rowsPerPageOptions={[5, 10, 25, 50]}
         defaultRowsPerPage={limit}
         serverSidePagination={true}
@@ -398,7 +400,7 @@ const Students: React.FC = () => {
                 fontSize: isSmallMobile ? "0.875rem" : isMobile ? "1rem" : "1.25rem",
               }}
             >
-              Student Details
+              {t("pages.users.studentDetails")}
             </Typography>
           </Box>
           <IconButton
@@ -477,7 +479,7 @@ const Students: React.FC = () => {
                     {studentDetails.data.full_name}
                   </Typography>
                   <Chip
-                    label="Student"
+                    label={t("pages.users.student")}
                     size="small"
                     sx={{
                       bgcolor: "#dbeafe",
@@ -687,7 +689,7 @@ const Students: React.FC = () => {
                           }}
                         />
                       ) : undefined}
-                      label={studentDetails.data.email_verified ? "Verified" : "Not Verified"}
+                      label={studentDetails.data.email_verified ? t("pages.users.verified") : t("pages.users.notVerified")}
                       size="small"
                       sx={{
                         bgcolor: studentDetails.data.email_verified ? "#d1fae5" : "#fee2e2",
@@ -740,7 +742,7 @@ const Students: React.FC = () => {
                           }}
                         />
                       ) : undefined}
-                      label={studentDetails.data.phone_verified ? "Verified" : "Not Verified"}
+                      label={studentDetails.data.phone_verified ? t("pages.users.verified") : t("pages.users.notVerified")}
                       size="small"
                       sx={{
                         bgcolor: studentDetails.data.phone_verified ? "#d1fae5" : "#fee2e2",
@@ -846,7 +848,7 @@ const Students: React.FC = () => {
               fontWeight: isMobile ? 500 : 400,
             }}
           >
-            Close
+            {t("pages.users.close")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -911,7 +913,7 @@ const Students: React.FC = () => {
                 fontSize: isSmallMobile ? "0.875rem" : isMobile ? "1rem" : "1.25rem",
               }}
             >
-              Edit Student
+              {t("pages.users.editStudent")}
             </Typography>
           </Box>
           <IconButton
@@ -995,7 +997,7 @@ const Students: React.FC = () => {
                     {studentDetails.data.full_name}
                   </Typography>
                   <Chip
-                    label="Student"
+                    label={t("pages.users.student")}
                     size="small"
                     sx={{
                       bgcolor: "#dbeafe",
@@ -1013,7 +1015,7 @@ const Students: React.FC = () => {
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
-                    label="Full Name"
+                    label={t("pages.users.fullName")}
                     value={editFormData.full_name || ""}
                     onChange={(e) =>
                       setEditFormData({ ...editFormData, full_name: e.target.value })
@@ -1040,7 +1042,7 @@ const Students: React.FC = () => {
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
-                    label="Email"
+                    label={t("pages.users.email")}
                     type="email"
                     value={editFormData.email || ""}
                     onChange={(e) =>
@@ -1068,7 +1070,7 @@ const Students: React.FC = () => {
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
-                    label="Mobile Number"
+                    label={t("pages.users.mobileNumber")}
                     value={editFormData.mobile_number || ""}
                     onChange={(e) =>
                       setEditFormData({ ...editFormData, mobile_number: e.target.value })
@@ -1095,7 +1097,7 @@ const Students: React.FC = () => {
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
-                    label="National ID Number"
+                    label={t("pages.users.nationalIdNumber")}
                     value={editFormData.national_id_number || ""}
                     onChange={(e) =>
                       setEditFormData({ ...editFormData, national_id_number: e.target.value })
@@ -1122,7 +1124,7 @@ const Students: React.FC = () => {
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
-                    label="Preferred Location"
+                    label={t("pages.users.preferredLocation")}
                     value={editFormData.preferred_location || ""}
                     onChange={(e) =>
                       setEditFormData({ ...editFormData, preferred_location: e.target.value })
@@ -1179,7 +1181,7 @@ const Students: React.FC = () => {
               fontWeight: isMobile ? 500 : 400,
             }}
           >
-            Cancel
+            {t("pages.users.cancel")}
           </Button>
           <Button
             onClick={handleSaveEdit}
@@ -1195,7 +1197,7 @@ const Students: React.FC = () => {
               fontWeight: isMobile ? 600 : 500,
             }}
           >
-            {isUpdating ? "Saving..." : "Save Changes"}
+            {isUpdating ? t("pages.users.saving") : t("pages.users.saveChanges")}
           </Button>
         </DialogActions>
       </Dialog>
