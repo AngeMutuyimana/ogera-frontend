@@ -191,7 +191,7 @@ const PendingReviews: React.FC = () => {
       setAdminError(null);
 
       if (item.storage_type === 's3') {
-        const res = await api.get(`/academic-verifications/${item.id}/document`);
+        const res = await api.get<{ url?: string }>(`/academic-verifications/${item.id}/document`);
         const url = res?.data?.url;
         if (url) {
           setViewerUrl(url);
