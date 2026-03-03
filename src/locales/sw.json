@@ -480,7 +480,10 @@
     "search": "Tafuta",
     "noData": "Hakuna data",
     "pageNotFound": "Ukurasa Haupatikani",
-    "na": "N/A"
+    "na": "N/A",
+    "refresh": "Onyesha upya",
+    "retry": "Jaribu tena",
+    "error": "Kuna hitilafu fulani"
   },
   "language": {
     "label": "Lugha",
@@ -731,6 +734,34 @@
       "viewDetails": "Tazama Maelezo",
       "receipt": "Risiti",
       "searchPlaceholder": "Tafuta kwa kitambulisho cha miamala, mwanafunzi, mwajiri..."
+    },
+    "notifications": {
+      "title": "Arifa",
+      "subtitle": "Tazama na udhibiti arifa zako zote",
+      "total": "Jumla",
+      "unread": "Zisizosomwa",
+      "totalCardDesc": "Arifa",
+      "unreadCardDesc": "{{count}} zisizosomwa",
+      "invalidDate": "Tarehe batili",
+      "failedToLoad": "Imeshindwa kupakia arifa.",
+      "types": {
+        "disputeUpdate": "Sasisho la Mgogoro",
+        "newDisputeAssigned": "Mgogoro Mpya Umetengwa",
+        "applicationAccepted": "Maombi Yamekubaliwa",
+        "applicationRejected": "Maombi Yamekataliwa",
+        "newJobApplication": "Ombi Jipya la Kazi"
+      },
+      "messages": {
+        "disputeResolved": "Mgogoro wako umetatuliwa.",
+        "disputeFiled": "Mgogoro mpya umeandaliwa. Tafadhali kagua na ujibu.",
+        "disputeAssignedToYou": "Mgogoro mpya umetengwa kwako kwa ukaguzi.",
+        "moderatorAssigned": "Msimamizi amewekwa kwenye mgogoro wako.",
+        "disputeEscalated": "Mgogoro wako umeongezewa kwa msimamizi mkuu.",
+        "disputeUpdateGeneric": "Kuna sasisho kwenye mgogoro wako.",
+        "applicationAccepted": "✅ Ombi lako la \"{{jobTitle}}\" limekubaliwa",
+        "applicationRejected": "❌ Ombi lako la \"{{jobTitle}}\" limekataliwa",
+        "newJobApplication": "{{studentName}} ameomba kazi yako: {{jobTitle}}"
+      }
     },
     "analytics": {
       "title": "Uchambuzi na Taarifa",

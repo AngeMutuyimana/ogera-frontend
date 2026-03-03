@@ -721,7 +721,10 @@
     "search": "Rechercher",
     "noData": "Aucune donnée",
     "pageNotFound": "Page non trouvée",
-    "na": "N/D"
+    "na": "N/D",
+    "refresh": "Actualiser",
+    "retry": "Réessayer",
+    "error": "Une erreur s'est produite"
   },
   "language": {
     "label": "Langue",
@@ -965,6 +968,34 @@
       "viewDetails": "Voir les détails",
       "receipt": "Reçu",
       "searchPlaceholder": "Rechercher par ID transaction, étudiant, employeur..."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "subtitle": "Voir et gérer toutes vos notifications",
+      "total": "Total",
+      "unread": "Non lus",
+      "totalCardDesc": "Notifications",
+      "unreadCardDesc": "{{count}} non lus",
+      "invalidDate": "Date invalide",
+      "failedToLoad": "Échec du chargement des notifications.",
+      "types": {
+        "disputeUpdate": "Mise à jour du litige",
+        "newDisputeAssigned": "Nouveau litige assigné",
+        "applicationAccepted": "Candidature acceptée",
+        "applicationRejected": "Candidature rejetée",
+        "newJobApplication": "Nouvelle candidature"
+      },
+      "messages": {
+        "disputeResolved": "Votre litige a été résolu.",
+        "disputeFiled": "Un nouveau litige a été déposé. Veuillez examiner et répondre.",
+        "disputeAssignedToYou": "Un nouveau litige vous a été assigné pour examen.",
+        "moderatorAssigned": "Un modérateur a été assigné à votre litige.",
+        "disputeEscalated": "Votre litige a été escaladé à un administrateur senior.",
+        "disputeUpdateGeneric": "Il y a une mise à jour sur votre litige.",
+        "applicationAccepted": "✅ Votre candidature pour \"{{jobTitle}}\" a été acceptée",
+        "applicationRejected": "❌ Votre candidature pour \"{{jobTitle}}\" a été rejetée",
+        "newJobApplication": "{{studentName}} a postulé à votre offre : {{jobTitle}}"
+      }
     },
     "analytics": {
       "title": "Analytiques et rapports",

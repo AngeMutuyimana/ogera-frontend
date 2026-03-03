@@ -64,6 +64,7 @@ import MyDisputes from "./pages/Disputes/MyDisputes";
 
 // Other Pages
 import Analytics from "./pages/Analytics";
+import Notifications from "./pages/Notifications";
 import Transactions from "./pages/Transactions";
 import Pay from "./pages/Transactions/Pay";
 import PaymentCallback from "./pages/PaymentCallback";
@@ -385,6 +386,10 @@ function App() {
             {
               path: "analytics",
               Component: Analytics,
+            },
+            {
+              path: "notifications",
+              Component: Notifications,
             },
             {
               path: "transactions",

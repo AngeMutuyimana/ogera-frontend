@@ -480,7 +480,10 @@
     "search": "Sesha",
     "noData": "Ayikho idatha",
     "pageNotFound": "Ikhasi Alitholakali",
-    "na": "N/A"
+    "na": "N/A",
+    "refresh": "Vuselela",
+    "retry": "Phinda uzame",
+    "error": "Kukhona okuhambile kabi"
   },
   "language": {
     "label": "Ulimi",
@@ -730,6 +733,34 @@
       "viewDetails": "Buka Imininingwane",
       "receipt": "Irisidi",
       "searchPlaceholder": "Sesha nge-ID yentengiso, umfundi, umqashi..."
+    },
+    "notifications": {
+      "title": "Izaziso",
+      "subtitle": "Buka futhi uphathe zonke izaziso zakho",
+      "total": "Isamba",
+      "unread": "Ezingafundwanga",
+      "totalCardDesc": "Izaziso",
+      "unreadCardDesc": "{{count}} ezingafundwanga",
+      "invalidDate": "Usuku olungavumelekile",
+      "failedToLoad": "Ihlulekile ukulayisha izaziso.",
+      "types": {
+        "disputeUpdate": "Izaziso Ngempikiswano",
+        "newDisputeAssigned": "Impikiswano Entsha Yabelwe",
+        "applicationAccepted": "Isicelo Samukelwe",
+        "applicationRejected": "Isicelo Salahlwa",
+        "newJobApplication": "Isicelo Somsebenzi Esisha"
+      },
+      "messages": {
+        "disputeResolved": "Impikiswano yakho ixazululiwe.",
+        "disputeFiled": "Kunenye impikiswano eshaywe. Sicela uyibuyekeze uphinde uphendule.",
+        "disputeAssignedToYou": "Impikiswano entsha ithunyelwe kuwe ukuze uyibuyekeze.",
+        "moderatorAssigned": "Umlamuli uthunyelwe empikiswaneni yakho.",
+        "disputeEscalated": "Impikiswano yakho idluliselwe kumphathi omkhulu.",
+        "disputeUpdateGeneric": "Kunokubuyekeza empikiswaneni yakho.",
+        "applicationAccepted": "✅ Isicelo sakho se-\"{{jobTitle}}\" samukelwe",
+        "applicationRejected": "❌ Isicelo sakho se-\"{{jobTitle}}\" salahlwa",
+        "newJobApplication": "U-{{studentName}} ufakile isicelo somsebenzi wakho: {{jobTitle}}"
+      }
     },
     "analytics": {
       "title": "Ukuhlaziya & Imibiko",

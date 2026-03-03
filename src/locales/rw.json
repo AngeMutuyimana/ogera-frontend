@@ -480,7 +480,10 @@
     "search": "Shakisha",
     "noData": "Nta data",
     "pageNotFound": "Urupapuro Rutabonetse",
-    "na": "N/A"
+    "na": "N/A",
+    "refresh": "Ongera usome",
+    "retry": "Ongera ugerageze",
+    "error": "Hari ikintu cyahindutse"
   },
   "language": {
     "label": "Ururimi",
@@ -731,6 +734,34 @@
       "viewDetails": "Reba Ibisobanuro",
       "receipt": "Receipt",
       "searchPlaceholder": "Shakisha ku ID y'amakoperative, umwigisha, umushoferi..."
+    },
+    "notifications": {
+      "title": "Amatangazo",
+      "subtitle": "Reba no gucunga amatangazo yose",
+      "total": "Igiteranyo",
+      "unread": "Ntarasomwa",
+      "totalCardDesc": "Amatangazo",
+      "unreadCardDesc": "{{count}} ntarasomwa",
+      "invalidDate": "Itariki idakwiye",
+      "failedToLoad": "Ntago byakozwe gukurura amatangazo.",
+      "types": {
+        "disputeUpdate": "Gusubiramakuru k'impaka",
+        "newDisputeAssigned": "Impaka Nshya Zahawe",
+        "applicationAccepted": "Gusaba Kwemewe",
+        "applicationRejected": "Gusaba Gwahakanwe",
+        "newJobApplication": "Gusaba Akazi Gushya"
+      },
+      "messages": {
+        "disputeResolved": "Impaka zawe zirakiriwe.",
+        "disputeFiled": "Hari impaka nshya zashyizwe. Nyamuneka reba ungasubire.",
+        "disputeAssignedToYou": "Impaka nshya zahawe kugira ngo uzisuzume.",
+        "moderatorAssigned": "Umunyamabanga yahawe kumpaka zawe.",
+        "disputeEscalated": "Impaka zawe zoherejwe k'umuyobozi mukuru.",
+        "disputeUpdateGeneric": "Hari gusubiramakuru kumpaka zawe.",
+        "applicationAccepted": "✅ Gusaba kwawe kwa \"{{jobTitle}}\" kwemewe",
+        "applicationRejected": "❌ Gusaba kwawe kwa \"{{jobTitle}}\" kwahakanwe",
+        "newJobApplication": "{{studentName}} yasabwe akazi kawe: {{jobTitle}}"
+      }
     },
     "analytics": {
       "title": "Ibisobanuro n'Iraporo",
