@@ -480,7 +480,10 @@
     "search": "Soek",
     "noData": "Geen data",
     "pageNotFound": "Bladsy Nie Gevind Nie",
-    "na": "N.v.t."
+    "na": "N.v.t.",
+    "refresh": "Verfris",
+    "retry": "Probeer weer",
+    "error": "Iets het verkeerd geloop"
   },
   "language": {
     "label": "Taal",
@@ -731,6 +734,34 @@
       "viewDetails": "Bekyk Besonderhede",
       "receipt": "Kwitansie",
       "searchPlaceholder": "Soek op transaksie-ID, student, werkgewer..."
+    },
+    "notifications": {
+      "title": "Kennisgewings",
+      "subtitle": "Bekyk en bestuur al jou kennisgewings",
+      "total": "Totaal",
+      "unread": "Ongelees",
+      "totalCardDesc": "Kennisgewings",
+      "unreadCardDesc": "{{count}} ongelees",
+      "invalidDate": "Ongeldige datum",
+      "failedToLoad": "Kon nie kennisgewings laai nie.",
+      "types": {
+        "disputeUpdate": "Geskilopdatering",
+        "newDisputeAssigned": "Nuwe geskil toegewys",
+        "applicationAccepted": "Aansoek aanvaar",
+        "applicationRejected": "Aansoek van die hand gewys",
+        "newJobApplication": "Nuwe werk aansoek"
+      },
+      "messages": {
+        "disputeResolved": "Jou geskil is opgelos.",
+        "disputeFiled": "'n Nuwe geskil is ingedien. Gaan dit na en reageer.",
+        "disputeAssignedToYou": "'n Nuwe geskil is aan jou toegewys vir hersiening.",
+        "moderatorAssigned": "'n Moderator is aan jou geskil toegewys.",
+        "disputeEscalated": "Jou geskil is na 'n senior administrateur verwys.",
+        "disputeUpdateGeneric": "Daar is 'n opdatering op jou geskil.",
+        "applicationAccepted": "✅ Jou aansoek vir \"{{jobTitle}}\" is aanvaar",
+        "applicationRejected": "❌ Jou aansoek vir \"{{jobTitle}}\" is van die hand gewys",
+        "newJobApplication": "{{studentName}} het aansoek gedoen vir jou werk: {{jobTitle}}"
+      }
     },
     "analytics": {
       "title": "Ontleding & Verslae",

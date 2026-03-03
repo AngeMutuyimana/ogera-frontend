@@ -480,7 +480,10 @@
     "search": "Search",
     "noData": "No data",
     "pageNotFound": "Page Not Found",
-    "na": "N/A"
+    "na": "N/A",
+    "refresh": "Refresh",
+    "retry": "Retry",
+    "error": "Something went wrong"
   },
   "language": {
     "label": "Language",
@@ -731,6 +734,34 @@
       "viewDetails": "View Details",
       "receipt": "Receipt",
       "searchPlaceholder": "Search by transaction ID, student, employer..."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "subtitle": "View and manage all your notifications",
+      "total": "Total",
+      "unread": "Unread",
+      "totalCardDesc": "Notifications",
+      "unreadCardDesc": "{{count}} unread",
+      "invalidDate": "Invalid date",
+      "failedToLoad": "Failed to load notifications.",
+      "types": {
+        "disputeUpdate": "Dispute Update",
+        "newDisputeAssigned": "New Dispute Assigned",
+        "applicationAccepted": "Application Accepted",
+        "applicationRejected": "Application Rejected",
+        "newJobApplication": "New Job Application"
+      },
+      "messages": {
+        "disputeResolved": "Your dispute has been resolved.",
+        "disputeFiled": "A new dispute has been filed. Please review and respond.",
+        "disputeAssignedToYou": "A new dispute has been assigned to you for review.",
+        "moderatorAssigned": "A moderator has been assigned to your dispute.",
+        "disputeEscalated": "Your dispute has been escalated to a senior administrator.",
+        "disputeUpdateGeneric": "There is an update on your dispute.",
+        "applicationAccepted": "✅ Your application for \"{{jobTitle}}\" has been accepted",
+        "applicationRejected": "❌ Your application for \"{{jobTitle}}\" has been rejected",
+        "newJobApplication": "{{studentName}} has applied for your job: {{jobTitle}}"
+      }
     },
     "analytics": {
       "title": "Analytics & Reports",
