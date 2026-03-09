@@ -15,6 +15,7 @@ import {
   useGetCourseStatisticsQuery,
   useGetCourseSpecificStatisticsQuery,
   useGetCourseStudentsQuery,
+  type CourseStudent,
 } from "../../services/api/coursesApi";
 import Loader from "../../components/Loader";
 import { formatRelativeTime } from "../../utils/timeUtils";
@@ -57,15 +58,11 @@ const CourseAnalytics: React.FC = () => {
   // Handle students data - it should be an array directly in data
   const allStudents = React.useMemo(() => {
     if (!studentsData) return [];
-    
+    const d = (studentsData as { data?: unknown }).data;
     // RTK Query response format: { success, data, message }
-    // The data field contains the array of students
-    if (Array.isArray(studentsData.data)) {
-      return studentsData.data;
-    }
-    
-    // Fallback: try to get from nested structure if API returns differently
-    return studentsData.data?.data || studentsData.data || [];
+    if (Array.isArray(d)) return d;
+    const nested = (d as { data?: unknown })?.data;
+    return (Array.isArray(nested) ? nested : Array.isArray(d) ? d : []);
   }, [studentsData]);
 
   // Filter students based on status
@@ -356,7 +353,7 @@ const CourseAnalytics: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {students.map((student) => (
+                    {students.map((student: CourseStudent) => (
                       <tr key={student.user_id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
@@ -371,17 +368,17 @@ const CourseAnalytics: React.FC = () => {
                                 className={`h-2 rounded-full ${
                                   student.is_completed
                                     ? "bg-green-600"
-                                    : student.percentage > 50
+                                    : (student.percentage ?? 0) > 50
                                     ? "bg-yellow-500"
                                     : "bg-blue-500"
                                 }`}
-                                style={{ width: `${student.percentage}%` }}
+                                style={{ width: `${student.percentage ?? 0}%` }}
                               />
                             </div>
-                            <span className="text-sm text-gray-700">{student.percentage}%</span>
+                            <span className="text-sm text-gray-700">{student.percentage ?? 0}%</span>
                           </div>
                           <div className="text-xs text-gray-500 mt-1">
-                            {student.completed_steps} of {student.total_steps} {t("courses.steps")}
+                            {student.completed_steps ?? 0} of {student.total_steps ?? 0} {t("courses.steps")}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -389,7 +386,7 @@ const CourseAnalytics: React.FC = () => {
                             <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                               {t("courses.completed")}
                             </span>
-                          ) : student.completed_steps > 0 ? (
+                          ) : (student.completed_steps ?? 0) > 0 ? (
                             <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
                               {t("courses.inProgress")}
                             </span>
