@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { UsersIcon } from "@heroicons/react/24/outline";
 import CustomTable, {
   type Column,
@@ -17,7 +18,6 @@ import {
   CircularProgress,
   TextField,
   Grid,
-  Divider,
   useMediaQuery,
   useTheme,
   IconButton,
@@ -45,6 +45,7 @@ interface User {
 }
 
 const AllUsers: React.FC = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
@@ -212,10 +213,10 @@ const AllUsers: React.FC = () => {
 
     try {
       await updateUser({ id: userToEdit.userId, data: editFormData }).unwrap();
-      toast.success("User updated successfully");
+      toast.success(t("pages.users.userUpdatedSuccess"));
       handleCloseEditDialog();
     } catch (error: any) {
-      toast.error(error?.data?.message || "Failed to update user");
+      toast.error(error?.data?.message || t("pages.users.failedToUpdateUser"));
     }
   };
 
@@ -262,14 +263,14 @@ const AllUsers: React.FC = () => {
       align: "center",
       sortable: false,
       format: (value) => (
-        <Typography sx={{ fontWeight: 500, color: "#6b7280" }}>
+        <Typography sx={{ fontWeight: 500, color: "var(--theme-text-secondary, #6b7280)" }}>
           {value}
         </Typography>
       ),
     },
     {
       id: "name",
-      label: "User",
+      label: t("pages.users.user"),
       minWidth: 200,
       format: (value, row) => (
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -284,7 +285,7 @@ const AllUsers: React.FC = () => {
           >
             {row.name.charAt(0)}
           </Avatar>
-          <Typography sx={{ fontWeight: 500, color: "#111827" }}>
+          <Typography sx={{ fontWeight: 500, color: "var(--theme-text-primary, #111827)" }}>
             {value}
           </Typography>
         </Box>
@@ -292,61 +293,59 @@ const AllUsers: React.FC = () => {
     },
     {
       id: "email",
-      label: "Email",
+      label: t("pages.users.email"),
       minWidth: 200,
     },
     {
       id: "role",
-      label: "Role",
+      label: t("pages.users.role"),
       minWidth: 120,
-      format: (value) => (
-        <Chip
-          label={value}
-          size="small"
-          sx={{
-            bgcolor: value === "Student" ? "#dbeafe" : "#d1fae5",
-            color: value === "Student" ? "#1e40af" : "#065f46",
-            fontWeight: 600,
-          }}
-        />
-      ),
+      format: (value) => {
+        const isStudent = value === "Student";
+        const isEmployer = value === "Employer";
+        return (
+          <Chip
+            label={value}
+            size="small"
+            sx={{
+              bgcolor: isStudent ? "var(--chip-role-student-bg)" : isEmployer ? "var(--chip-role-employer-bg)" : "var(--chip-role-admin-bg)",
+              color: isStudent ? "var(--chip-role-student-text)" : isEmployer ? "var(--chip-role-employer-text)" : "var(--chip-role-admin-text)",
+              fontWeight: 600,
+            }}
+          />
+        );
+      },
     },
     {
       id: "status",
-      label: "Status",
+      label: t("pages.users.status"),
       minWidth: 120,
-      format: (value) => (
-        <Chip
-          label={value}
-          size="small"
-          sx={{
-            bgcolor:
-              value === "Active"
-                ? "#d1fae5"
-                : value === "Pending"
-                ? "#fed7aa"
-                : "#fee2e2",
-            color:
-              value === "Active"
-                ? "#065f46"
-                : value === "Pending"
-                ? "#9a3412"
-                : "#991b1b",
-            fontWeight: 600,
-          }}
-        />
-      ),
+      format: (value) => {
+        const isActive = value === "Active";
+        const isPending = value === "Pending";
+        return (
+          <Chip
+            label={value}
+            size="small"
+            sx={{
+              bgcolor: isActive ? "var(--chip-status-active-bg)" : isPending ? "var(--chip-status-pending-bg)" : "var(--chip-status-suspended-bg)",
+              color: isActive ? "var(--chip-status-active-text)" : isPending ? "var(--chip-status-pending-text)" : "var(--chip-status-suspended-text)",
+              fontWeight: 600,
+            }}
+          />
+        );
+      },
     },
     {
       id: "joinDate",
-      label: "Join Date",
+      label: t("pages.users.joinDate"),
       minWidth: 120,
     },
   ];
 
   const actions: TableAction<User>[] = [
     {
-      label: "View",
+      label: t("pages.users.view"),
       icon: <ViewIcon fontSize="small" />,
       onClick: (row) => {
         handleViewClick(row);
@@ -354,7 +353,7 @@ const AllUsers: React.FC = () => {
       color: "primary",
     },
     {
-      label: "Edit",
+      label: t("pages.users.edit"),
       icon: <EditIcon fontSize="small" />,
       onClick: (row) => {
         handleEditClick(row);
@@ -362,7 +361,7 @@ const AllUsers: React.FC = () => {
       color: "primary",
     },
     {
-      label: "Delete",
+      label: t("pages.users.delete"),
       icon: <DeleteIcon fontSize="small" />,
       onClick: (row) => {
         handleDeleteClick(row);
@@ -378,51 +377,51 @@ const AllUsers: React.FC = () => {
         <div>
           <h1 className="text-2xl md:text-4xl font-extrabold text-gray-900 flex items-center gap-2 md:gap-3">
             <UsersIcon className="h-8 w-8 md:h-10 md:w-10 text-purple-600" />
-            All Users
+            {t("pages.users.allUsers")}
           </h1>
           <p className="text-sm md:text-base text-gray-500 mt-2">
-            View and manage all students and employers in the platform
+            {t("pages.users.subtitle")}
           </p>
         </div>
         <button
           onClick={() => setAddUserDialogOpen(true)}
           className="bg-purple-600 hover:bg-purple-700 text-white px-4 md:px-6 py-2.5 rounded-lg font-semibold transition shadow-md hover:shadow-lg whitespace-nowrap self-start md:self-auto"
         >
-          + Add User
+          {t("pages.users.addUser")}
         </button>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100">
-          <p className="text-sm text-gray-500 font-medium">Total Users</p>
+          <p className="text-sm text-gray-500 font-medium">{t("pages.users.totalUsers")}</p>
           <p className="text-3xl font-bold text-gray-900 mt-2">
             {isLoading ? "…" : totalCount}
           </p>
           <p className="text-sm text-green-600 mt-2">
-            Students & Employers only
+            {t("pages.users.studentsAndEmployersOnly")}
           </p>
         </div>
         <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100">
-          <p className="text-sm text-gray-500 font-medium">Students</p>
+          <p className="text-sm text-gray-500 font-medium">{t("pages.users.students")}</p>
           <p className="text-3xl font-bold text-gray-900 mt-2">
             {isLoading ? "…" : studentCount}
           </p>
-          <p className="text-sm text-blue-600 mt-2">Student accounts</p>
+          <p className="text-sm text-blue-600 mt-2">{t("pages.users.studentAccounts")}</p>
         </div>
         <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100">
-          <p className="text-sm text-gray-500 font-medium">Employers</p>
+          <p className="text-sm text-gray-500 font-medium">{t("pages.users.employers")}</p>
           <p className="text-3xl font-bold text-gray-900 mt-2">
             {isLoading ? "…" : employerCount}
           </p>
-          <p className="text-sm text-purple-600 mt-2">Employer accounts</p>
+          <p className="text-sm text-purple-600 mt-2">{t("pages.users.employerAccounts")}</p>
         </div>
         <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100">
-          <p className="text-sm text-gray-500 font-medium">On This Page</p>
+          <p className="text-sm text-gray-500 font-medium">{t("pages.users.onThisPage")}</p>
           <p className="text-3xl font-bold text-gray-900 mt-2">
             {isLoading ? "…" : users.length}
           </p>
-          <p className="text-sm text-gray-600 mt-2">Currently displayed</p>
+          <p className="text-sm text-gray-600 mt-2">{t("pages.users.currentlyDisplayed")}</p>
         </div>
       </div>
 
@@ -434,14 +433,14 @@ const AllUsers: React.FC = () => {
         loading={isLoading}
         emptyMessage={
           isError
-            ? "Failed to load users. Please try again."
+            ? t("pages.users.failedToLoad")
             : totalCount === 0
-            ? "No users present"
-            : "No users found"
+            ? t("pages.users.noUsersPresent")
+            : t("pages.users.noUsersFound")
         }
         selectable={true}
         searchable={true}
-        searchPlaceholder="Search users by name, email..."
+        searchPlaceholder={t("pages.users.searchPlaceholder")}
         rowsPerPageOptions={[5, 10, 25, 50]}
         defaultRowsPerPage={limit}
         serverSidePagination={true}
@@ -508,12 +507,15 @@ const AllUsers: React.FC = () => {
                   mb: isSmallMobile ? 1.5 : isMobile ? 2 : 2,
                   p: isSmallMobile ? 1.25 : isMobile ? 1.5 : 1.75,
                   borderRadius: 1.5,
-                  backgroundColor: userDetails.data.role?.roleType === "student" 
-                    ? "rgba(59, 130, 246, 0.08)" 
-                    : "rgba(16, 185, 129, 0.08)",
-                  border: `1px solid ${userDetails.data.role?.roleType === "student" 
-                    ? "rgba(59, 130, 246, 0.2)" 
-                    : "rgba(16, 185, 129, 0.2)"}`,
+                  backgroundColor:
+                    userDetails.data.role?.roleType === "student"
+                      ? "var(--chip-role-student-bg)"
+                      : "var(--chip-role-employer-bg)",
+                  border: `1px solid ${
+                    userDetails.data.role?.roleType === "student"
+                      ? "var(--chip-role-student-bg)"
+                      : "var(--chip-role-employer-bg)"
+                  }`,
                   flexDirection: isMobile ? "column" : "row",
                   textAlign: isMobile ? "center" : "left",
                 }}
@@ -546,8 +548,8 @@ const AllUsers: React.FC = () => {
                     label={userDetails.data.role?.roleType === "student" ? "Student" : "Employer"}
                     size="small"
                     sx={{
-                      bgcolor: userDetails.data.role?.roleType === "student" ? "#dbeafe" : "#d1fae5",
-                      color: userDetails.data.role?.roleType === "student" ? "#1e40af" : "#065f46",
+                      bgcolor: userDetails.data.role?.roleType === "student" ? "var(--chip-role-student-bg)" : "var(--chip-role-employer-bg)",
+                      color: userDetails.data.role?.roleType === "student" ? "var(--chip-role-student-text)" : "var(--chip-role-employer-text)",
                       fontWeight: 600,
                       fontSize: isSmallMobile ? "0.65rem" : isMobile ? "0.7rem" : "0.75rem",
                       height: isSmallMobile ? "20px" : isMobile ? "22px" : "24px",
@@ -560,13 +562,14 @@ const AllUsers: React.FC = () => {
               {/* Details Section */}
               <Grid container spacing={isSmallMobile ? 1.5 : isMobile ? 2 : 2}>
                 {/* Email */}
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box
                     sx={{
                       p: isSmallMobile ? 1.25 : isMobile ? 1.5 : 1.75,
                       borderRadius: 1.5,
-                      backgroundColor: "rgba(0, 0, 0, 0.02)",
-                      border: "1px solid rgba(0, 0, 0, 0.08)",
+                      backgroundColor: "var(--theme-card-bg, #ffffff)",
+                      border: "1px solid var(--theme-border, rgba(0, 0, 0, 0.08))",
+                      boxShadow: "0 4px 10px rgba(15, 23, 42, 0.04)",
                       height: "100%",
                       minHeight: "80px",
                     }}
@@ -599,13 +602,14 @@ const AllUsers: React.FC = () => {
                 </Grid>
 
                 {/* Mobile Number */}
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box
                     sx={{
                       p: isSmallMobile ? 1.25 : isMobile ? 1.5 : 1.75,
                       borderRadius: 1.5,
-                      backgroundColor: "rgba(0, 0, 0, 0.02)",
-                      border: "1px solid rgba(0, 0, 0, 0.08)",
+                      backgroundColor: "var(--theme-card-bg, #ffffff)",
+                      border: "1px solid var(--theme-border, rgba(0, 0, 0, 0.08))",
+                      boxShadow: "0 4px 10px rgba(15, 23, 42, 0.04)",
                       height: "100%",
                       minHeight: "80px",
                     }}
@@ -638,7 +642,7 @@ const AllUsers: React.FC = () => {
 
                 {/* National ID Number - Only for Students */}
                 {userDetails.data.role?.roleType === "student" && (
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Box
                       sx={{
                         p: isSmallMobile ? 1.25 : isMobile ? 1.5 : 1.75,
@@ -679,7 +683,7 @@ const AllUsers: React.FC = () => {
 
                 {/* Business Registration ID - Only for Employers */}
                 {userDetails.data.role?.roleType === "employer" && (
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Box
                       sx={{
                         p: isSmallMobile ? 1.25 : isMobile ? 1.5 : 1.75,
@@ -719,13 +723,14 @@ const AllUsers: React.FC = () => {
                 )}
 
                 {/* Preferred Location */}
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box
                     sx={{
                       p: isSmallMobile ? 1.25 : isMobile ? 1.5 : 1.75,
                       borderRadius: 1.5,
-                      backgroundColor: "rgba(0, 0, 0, 0.02)",
-                      border: "1px solid rgba(0, 0, 0, 0.08)",
+                      backgroundColor: "var(--theme-card-bg, #ffffff)",
+                      border: "1px solid var(--theme-border, rgba(0, 0, 0, 0.08))",
+                      boxShadow: "0 4px 10px rgba(15, 23, 42, 0.04)",
                       height: "100%",
                       minHeight: "80px",
                     }}
@@ -756,17 +761,19 @@ const AllUsers: React.FC = () => {
                   </Box>
                 </Grid>
                 {/* Verification Status */}
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box
                     sx={{
                       p: isSmallMobile ? 1.25 : isMobile ? 1.5 : 1.75,
                       borderRadius: 1.5,
-                      backgroundColor: userDetails.data.email_verified 
-                        ? "rgba(16, 185, 129, 0.08)" 
-                        : "rgba(153, 27, 27, 0.08)",
-                      border: `1px solid ${userDetails.data.email_verified 
-                        ? "rgba(16, 185, 129, 0.2)" 
-                        : "rgba(153, 27, 27, 0.2)"}`,
+                      backgroundColor: userDetails.data.email_verified
+                        ? "var(--chip-verified-bg)"
+                        : "var(--chip-unverified-bg)",
+                      border: `1px solid ${
+                        userDetails.data.email_verified
+                          ? "var(--chip-verified-bg)"
+                          : "var(--chip-unverified-bg)"
+                      }`,
                       height: "100%",
                       minHeight: "80px",
                     }}
@@ -798,8 +805,8 @@ const AllUsers: React.FC = () => {
                       label={userDetails.data.email_verified ? "Verified" : "Not Verified"}
                       size="small"
                       sx={{
-                        bgcolor: userDetails.data.email_verified ? "#d1fae5" : "#fee2e2",
-                        color: userDetails.data.email_verified ? "#065f46" : "#991b1b",
+                        bgcolor: userDetails.data.email_verified ? "var(--chip-verified-bg)" : "var(--chip-unverified-bg)",
+                        color: userDetails.data.email_verified ? "var(--chip-verified-text)" : "var(--chip-unverified-text)",
                         fontSize: isSmallMobile ? "0.65rem" : isMobile ? "0.7rem" : "0.75rem",
                         height: isSmallMobile ? "22px" : isMobile ? "24px" : "26px",
                         fontWeight: 600,
@@ -808,17 +815,19 @@ const AllUsers: React.FC = () => {
                   </Box>
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box
                     sx={{
                       p: isSmallMobile ? 1.25 : isMobile ? 1.5 : 1.75,
                       borderRadius: 1.5,
-                      backgroundColor: userDetails.data.phone_verified 
-                        ? "rgba(16, 185, 129, 0.08)" 
-                        : "rgba(153, 27, 27, 0.08)",
-                      border: `1px solid ${userDetails.data.phone_verified 
-                        ? "rgba(16, 185, 129, 0.2)" 
-                        : "rgba(153, 27, 27, 0.2)"}`,
+                      backgroundColor: userDetails.data.phone_verified
+                        ? "var(--chip-verified-bg)"
+                        : "var(--chip-unverified-bg)",
+                      border: `1px solid ${
+                        userDetails.data.phone_verified
+                          ? "var(--chip-verified-bg)"
+                          : "var(--chip-unverified-bg)"
+                      }`,
                       height: "100%",
                       minHeight: "80px",
                     }}
@@ -850,8 +859,8 @@ const AllUsers: React.FC = () => {
                       label={userDetails.data.phone_verified ? "Verified" : "Not Verified"}
                       size="small"
                       sx={{
-                        bgcolor: userDetails.data.phone_verified ? "#d1fae5" : "#fee2e2",
-                        color: userDetails.data.phone_verified ? "#065f46" : "#991b1b",
+                        bgcolor: userDetails.data.phone_verified ? "var(--chip-verified-bg)" : "var(--chip-unverified-bg)",
+                        color: userDetails.data.phone_verified ? "var(--chip-verified-text)" : "var(--chip-unverified-text)",
                         fontSize: isSmallMobile ? "0.65rem" : isMobile ? "0.7rem" : "0.75rem",
                         height: isSmallMobile ? "22px" : isMobile ? "24px" : "26px",
                         fontWeight: 600,
@@ -861,13 +870,14 @@ const AllUsers: React.FC = () => {
                 </Grid>
 
                 {/* Account Dates */}
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box
                     sx={{
                       p: isSmallMobile ? 1.25 : isMobile ? 1.5 : 1.75,
                       borderRadius: 1.5,
-                      backgroundColor: "rgba(0, 0, 0, 0.02)",
-                      border: "1px solid rgba(0, 0, 0, 0.08)",
+                      backgroundColor: "var(--theme-card-bg, #ffffff)",
+                      border: "1px solid var(--theme-border, rgba(0, 0, 0, 0.08))",
+                      boxShadow: "0 4px 10px rgba(15, 23, 42, 0.04)",
                       height: "100%",
                       minHeight: "80px",
                     }}
@@ -920,13 +930,14 @@ const AllUsers: React.FC = () => {
                   </Box>
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box
                     sx={{
                       p: isSmallMobile ? 1.25 : isMobile ? 1.5 : 1.75,
                       borderRadius: 1.5,
-                      backgroundColor: "rgba(0, 0, 0, 0.02)",
-                      border: "1px solid rgba(0, 0, 0, 0.08)",
+                      backgroundColor: "var(--theme-card-bg, #ffffff)",
+                      border: "1px solid var(--theme-border, rgba(0, 0, 0, 0.08))",
+                      boxShadow: "0 4px 10px rgba(15, 23, 42, 0.04)",
                       height: "100%",
                       minHeight: "80px",
                     }}
@@ -994,7 +1005,7 @@ const AllUsers: React.FC = () => {
             borderTop: isMobile ? "1px solid rgba(0, 0, 0, 0.12)" : "none",
             position: isMobile ? "sticky" : "relative",
             bottom: 0,
-            backgroundColor: "background.paper",
+            backgroundColor: "var(--theme-card-bg, #ffffff)",
             zIndex: 1,
             boxShadow: isMobile ? "0 -2px 8px rgba(0, 0, 0, 0.1)" : "none",
             flexShrink: 0,
@@ -1044,11 +1055,14 @@ const AllUsers: React.FC = () => {
             justifyContent: "space-between",
             alignItems: "center",
             pb: 1,
-            borderBottom: "1px solid #e5e7eb",
+            borderBottom: "1px solid var(--theme-border, #e5e7eb)",
           }}
         >
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Edit {userDetails?.data?.role?.roleType === "student" ? "Student" : userDetails?.data?.role?.roleType === "employer" ? "Employer" : "User"}
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 600, color: "var(--theme-text-primary, #111827)" }}
+          >
+            {userDetails?.data?.role?.roleType === "student" ? t("pages.users.editStudent") : userDetails?.data?.role?.roleType === "employer" ? t("pages.users.editEmployer") : t("pages.users.editUser")}
           </Typography>
           <IconButton
             onClick={handleCloseEditDialog}
@@ -1077,8 +1091,8 @@ const AllUsers: React.FC = () => {
                   mb: isSmallMobile ? 1.5 : isMobile ? 2 : 3,
                   p: isSmallMobile ? 1.5 : isMobile ? 2 : 2.5,
                   borderRadius: 2,
-                  backgroundColor: "rgba(147, 51, 234, 0.05)",
-                  border: "1px solid rgba(147, 51, 234, 0.1)",
+                  backgroundColor: "rgba(147, 51, 234, 0.06)",
+                  border: "1px solid rgba(147, 51, 234, 0.18)",
                 }}
               >
                 <Avatar
@@ -1097,7 +1111,7 @@ const AllUsers: React.FC = () => {
                     variant={isSmallMobile ? "body2" : isMobile ? "body1" : "subtitle1"}
                     sx={{
                       fontWeight: 600,
-                      color: "text.primary",
+                      color: "var(--theme-text-primary, #111827)",
                       fontSize: isSmallMobile ? "0.875rem" : isMobile ? "0.9375rem" : "1rem",
                     }}
                   >
@@ -1107,8 +1121,8 @@ const AllUsers: React.FC = () => {
                     label={userDetails.data.role?.roleType === "student" ? "Student" : "Employer"}
                     size="small"
                     sx={{
-                      bgcolor: userDetails.data.role?.roleType === "student" ? "#dbeafe" : "#d1fae5",
-                      color: userDetails.data.role?.roleType === "student" ? "#1e40af" : "#065f46",
+                      bgcolor: userDetails.data.role?.roleType === "student" ? "var(--chip-role-student-bg)" : "var(--chip-role-employer-bg)",
+                      color: userDetails.data.role?.roleType === "student" ? "var(--chip-role-student-text)" : "var(--chip-role-employer-text)",
                       fontWeight: 600,
                       mt: 0.5,
                       fontSize: isSmallMobile ? "0.65rem" : isMobile ? "0.7rem" : "0.75rem",
@@ -1119,7 +1133,7 @@ const AllUsers: React.FC = () => {
               </Box>
 
               <Grid container spacing={isSmallMobile ? 2 : isMobile ? 2.5 : 3}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Full Name"
@@ -1133,7 +1147,7 @@ const AllUsers: React.FC = () => {
                       "& .MuiInputBase-root": {
                         fontSize: isSmallMobile ? "0.875rem" : isMobile ? "0.875rem" : "1rem",
                         minHeight: isSmallMobile ? "44px" : isMobile ? "48px" : "56px",
-                        backgroundColor: "background.paper",
+                        backgroundColor: "var(--theme-input-bg, #ffffff)",
                       },
                       "& .MuiInputLabel-root": {
                         fontSize: isSmallMobile ? "0.75rem" : isMobile ? "0.8125rem" : "0.875rem",
@@ -1146,7 +1160,7 @@ const AllUsers: React.FC = () => {
                     }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Email"
@@ -1161,7 +1175,7 @@ const AllUsers: React.FC = () => {
                       "& .MuiInputBase-root": {
                         fontSize: isSmallMobile ? "0.875rem" : isMobile ? "0.875rem" : "1rem",
                         minHeight: isSmallMobile ? "44px" : isMobile ? "48px" : "56px",
-                        backgroundColor: "background.paper",
+                        backgroundColor: "var(--theme-input-bg, #ffffff)",
                       },
                       "& .MuiInputLabel-root": {
                         fontSize: isSmallMobile ? "0.75rem" : isMobile ? "0.8125rem" : "0.875rem",
@@ -1174,7 +1188,7 @@ const AllUsers: React.FC = () => {
                     }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Mobile Number"
@@ -1188,7 +1202,7 @@ const AllUsers: React.FC = () => {
                       "& .MuiInputBase-root": {
                         fontSize: isSmallMobile ? "0.875rem" : isMobile ? "0.875rem" : "1rem",
                         minHeight: isSmallMobile ? "44px" : isMobile ? "48px" : "56px",
-                        backgroundColor: "background.paper",
+                        backgroundColor: "var(--theme-input-bg, #ffffff)",
                       },
                       "& .MuiInputLabel-root": {
                         fontSize: isSmallMobile ? "0.75rem" : isMobile ? "0.8125rem" : "0.875rem",
@@ -1203,7 +1217,7 @@ const AllUsers: React.FC = () => {
                 </Grid>
                 {/* Show National ID only for Students */}
                 {userDetails.data.role?.roleType === "student" && (
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField
                       fullWidth
                       label="National ID Number"
@@ -1217,7 +1231,7 @@ const AllUsers: React.FC = () => {
                         "& .MuiInputBase-root": {
                           fontSize: isSmallMobile ? "0.875rem" : isMobile ? "0.875rem" : "1rem",
                           minHeight: isSmallMobile ? "44px" : isMobile ? "48px" : "56px",
-                          backgroundColor: "background.paper",
+                          backgroundColor: "var(--theme-input-bg, #ffffff)",
                         },
                         "& .MuiInputLabel-root": {
                           fontSize: isSmallMobile ? "0.75rem" : isMobile ? "0.8125rem" : "0.875rem",
@@ -1233,7 +1247,7 @@ const AllUsers: React.FC = () => {
                 )}
                 {/* Show Business Registration ID only for Employers */}
                 {userDetails.data.role?.roleType === "employer" && (
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField
                       fullWidth
                       label="Business Registration ID"
@@ -1247,7 +1261,7 @@ const AllUsers: React.FC = () => {
                         "& .MuiInputBase-root": {
                           fontSize: isSmallMobile ? "0.875rem" : isMobile ? "0.875rem" : "1rem",
                           minHeight: isSmallMobile ? "44px" : isMobile ? "48px" : "56px",
-                          backgroundColor: "background.paper",
+                          backgroundColor: "var(--theme-input-bg, #ffffff)",
                         },
                         "& .MuiInputLabel-root": {
                           fontSize: isSmallMobile ? "0.75rem" : isMobile ? "0.8125rem" : "0.875rem",
@@ -1261,7 +1275,7 @@ const AllUsers: React.FC = () => {
                     />
                   </Grid>
                 )}
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Preferred Location"
@@ -1275,7 +1289,7 @@ const AllUsers: React.FC = () => {
                       "& .MuiInputBase-root": {
                         fontSize: isSmallMobile ? "0.875rem" : isMobile ? "0.875rem" : "1rem",
                         minHeight: isSmallMobile ? "44px" : isMobile ? "48px" : "56px",
-                        backgroundColor: "background.paper",
+                        backgroundColor: "var(--theme-input-bg, #ffffff)",
                       },
                       "& .MuiInputLabel-root": {
                         fontSize: isSmallMobile ? "0.75rem" : isMobile ? "0.8125rem" : "0.875rem",
@@ -1304,14 +1318,14 @@ const AllUsers: React.FC = () => {
             borderTop: isMobile ? "1px solid rgba(0, 0, 0, 0.12)" : "none",
             position: isMobile ? "sticky" : "relative",
             bottom: 0,
-            backgroundColor: "background.paper",
+            backgroundColor: "var(--theme-card-bg, #ffffff)",
             zIndex: 1,
             boxShadow: isMobile ? "0 -2px 8px rgba(0, 0, 0, 0.1)" : "none",
           }}
         >
           <Button 
-            onClick={handleCloseEditDialog} 
-            variant="outlined" 
+            onClick={handleCloseEditDialog}
+            variant="outlined"
             color="inherit"
             fullWidth={isMobile}
             size={isSmallMobile ? "medium" : isMobile ? "large" : "medium"}
@@ -1321,7 +1335,7 @@ const AllUsers: React.FC = () => {
               fontWeight: isMobile ? 500 : 400,
             }}
           >
-            Cancel
+            {t("pages.users.cancel")}
           </Button>
           <Button
             onClick={handleSaveEdit}
@@ -1337,7 +1351,7 @@ const AllUsers: React.FC = () => {
               fontWeight: isMobile ? 600 : 500,
             }}
           >
-            {isUpdating ? "Saving..." : "Save Changes"}
+            {isUpdating ? t("pages.users.saving") : t("pages.users.saveChanges")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1388,7 +1402,7 @@ const AllUsers: React.FC = () => {
             fontSize: isSmallMobile ? "0.8125rem" : isMobile ? "0.9375rem" : "1rem",
             position: isMobile ? "sticky" : "relative",
             top: 0,
-            backgroundColor: "background.paper",
+            backgroundColor: "var(--theme-card-bg, #ffffff)",
             zIndex: 2,
             borderBottom: isMobile ? "1px solid rgba(0, 0, 0, 0.12)" : "none",
           }}
@@ -1407,7 +1421,7 @@ const AllUsers: React.FC = () => {
                 fontSize: isSmallMobile ? "0.8125rem" : isMobile ? "0.9375rem" : "1rem",
               }}
             >
-              Delete User
+              {t("pages.users.deleteUser")}
             </Typography>
           </Box>
           <IconButton
@@ -1457,7 +1471,7 @@ const AllUsers: React.FC = () => {
               lineHeight: 1.6,
             }}
           >
-            Are you sure you want to delete <strong>{userToDelete?.name}</strong>?
+            {t("pages.users.deleteConfirm")} <strong>{userToDelete?.name}</strong>?
           </Typography>
           <Box
             sx={{
@@ -1484,7 +1498,7 @@ const AllUsers: React.FC = () => {
                 fontSize: isSmallMobile ? "0.7rem" : isMobile ? "0.75rem" : "0.875rem",
               }}
             >
-              Auto-deleting in {countdown} second{countdown !== 1 ? "s" : ""}...
+              {t("pages.users.autoDeleting", { count: countdown })}
             </Typography>
           </Box>
         </DialogContent>
@@ -1498,7 +1512,7 @@ const AllUsers: React.FC = () => {
             borderTop: isMobile ? "1px solid rgba(0, 0, 0, 0.12)" : "none",
             position: isMobile ? "sticky" : "relative",
             bottom: 0,
-            backgroundColor: "background.paper",
+            backgroundColor: "var(--theme-card-bg, #ffffff)",
             zIndex: 1,
             boxShadow: isMobile ? "0 -2px 8px rgba(0, 0, 0, 0.1)" : "none",
           }}
@@ -1515,7 +1529,7 @@ const AllUsers: React.FC = () => {
               fontWeight: isMobile ? 500 : 400,
             }}
           >
-            Cancel
+            {t("pages.users.cancel")}
           </Button>
           <Button
             onClick={handleConfirmDelete}
@@ -1530,7 +1544,7 @@ const AllUsers: React.FC = () => {
               fontWeight: isMobile ? 600 : 500,
             }}
           >
-            Confirm Delete
+            {t("pages.users.confirmDelete")}
           </Button>
         </DialogActions>
       </Dialog>

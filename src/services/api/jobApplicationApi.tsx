@@ -63,6 +63,8 @@ export interface JobApplicationsListResponse {
   message: string;
 }
 
+export type JobApplicationStatusFilter = "Pending" | "Accepted" | "Rejected";
+
 export const jobApplicationApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Apply for a job (student only)
@@ -75,7 +77,7 @@ export const jobApplicationApi = apiSlice.injectEndpoints({
         method: "POST",
         body: data,
       }),
-      invalidatesTags: (result, error, { job_id }) => [
+      invalidatesTags: (_result, _error, { job_id }) => [
         { type: "Job", id: job_id },
         "Job",
         "JobApplication",
@@ -88,27 +90,41 @@ export const jobApplicationApi = apiSlice.injectEndpoints({
         url: `/jobs/${job_id}/applications`,
         method: "GET",
       }),
-      providesTags: (result, error, job_id) => [
+      providesTags: (_result, _error, job_id) => [
         { type: "Job", id: job_id },
         "Job",
       ],
     }),
 
     // Get all applications for an employer (employer/superadmin only)
-    getEmployerApplications: builder.query<JobApplicationsListResponse, void>({
-      query: () => ({
-        url: "/employer/applications",
-        method: "GET",
-      }),
+    getEmployerApplications: builder.query<
+      JobApplicationsListResponse,
+      { status?: JobApplicationStatusFilter } | void
+    >({
+      query: (arg) => {
+        const status = arg && "status" in arg ? arg.status : undefined;
+        const qs = status ? `?status=${encodeURIComponent(status)}` : "";
+        return {
+          url: `/employer/applications${qs}`,
+          method: "GET",
+        };
+      },
       providesTags: ["Job"],
     }),
 
     // Get student's own applications
-    getStudentApplications: builder.query<JobApplicationsListResponse, void>({
-      query: () => ({
-        url: "/student/applications",
-        method: "GET",
-      }),
+    getStudentApplications: builder.query<
+      JobApplicationsListResponse,
+      { status?: JobApplicationStatusFilter } | void
+    >({
+      query: (arg) => {
+        const status = arg && "status" in arg ? arg.status : undefined;
+        const qs = status ? `?status=${encodeURIComponent(status)}` : "";
+        return {
+          url: `/student/applications${qs}`,
+          method: "GET",
+        };
+      },
       providesTags: ["Job", "JobApplication"],
     }),
 
@@ -121,7 +137,7 @@ export const jobApplicationApi = apiSlice.injectEndpoints({
         url: `/applications/${application_id}`,
         method: "GET",
       }),
-      providesTags: (result, error, application_id) => [
+      providesTags: (_result, _error, application_id) => [
         { type: "Job", id: application_id },
       ],
     }),
@@ -135,7 +151,7 @@ export const jobApplicationApi = apiSlice.injectEndpoints({
         url: `/jobs/${job_id}/check-application`,
         method: "GET",
       }),
-      providesTags: (result, error, job_id) => [
+      providesTags: (_result, _error, job_id) => [
         { type: "Job", id: job_id },
         "Job",
       ],

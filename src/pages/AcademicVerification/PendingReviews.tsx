@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import { useTranslation } from "react-i18next";
 import { DocumentCheckIcon } from "@heroicons/react/24/outline";
 import type { AcademicVerification } from "../../services/api/academicVerificationApi";
 import {
@@ -7,6 +8,7 @@ import {
   getPendingAcademicVerifications,
   reviewAcademicVerification,
 } from "../../services/api/academicVerificationApi";
+import api from "../../services/api/axiosInstance";
 
 interface RootState {
   auth: {
@@ -15,6 +17,7 @@ interface RootState {
 }
 
 const PendingReviews: React.FC = () => {
+  const { t } = useTranslation();
   const role = useSelector((state: RootState) => state.auth.role);
 
   // -------- student state --------
@@ -33,6 +36,10 @@ const PendingReviews: React.FC = () => {
   const [rejectionNotes, setRejectionNotes] = useState<Record<string, string>>(
     {}
   );
+  const [showViewer, setShowViewer] = useState(false);
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+  const [viewerBlob, setViewerBlob] = useState<Blob | null>(null);
+  const [viewerContentType, setViewerContentType] = useState<string | null>(null);
 
   // ---------- helpers ----------
   const loadMyVerification = async () => {
@@ -43,11 +50,16 @@ const PendingReviews: React.FC = () => {
     } catch (err: any) {
       // If not found, keep null
       setMyVerification(null);
-      const msg =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Could not fetch academic verification";
-      setStudentError(msg);
+      const data = err?.response?.data;
+      const raw =
+        (typeof data?.message === "string" ? data.message : null) ||
+        (typeof data?.error === "string" ? data.error : null) ||
+        (typeof data?.msg === "string" ? data.msg : null) ||
+        (typeof err?.message === "string" ? err.message : null) ||
+        "";
+      setStudentError(
+        raw ? getTranslatedErrorMessage(raw) : t("pages.academic.failedToFetch")
+      );
     }
   };
 
@@ -58,14 +70,37 @@ const PendingReviews: React.FC = () => {
       const res = await getPendingAcademicVerifications({ page: 1, limit: 20 });
       setPending(res.data || []);
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Failed to load pending academic verifications";
-      setAdminError(msg);
+      const data = err?.response?.data;
+      const raw =
+        (typeof data?.message === "string" ? data.message : null) ||
+        (typeof data?.error === "string" ? data.error : null) ||
+        (typeof data?.msg === "string" ? data.msg : null) ||
+        (typeof err?.message === "string" ? err.message : null) ||
+        "";
+      setAdminError(
+        raw ? getTranslatedErrorMessage(raw) : t("pages.academic.failedToLoadPending")
+      );
     } finally {
       setLoadingAdmin(false);
     }
+  };
+
+  // Map known API messages / rejection reasons to translated strings so they follow the selected language
+  const getTranslatedErrorMessage = (apiMessage: string | undefined): string => {
+    if (!apiMessage || typeof apiMessage !== "string") return apiMessage || "";
+    const lower = apiMessage.toLowerCase().trim();
+    // Match "incorrect document / please upload the correct document" in various phrasings
+    const hasCorrectDocument = lower.includes("correct document");
+    const hasWrongOrNotCorrect =
+      lower.includes("not correct") ||
+      lower.includes("incorrect") ||
+      lower.includes("wrong document") ||
+      lower.includes("not the correct");
+    const hasUpload = lower.includes("upload") || lower.includes("laai");
+    if (hasCorrectDocument && hasWrongOrNotCorrect && hasUpload) {
+      return t("pages.academic.incorrectDocumentMessage");
+    }
+    return apiMessage;
   };
 
   useEffect(() => {
@@ -94,26 +129,27 @@ const PendingReviews: React.FC = () => {
           "../../services/api/academicVerificationApi"
         );
         await reuploadAcademicVerification(myVerification.id, file);
-        setStudentSuccess(
-          "Document re-uploaded successfully. It will be reviewed again."
-        );
+        setStudentSuccess(t("pages.academic.documentReuploadedSuccess"));
       } else {
         const { uploadAcademicVerification } = await import(
           "../../services/api/academicVerificationApi"
         );
         await uploadAcademicVerification(file);
-        setStudentSuccess(
-          "Document uploaded successfully. Status is now pending."
-        );
+        setStudentSuccess(t("pages.academic.documentUploadedSuccess"));
       }
 
       await loadMyVerification();
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Failed to upload document";
-      setStudentError(msg);
+      const data = err?.response?.data;
+      const raw =
+        (typeof data?.message === "string" ? data.message : null) ||
+        (typeof data?.error === "string" ? data.error : null) ||
+        (typeof data?.msg === "string" ? data.msg : null) ||
+        (typeof err?.message === "string" ? err.message : null) ||
+        "";
+      setStudentError(
+        raw ? getTranslatedErrorMessage(raw) : t("pages.academic.failedToUpload")
+      );
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -135,104 +171,191 @@ const PendingReviews: React.FC = () => {
       await reviewAcademicVerification({ id, status, rejection_reason });
       await loadPendingForAdmin();
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Failed to review academic verification";
-      setAdminError(msg);
+      const data = err?.response?.data;
+      const raw =
+        (typeof data?.message === "string" ? data.message : null) ||
+        (typeof data?.error === "string" ? data.error : null) ||
+        (typeof data?.msg === "string" ? data.msg : null) ||
+        (typeof err?.message === "string" ? err.message : null) ||
+        "";
+      setAdminError(
+        raw ? getTranslatedErrorMessage(raw) : t("pages.academic.failedToReview")
+      );
     } finally {
       setReviewLoadingId(null);
+    }
+  };
+
+  const handleViewDocument = async (item: AcademicVerification) => {
+    try {
+      setAdminError(null);
+
+      if (item.storage_type === 's3') {
+        const res = await api.get<{ url?: string }>(`/academic-verifications/${item.id}/document`);
+        const url = res?.data?.url;
+        if (url) {
+          setViewerUrl(url);
+          setViewerBlob(null);
+          setViewerContentType(null);
+          setShowViewer(true);
+        } else {
+          setAdminError(t("pages.academic.couldNotObtainUrl"));
+        }
+        return;
+      }
+
+      // Local storage: fetch blob and open inside modal
+      const blobRes = await api.get(`/academic-verifications/${item.id}/document`, {
+        responseType: 'blob',
+      });
+
+      const blob = blobRes.data as Blob;
+      const objectUrl = window.URL.createObjectURL(blob);
+      setViewerUrl(objectUrl);
+      setViewerBlob(blob);
+      setViewerContentType(blob.type || null);
+      setShowViewer(true);
+    } catch (err: any) {
+      const raw =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "";
+      setAdminError(
+        raw ? getTranslatedErrorMessage(raw) : t("pages.academic.failedToOpenDocument")
+      );
+    }
+  };
+
+  const closeViewer = () => {
+    if (viewerUrl && viewerUrl.startsWith('blob:')) {
+      window.URL.revokeObjectURL(viewerUrl);
+    }
+    setShowViewer(false);
+    setViewerUrl(null);
+    setViewerBlob(null);
+    setViewerContentType(null);
+  };
+
+  const downloadViewer = async () => {
+    try {
+      if (viewerBlob) {
+        const url = window.URL.createObjectURL(viewerBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'document';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        return;
+      }
+
+      if (viewerUrl) {
+        // fetch the resource and download as blob
+        const r = await fetch(viewerUrl, { credentials: 'include' });
+        const b = await r.blob();
+        const url = window.URL.createObjectURL(b);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'document';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (e: any) {
+      setAdminError(e?.message || t("pages.academic.downloadFailed"));
     }
   };
 
   // ===================== STUDENT VIEW =====================
   if (role === "student") {
     return (
-      <div className="space-y-6 animate-fadeIn">
-        <div>
-          <h1 className="text-4xl font-extrabold text-gray-900 flex items-center gap-3">
-            <DocumentCheckIcon className="h-10 w-10 text-orange-600" />
-            Academic Verification
-          </h1>
-          <p className="text-gray-500 mt-2">
-            Upload your academic proof and track its verification status.
-          </p>
-        </div>
+      <div className="academic-page theme-page-bg p-3 min-h-full">
+        <div className="max-w-3xl mx-auto space-y-3">
+          {/* Header */}
+          <div className="text-center space-y-1">
+            <div className="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full shadow-lg">
+              <DocumentCheckIcon className="h-5 w-5 text-white" />
+            </div>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+              {t("pages.academic.title")}
+            </h1>
+            <p className="text-gray-600 text-xs">{t("pages.academic.subtitle")}</p>
+          </div>
 
-        {/* Status */}
-        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Current Status
-          </h2>
-
-          {myVerification ? (
-            <div className="space-y-2">
-              <p className="text-sm text-gray-700">
-                <span className="font-medium">Status:</span>{" "}
-                <span
-                  className={
+          {/* Status Card */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-3">
+            <h2 className="text-base font-bold text-gray-800 mb-2">{t("pages.academic.status")}</h2>
+            {myVerification ? (
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-700 text-sm">{t("pages.academic.current")}:</span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
                     myVerification.status === "accepted"
-                      ? "text-green-600 font-semibold"
+                      ? "bg-green-100 text-green-700"
                       : myVerification.status === "rejected"
-                      ? "text-red-600 font-semibold"
-                      : "text-orange-600 font-semibold"
-                  }
-                >
-                  {myVerification.status}
-                </span>
-              </p>
-              {myVerification.rejection_reason && (
-                <p className="text-sm text-red-600">
-                  <span className="font-medium">Rejection reason:</span>{" "}
-                  {myVerification.rejection_reason}
-                </p>
+                      ? "bg-red-100 text-red-700"
+                      : "bg-yellow-100 text-yellow-700"
+                  }`}>
+                    {myVerification.status === "accepted" ? t("pages.academic.approved") : myVerification.status === "rejected" ? t("pages.academic.rejected") : t("pages.academic.pending")}
+                  </span>
+                </div>
+                {myVerification.rejection_reason && (
+                  <div className="bg-red-50 border-l-4 border-red-400 p-2 rounded-r">
+                    <p className="text-red-700 text-xs font-medium">{t("pages.academic.reason")}:</p>
+                    <p className="text-red-600 text-xs">{getTranslatedErrorMessage(myVerification.rejection_reason)}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm">{t("pages.academic.noDocumentUploaded")}</p>
+            )}
+          </div>
+
+          {/* Upload Card */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-3">
+            <h2 className="text-base font-bold text-gray-800 mb-2">
+              {myVerification?.status === "rejected" ? t("pages.academic.reupload") : t("pages.academic.upload")}
+            </h2>
+
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 mb-2">
+              <p className="text-purple-600 text-xs">{t("pages.academic.fileTypesHint")}</p>
+            </div>
+
+            {studentError && (
+              <div className="bg-red-50 border-l-4 border-red-400 p-2 rounded-r mb-2">
+                <p className="text-red-600 text-xs">{studentError}</p>
+              </div>
+            )}
+
+            {studentSuccess && (
+              <div className="bg-green-50 border-l-4 border-green-400 p-2 rounded-r mb-2">
+                <p className="text-green-600 text-xs">{studentSuccess}</p>
+              </div>
+            )}
+
+            <label className={`inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg font-medium cursor-pointer transition-all shadow-md hover:shadow-lg ${
+              uploading ? 'opacity-75 cursor-not-allowed' : ''
+            }`}>
+              {uploading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
               )}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500">
-              You have not uploaded any academic document yet.
-            </p>
-          )}
-        </div>
+              <span>{uploading ? t("pages.academic.uploading") : t("pages.academic.chooseFile")}</span>
+              <input type="file" className="hidden" onChange={handleFileChange} disabled={uploading} />
+            </label>
 
-        {/* Upload / Re-upload */}
-        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">
-            {myVerification && myVerification.status === "rejected"
-              ? "Re-upload Document"
-              : "Upload Document"}
-          </h2>
-          <p className="text-sm text-gray-500">
-            Accepted formats: PDF, JPG, PNG, DOC, DOCX. Max size 10MB.
-          </p>
-
-          {studentError && (
-            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-              {studentError}
-            </div>
-          )}
-
-          {studentSuccess && (
-            <div className="text-sm text-green-600 bg-green-50 border border-green-200 rounded-md px-3 py-2">
-              {studentSuccess}
-            </div>
-          )}
-
-          <label className="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold cursor-pointer transition shadow-md">
-            <span>{uploading ? "Uploading..." : "Choose file"}</span>
-            <input
-              type="file"
-              className="hidden"
-              onChange={handleFileChange}
-              disabled={uploading}
-            />
-          </label>
-
-          {myVerification && myVerification.status === "pending" && (
-            <p className="text-xs text-gray-500 mt-2">
-              Your document is pending review by an administrator.
-            </p>
-          )}
+            {myVerification?.status === "pending" && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 mt-3 text-center">
+                <p className="text-yellow-600 text-xs">{t("pages.academic.underReview")}</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -240,109 +363,155 @@ const PendingReviews: React.FC = () => {
 
   // ===================== ADMIN/VERIFYDOCADMIN VIEW =====================
   return (
-    <div className="space-y-6 animate-fadeIn">
-      <div>
-        <h1 className="text-4xl font-extrabold text-gray-900 flex items-center gap-3">
-          <DocumentCheckIcon className="h-10 w-10 text-orange-600" />
-          Pending Reviews
-        </h1>
-        <p className="text-gray-500 mt-2">
-          Academic verifications waiting for review
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-orange-50 rounded-xl p-6 border border-orange-200">
-          <p className="text-sm text-orange-700 font-medium">Pending Reviews</p>
-          <p className="text-3xl font-bold text-orange-900 mt-2">
-            {pending.length}
-          </p>
+    <div className="academic-page theme-page-bg p-3 min-h-full">
+      <div className="max-w-6xl mx-auto space-y-3">
+        {/* Header */}
+        <div className="text-center space-y-1">
+          <div className="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full shadow-lg">
+            <DocumentCheckIcon className="h-5 w-5 text-white" />
+          </div>
+          <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+            {t("pages.academic.pendingReviews")}
+          </h1>
+          <p className="text-gray-600 text-xs">{t("pages.academic.awaitingReview")}</p>
         </div>
-      </div>
 
-      {adminError && (
-        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-          {adminError}
+        {/* Stats */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-3 max-w-xs mx-auto">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-purple-600 font-bold text-xs uppercase">{t("pages.academic.pending")}</p>
+              <p className="text-xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                {pending.length}
+              </p>
+            </div>
+            <DocumentCheckIcon className="h-5 w-5 text-purple-600" />
+          </div>
         </div>
-      )}
 
-      {loadingAdmin ? (
-        <p className="text-sm text-gray-500">Loading pending verifications…</p>
-      ) : pending.length === 0 ? (
-        <p className="text-sm text-gray-500">No pending verifications.</p>
-      ) : (
-        <div className="space-y-4">
-          {pending.map((item) => (
-            <div
-              key={item.id}
-              className="bg-white rounded-xl p-6 shadow-md border border-gray-100 hover:shadow-lg transition-shadow"
-            >
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-lg">
-                      {item.user_id.charAt(0)}
+        {adminError && (
+          <div className="bg-red-50 border-l-4 border-red-400 p-2 rounded-r">
+            <p className="text-red-600 text-xs">{adminError}</p>
+          </div>
+        )}
+
+        {loadingAdmin ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+              <p className="text-gray-600 text-sm">{t("pages.academic.loading")}</p>
+            </div>
+          </div>
+        ) : pending.length === 0 ? (
+          <div className="text-center py-6">
+            <DocumentCheckIcon className="h-10 w-10 text-gray-400 mx-auto mb-2" />
+            <p className="text-gray-500 text-sm">{t("pages.academic.noPendingVerifications")}</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {pending.map((item) => (
+              <div key={item.id} className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-3">
+                <div className="flex flex-col lg:flex-row gap-3">
+                  <div className="flex-1 space-y-2">
+                    {/* User Info */}
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-100 to-indigo-100 flex items-center justify-center flex-shrink-0">
+                        <span className="text-purple-600 font-bold text-xs">
+                          {item.user_id.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-gray-800 text-sm truncate">ID: {item.user_id}</h3>
+                        <p className="text-gray-500 text-xs">
+                          {new Date(item.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-bold flex-shrink-0">
+                        {item.storage_type.toUpperCase()}
+                      </span>
                     </div>
+
+                    {/* Rejection Reason */}
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Student ID: {item.user_id}
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        Submitted on{" "}
-                        {new Date(item.created_at).toLocaleString()}
-                      </p>
+                      <label className="block text-gray-700 font-medium text-xs mb-1">
+                        {t("pages.academic.rejectionReason")} <span className="text-red-500">*</span>
+                      </label>
+                      <textarea
+                        className="w-full rounded-lg border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 resize-none"
+                        rows={2}
+                        placeholder={t("pages.academic.rejectionReasonPlaceholder")}
+                        value={rejectionNotes[item.id] || ""}
+                        onChange={(e) =>
+                          setRejectionNotes((prev) => ({
+                            ...prev,
+                            [item.id]: e.target.value,
+                          }))
+                        }
+                      />
                     </div>
                   </div>
 
-                  <div className="mt-3 space-y-2">
-                    <p className="text-xs text-gray-500 font-medium">
-                      Storage Type
-                    </p>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {item.storage_type.toUpperCase()}
-                    </p>
+                  {/* Actions */}
+                  <div className="flex lg:flex-col gap-2 lg:min-w-[130px] flex-shrink-0">
+                    <button
+                      className={`flex-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-all text-xs disabled:opacity-50`}
+                      onClick={() => handleViewDocument(item)}
+                    >
+                      {t("pages.academic.view")}
+                    </button>
+                    <button
+                      className={`flex-1 px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-all text-xs disabled:opacity-50 ${
+                        reviewLoadingId === item.id ? 'animate-pulse' : ''
+                      }`}
+                      disabled={reviewLoadingId === item.id}
+                      onClick={() => handleReview(item.id, "accepted")}
+                    >
+                      {reviewLoadingId === item.id ? t("pages.academic.approving") : t("pages.academic.approve")}
+                    </button>
+                    
+                    <button
+                      className={`flex-1 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-all text-xs disabled:opacity-50 ${
+                        reviewLoadingId === item.id ? 'animate-pulse' : ''
+                      }`}
+                      disabled={reviewLoadingId === item.id}
+                      onClick={() => handleReview(item.id, "rejected")}
+                    >
+                      {reviewLoadingId === item.id ? t("pages.academic.rejecting") : t("pages.academic.reject")}
+                    </button>
                   </div>
-
-                  <div className="mt-4">
-                    <label className="text-xs text-gray-500 font-medium block mb-1">
-                      Rejection reason (required when rejecting)
-                    </label>
-                    <textarea
-                      className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                      rows={2}
-                      placeholder="Enter reason if you reject this verification"
-                      value={rejectionNotes[item.id] || ""}
-                      onChange={(e) =>
-                        setRejectionNotes((prev) => ({
-                          ...prev,
-                          [item.id]: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2 ml-6">
-                  <button
-                    className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition shadow-md whitespace-nowrap disabled:opacity-60"
-                    disabled={reviewLoadingId === item.id}
-                    onClick={() => handleReview(item.id, "accepted")}
-                  >
-                    {reviewLoadingId === item.id ? "Saving…" : "Approve"}
-                  </button>
-                  <button
-                    className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition shadow-md whitespace-nowrap disabled:opacity-60"
-                    disabled={reviewLoadingId === item.id}
-                    onClick={() => handleReview(item.id, "rejected")}
-                  >
-                    {reviewLoadingId === item.id ? "Saving…" : "Reject"}
-                  </button>
                 </div>
               </div>
+            ))}
+          </div>
+        )}
+        {showViewer && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 backdrop-blur-sm">
+            <div className="fixed inset-0 bg-black/40" onClick={closeViewer} />
+            <div className="relative bg-white rounded-lg shadow-lg max-w-4xl w-full max-h-[85vh] sm:max-h-[90vh] z-60 flex flex-col overflow-hidden theme-modal border border-gray-200">
+              <div className="flex items-center justify-between p-3 sm:p-4 border-b flex-shrink-0">
+                <h3 className="text-lg font-bold">{t("pages.academic.documentViewer")}</h3>
+                <div className="flex items-center gap-2">
+                  <button className="px-3 py-1 text-sm bg-green-500 rounded" onClick={downloadViewer}>{t("pages.academic.download")}</button>
+                  <button className="px-3 py-1 text-sm bg-red-400 rounded" onClick={closeViewer}>{t("pages.academic.close")}</button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-2 sm:p-4">
+                {viewerUrl ? (
+                  viewerContentType?.startsWith('image/') ? (
+                    <img src={viewerUrl} alt="document" className="mx-auto max-h-full w-auto object-contain" />
+                  ) : viewerContentType === 'application/pdf' || viewerUrl.toLowerCase().endsWith('.pdf') ? (
+                    <iframe src={viewerUrl} className="w-full h-full border-0 min-h-[500px] sm:min-h-[600px]" title="Document" />
+                  ) : (
+                    <iframe src={viewerUrl} className="w-full h-full border-0 min-h-[500px] sm:min-h-[600px]" title="Document" />
+                  )
+                ) : (
+                  <div className="text-center p-8">{t("pages.academic.noDocumentToDisplay")}</div>
+                )}
+              </div>
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

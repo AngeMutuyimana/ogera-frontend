@@ -14,7 +14,7 @@ const VerifyEmail: React.FC = () => {
   const [isVerified, setIsVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [verifyEmail, { isSuccess, isError, error }] = useVerifyEmailMutation();
+  const [verifyEmail] = useVerifyEmailMutation();
   const [resendEmail, { isLoading: isResending }] = useResendVerificationEmailMutation();
 
   useEffect(() => {

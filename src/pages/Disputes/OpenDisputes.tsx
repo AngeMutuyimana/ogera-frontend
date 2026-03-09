@@ -1,97 +1,102 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
 import CustomTable, {
   type Column,
   type TableAction,
 } from "../../components/Table/CustomTable";
-import { Chip, Box, Typography } from "@mui/material";
+import { Chip, Typography } from "@mui/material";
 import {
   Visibility as ViewIcon,
   MessageOutlined as MessageIcon,
   CheckCircle as ResolveIcon,
 } from "@mui/icons-material";
 
-interface Dispute {
-  id: number;
-  type: string;
-  student: string;
-  employer: string;
-  description: string;
-  priority: "High" | "Medium" | "Low";
-  reportedDate: string;
-}
+import { getAllDisputes, type Dispute } from "../../services/api/disputesApi";
+import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import Loader from "../../components/Loader";
 
 const OpenDisputes: React.FC = () => {
-  const disputes: Dispute[] = [
-    {
-      id: 1,
-      type: "Payment",
-      student: "John Doe",
-      employer: "TechCorp",
-      description: "Payment not received for completed work",
-      priority: "High",
-      reportedDate: "2024-03-10",
-    },
-    {
-      id: 2,
-      type: "Contract Violation",
-      student: "Emily Smith",
-      employer: "StartupXYZ",
-      description: "Work hours exceeded agreement",
-      priority: "Medium",
-      reportedDate: "2024-03-12",
-    },
-    {
-      id: 3,
-      type: "Quality Issue",
-      student: "Mike Johnson",
-      employer: "DesignHub",
-      description: "Deliverables quality disputed",
-      priority: "Low",
-      reportedDate: "2024-03-14",
-    },
-  ];
+  const { t } = useTranslation();
+  const role = useSelector((state: any) => state.auth.role);
+  const [disputes, setDisputes] = useState<Dispute[]>([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Only allow admins/superadmin to view this page
+    if (role === "student" || role === "employer") {
+      navigate("/dashboard/disputes/my-disputes");
+      return;
+    }
+    fetchDisputes();
+  }, [role]);
+
+  const fetchDisputes = async () => {
+    try {
+      setLoading(true);
+      const result = await getAllDisputes({ status: "Open", page: 1, limit: 100 });
+      setDisputes(result.data || []);
+    } catch (error) {
+      console.error("Failed to fetch open disputes:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const columns: Column<Dispute>[] = [
     {
       id: "type",
-      label: "Type",
+      label: t("disputes.type"),
       minWidth: 150,
       format: (value) => (
         <Chip
           label={value}
           size="small"
           sx={{
-            bgcolor: "#f3e8ff",
-            color: "#7c3aed",
+            bgcolor: "var(--chip-role-admin-bg)",
+            color: "var(--chip-role-admin-text)",
             fontWeight: 600,
           }}
         />
       ),
     },
     {
-      id: "description",
-      label: "Description",
-      minWidth: 250,
+      id: "title",
+      label: t("disputes.title"),
+      minWidth: 200,
       format: (value) => (
-        <Typography sx={{ fontSize: "0.875rem", color: "#374151" }}>
+        <Typography
+          sx={{
+            fontSize: "0.875rem",
+            color: "var(--theme-text-primary, #374151)",
+            fontWeight: 600,
+          }}
+        >
           {value}
         </Typography>
       ),
     },
     {
       id: "student",
-      label: "Student",
+      label: t("disputes.student"),
       minWidth: 150,
+       format: (value: any, row: any) => {
+        return row.reported_by === 'student' ? (value?.full_name || t("disputes.na")) : "-";
+      },
     },
     {
       id: "employer",
-      label: "Employer",
+      label: t("disputes.employer"),
       minWidth: 150,
+      format: (value: any, row: any) => {
+        return row.reported_by === 'employer' ? (value?.full_name || t("disputes.na")) : "-";
+      },
     },
     {
       id: "priority",
-      label: "Priority",
+      label: t("disputes.priority"),
       minWidth: 120,
       format: (value) => (
         <Chip
@@ -100,85 +105,96 @@ const OpenDisputes: React.FC = () => {
           sx={{
             bgcolor:
               value === "High"
-                ? "#fee2e2"
+                ? "var(--chip-status-suspended-bg)"
                 : value === "Medium"
-                ? "#fed7aa"
-                : "#dbeafe",
+                ? "var(--chip-warning-bg)"
+                : "var(--chip-permission-yes-bg)",
             color:
               value === "High"
-                ? "#991b1b"
+                ? "var(--chip-status-suspended-text)"
                 : value === "Medium"
-                ? "#9a3412"
-                : "#1e40af",
+                ? "var(--chip-warning-text)"
+                : "var(--chip-permission-yes-text)",
             fontWeight: 600,
           }}
         />
       ),
     },
     {
-      id: "reportedDate",
-      label: "Reported Date",
+      id: "created_at",
+      label: t("disputes.reportedDate"),
       minWidth: 130,
+            format: (value) => new Date(value).toLocaleDateString(),
     },
   ];
 
   const actions: TableAction<Dispute>[] = [
     {
-      label: "View Details",
+      label: t("disputes.viewDetails"),
       icon: <ViewIcon fontSize="small" />,
       onClick: (row) => {
-        console.log("View dispute:", row);
+                navigate(`/dashboard/disputes/${row.dispute_id}`);
       },
       color: "primary",
     },
     {
-      label: "Message Parties",
+      label: t("disputes.messageParties"),
       icon: <MessageIcon fontSize="small" />,
       onClick: (row) => {
-        console.log("Message:", row);
+                navigate(`/dashboard/disputes/${row.dispute_id}`);
       },
       color: "primary",
     },
     {
-      label: "Resolve",
+      label: t("disputes.resolve"),
       icon: <ResolveIcon fontSize="small" />,
       onClick: (row) => {
-        console.log("Resolve dispute:", row);
+                navigate(`/dashboard/disputes/${row.dispute_id}`);
       },
       color: "success",
     },
   ];
+
+  if (loading) {
+    return <Loader />;
+  }
 
   return (
     <div className="space-y-6 animate-fadeIn">
       <div>
         <h1 className="text-2xl md:text-4xl font-extrabold text-gray-900 flex items-center gap-2 md:gap-3">
           <ExclamationCircleIcon className="h-8 w-8 md:h-10 md:w-10 text-red-600" />
-          Open Disputes
+          {t("disputes.openTitle")}
         </h1>
         <p className="text-sm md:text-base text-gray-500 mt-2">
-          Disputes that require immediate attention
+          {t("disputes.openSubtitle")}
         </p>
       </div>
 
       <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
         <p className="text-red-800 font-medium text-sm md:text-base">
-          ⚠️ {disputes.length} open disputes requiring action
+          ⚠️ {t("disputes.openCountMessage", { count: disputes.length })}
         </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
         <div className="bg-red-50 rounded-xl p-6 border border-red-200">
-          <p className="text-sm text-red-700 font-medium">High Priority</p>
-          <p className="text-3xl font-bold text-red-900 mt-2">1</p>
+          <p className="text-sm text-red-700 font-medium">{t("disputes.highPriority")}</p>
+           <p className="text-3xl font-bold text-red-900 mt-2">
+            {disputes.filter((d) => d.priority === "High").length}
+          </p>
         </div>
         <div className="bg-orange-50 rounded-xl p-6 border border-orange-200">
-          <p className="text-sm text-orange-700 font-medium">Medium Priority</p>
-          <p className="text-3xl font-bold text-orange-900 mt-2">1</p>
+          <p className="text-sm text-orange-700 font-medium">{t("disputes.mediumPriority")}</p>
+           <p className="text-3xl font-bold text-orange-900 mt-2">
+            {disputes.filter((d) => d.priority === "Medium").length}
+          </p>
         </div>
         <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
-          <p className="text-sm text-blue-700 font-medium">Low Priority</p>
-          <p className="text-3xl font-bold text-blue-900 mt-2">1</p>
+          <p className="text-sm text-blue-700 font-medium">{t("disputes.lowPriority")}</p>
+           <p className="text-3xl font-bold text-blue-900 mt-2">
+            {disputes.filter((d) => d.priority === "Low").length}
+          </p>
         </div>
       </div>
 
@@ -187,7 +203,7 @@ const OpenDisputes: React.FC = () => {
         data={disputes}
         actions={actions}
         searchable={true}
-        searchPlaceholder="Search disputes..."
+        searchPlaceholder={t("disputes.searchPlaceholder")}
         rowsPerPageOptions={[5, 10, 25]}
         defaultRowsPerPage={10}
       />

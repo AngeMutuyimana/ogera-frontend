@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { styled } from "@mui/material/styles";
 import logo from "../assets/logoWhite.png";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
@@ -16,8 +17,10 @@ import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import TermsModal from "../components/TermsModal";
 import PrivacyModal from "../components/PrivacyModal";
 import CountryCodeSelector from "../components/CountryCodeSelector";
+import { getCountryCodeFromDialCode, getExpectedDigitMessage } from "../utils/mobileValidation";
 
 const Register = () => {
+  const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
 
   // Modals
@@ -32,6 +35,21 @@ const Register = () => {
   const handleClickShowPassword = () => setShowPassword((prev) => !prev);
 
   const [countryCode, setCountryCode] = useState("+1"); // Default to US/Canada
+  const [expectedDigitMessage, setExpectedDigitMessage] = useState<string>("Enter phone number"); // Store expected digit message
+  const [hasStartedTyping, setHasStartedTyping] = useState(false); // Track if user started typing phone number
+
+  // Update expected digit message when country changes
+  const handleCountryCodeChange = (newDialCode: string) => {
+    setCountryCode(newDialCode);
+    setHasStartedTyping(false); // Reset typing state when country changes
+    const countryISOCode = getCountryCodeFromDialCode(newDialCode);
+    if (countryISOCode) {
+      const message = getExpectedDigitMessage(countryISOCode);
+      setExpectedDigitMessage(message);
+    }
+  };
+
+  const defaultCountryISO = getCountryCodeFromDialCode(countryCode) || "";
 
   const initialValues: RegisterFormValues = {
     accountType: "student",
@@ -41,6 +59,7 @@ const Register = () => {
     national_id_number: "",
     businessId: "",
     mobile_number: "",
+    countryCode: defaultCountryISO,
     terms: false,
     privacy: false,
   };
@@ -74,21 +93,35 @@ const Register = () => {
     },
   });
 
+  // Keep formik.countryCode in sync with selected dial code (countryCode state)
+  useEffect(() => {
+    const iso = getCountryCodeFromDialCode(countryCode);
+    if (iso) {
+      formik.setFieldValue("countryCode", iso);
+    }
+  }, [countryCode]);
+
   const { resetForm } = formik;
+
+  // Initialize expected digit message based on default country code
+  useEffect(() => {
+    const countryISOCode = getCountryCodeFromDialCode(countryCode);
+    if (countryISOCode) {
+      const message = getExpectedDigitMessage(countryISOCode);
+      setExpectedDigitMessage(message);
+    }
+  }, []);
 
   useEffect(() => {
     if (isError && error) {
       const err = error as FetchBaseQueryError & {
         data?: { message?: string };
       };
-      toast.error(err?.data?.message || "Something went wrong");
+      toast.error(err?.data?.message || t("register.somethingWentWrong"));
     }
 
     if (data && isSuccess) {
-      toast.success(
-        "Registration successful! Please check your email to verify your account.",
-        { duration: 5000 }
-      );
+      toast.success(t("register.registrationSuccess"), { duration: 5000 });
       resetForm();
       // Show verification message and navigate after a delay
       setTimeout(() => {
@@ -106,27 +139,20 @@ const Register = () => {
         <Logo />
         <LeftTextContainer>
           <TextContainer>
-            <Heading>Your Success Story Starts Here</Heading>
-            <SubHeading>
-              Connect with trusted employers, earn money instantly via mobile
-              payments, and maintain your academic excellence – all in one
-              platform designed for African students.
-            </SubHeading>
+            <Heading>{t("register.successStartsHere")}</Heading>
+            <SubHeading>{t("register.connectTrustedEmployers")}</SubHeading>
           </TextContainer>
 
           <TestimonialCard>
-            <p>
-              I earned $500 last month while maintaining my 3.8 GPA! Ogera's
-              academic tracking kept me focused.
-            </p>
+            <p>{t("register.testimonial")}</p>
             <UserInfo>
               <img
                 src="https://randomuser.me/api/portraits/women/44.jpg"
                 alt="User testimonial"
               />
               <div>
-                <span>Daphne Park</span>
-                <span>Computer Science Student</span>
+                <span>{t("register.daphnePark")}</span>
+                <span>{t("register.computerScienceStudent")}</span>
               </div>
             </UserInfo>
           </TestimonialCard>
@@ -136,9 +162,9 @@ const Register = () => {
       {/* Right Section */}
       <RegisterRightContainer>
         <RegisterFormContainer onSubmit={formik.handleSubmit}>
-          <Head>Create your account with us below</Head>
+          <Head>{t("register.createAccount")}</Head>
           <SmallText>
-            Already have an account? <a href="/auth/login">Sign In</a>
+            {t("register.alreadyHaveAccount")} <a href="/auth/login">{t("register.signIn")}</a>
           </SmallText>
 
           {/* Account Type Toggle */}
@@ -153,7 +179,7 @@ const Register = () => {
                   onChange={formik.handleChange}
                 />
                 <span>
-                  {type === "student" ? "As a Student" : "As an Employer"}
+                  {type === "student" ? t("register.asStudent") : t("register.asEmployer")}
                 </span>
               </ToggleOption>
             ))}
@@ -161,12 +187,12 @@ const Register = () => {
 
           {/* Full Name */}
           <FormGroup>
-            <Label htmlFor="full_name">Full Name</Label>
+            <Label htmlFor="full_name">{t("register.fullName")}</Label>
             <Input
               id="full_name"
               name="full_name"
               maxLength={20}
-              placeholder="Enter your full name"
+              placeholder={t("register.enterFullName")}
               value={formik.values.full_name}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
@@ -178,12 +204,12 @@ const Register = () => {
 
           {/* Email */}
           <FormGroup>
-            <Label htmlFor="email">Email Address</Label>
+            <Label htmlFor="email">{t("register.emailAddress")}</Label>
             <Input
               id="email"
               name="email"
               type="email"
-              placeholder="Enter your email"
+              placeholder={t("register.enterEmail")}
               value={formik.values.email}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
@@ -195,12 +221,12 @@ const Register = () => {
 
           {/* Password */}
           <FormGroup>
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t("register.password")}</Label>
             <TextField
               id="password"
               name="password"
               type={showPassword ? "text" : "password"}
-              placeholder="Create your password"
+              placeholder={t("register.createPassword")}
               variant="outlined"
               fullWidth
               size="small"
@@ -230,12 +256,12 @@ const Register = () => {
           {/* Conditional Fields */}
           {formik.values.accountType === "student" ? (
             <FormGroup>
-              <Label htmlFor="national_id_number">National ID Number</Label>
+              <Label htmlFor="national_id_number">{t("register.nationalIdNumber")}</Label>
               <Input
                 id="national_id_number"
                 name="national_id_number"
                 maxLength={15}
-                placeholder="Enter your national ID number"
+                placeholder={t("register.enterNationalId")}
                 value={formik.values.national_id_number}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -247,12 +273,12 @@ const Register = () => {
             </FormGroup>
           ) : (
             <FormGroup>
-              <Label htmlFor="businessId">Business Registration ID</Label>
+              <Label htmlFor="businessId">{t("register.businessRegistrationId")}</Label>
               <Input
                 id="businessId"
                 name="businessId"
                 maxLength={15}
-                placeholder="Enter your business registration ID"
+                placeholder={t("register.enterBusinessId")}
                 value={formik.values.businessId}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -265,25 +291,31 @@ const Register = () => {
 
           {/* Mobile Number */}
           <FormGroup>
-            <Label htmlFor="mobile_number">Mobile Number</Label>
+            <Label htmlFor="mobile_number">{t("register.mobileNumber")}</Label>
             <PhoneInputContainer>
               <CountryCodeSelector
                 value={countryCode}
-                onChange={setCountryCode}
+                onChange={handleCountryCodeChange}
               />
               <PhoneInput
                 id="mobile_number"
                 name="mobile_number"
                 type="tel"
-                placeholder="Enter your mobile number"
+                placeholder={t("register.enterMobileNumber")}
                 value={formik.values.mobile_number}
                 onBlur={formik.handleBlur}
                 onChange={(e) => {
                   const cleaned = e.target.value.replace(/[^0-9]/g, "");
                   formik.setFieldValue("mobile_number", cleaned);
+                  if (cleaned) {
+                    setHasStartedTyping(true); // Hide suggestion when user starts typing
+                  }
                 }}
               />
             </PhoneInputContainer>
+            {!hasStartedTyping && !formik.errors.mobile_number && (
+              <InfoText>{expectedDigitMessage}</InfoText>
+            )}
             {formik.touched.mobile_number && formik.errors.mobile_number && (
               <ErrorText>{formik.errors.mobile_number}</ErrorText>
             )}
@@ -300,9 +332,9 @@ const Register = () => {
                 onChange={formik.handleChange}
               />
               <label htmlFor="terms">
-                I agree to the{" "}
+                {t("register.agreeToTerms")}{" "}
                 <ModalLinkText onClick={() => setOpenTerms(true)}>
-                  Terms of Service
+                  {t("register.termsOfService")}
                 </ModalLinkText>
               </label>
               {formik.touched.terms && formik.errors.terms && (
@@ -319,9 +351,9 @@ const Register = () => {
                 onChange={formik.handleChange}
               />
               <label htmlFor="privacy">
-                I agree to the{" "}
+                {t("register.agreeToPrivacy")}{" "}
                 <ModalLinkText onClick={() => setOpenPrivacy(true)}>
-                  Privacy Policy
+                  {t("register.privacyPolicy")}
                 </ModalLinkText>
               </label>
               {formik.touched.privacy && formik.errors.privacy && (
@@ -333,7 +365,7 @@ const Register = () => {
           <Button
             backgroundcolor="#7f56d9"
             type="submit"
-            text={isLoading ? "Submitting..." : "Submit"}
+            text={isLoading ? t("common.loading") : t("register.createAccountButton")}
             disabled={isLoading}
           />
         </RegisterFormContainer>
@@ -357,6 +389,8 @@ const RegisterMainContainer = styled("div")`
   min-height: 100vh;
   display: flex;
   overflow: hidden;
+  background: var(--theme-page-bg);
+  transition: background 0.35s ease;
   @media (max-width: 768px) {
     flex-direction: column;
   }
@@ -456,9 +490,14 @@ const RegisterRightContainer = styled("div")`
   justify-content: center;
   align-items: center;
   overflow-y: auto;
+  background-color: var(--theme-card-bg);
+  color: var(--theme-text-primary);
+  transition: background-color 0.35s ease, color 0.35s ease;
   @media (max-width: 768px) {
     width: 100%;
     padding: 20px;
+    border-radius: 20px;
+    margin: 10px;
   }
 `;
 
@@ -472,11 +511,13 @@ const RegisterFormContainer = styled("form")`
 const Head = styled("p")`
   font-size: 26px;
   font-weight: 600;
+  color: var(--theme-text-primary);
 `;
 
 const SmallText = styled("p")`
   font-size: 14px;
   margin-bottom: 20px;
+  color: var(--theme-text-secondary);
 
   a {
     color: #7f56d9;
@@ -494,8 +535,9 @@ const ToggleOption = styled("label")`
   flex: 1;
   padding: 15px;
   border-radius: 10px;
-  border: 1px solid #ccc;
-  background: #fff;
+  border: 1px solid var(--theme-border);
+  background: var(--theme-card-bg);
+  color: var(--theme-text-primary);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -511,7 +553,7 @@ const ToggleOption = styled("label")`
   }
 
   &:has(input:checked) {
-    background: #f3ebff;
+    background: var(--theme-table-selected-bg);
     border-color: #7f56d9;
   }
 `;
@@ -526,14 +568,16 @@ const Label = styled("label")`
   margin-bottom: 6px;
   font-size: 14px;
   font-weight: 500;
-  color: #333;
+  color: var(--theme-text-primary);
 `;
 
 const Input = styled("input")`
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--theme-border, #ddd);
   font-size: 14px;
+  background-color: var(--theme-input-bg, #ffffff);
+  color: var(--theme-text-primary, #111827);
 `;
 
 const PhoneInputContainer = styled("div")`
@@ -545,9 +589,11 @@ const PhoneInput = styled("input")`
   flex: 1;
   padding: 12px;
   border-radius: 0 8px 8px 0;
-  border: 1px solid #ddd;
+  border: 1px solid var(--theme-border, #ddd);
   border-left: none;
   font-size: 14px;
+  background-color: var(--theme-input-bg, #ffffff);
+  color: var(--theme-text-primary, #111827);
   
   &:focus {
     outline: none;
@@ -558,8 +604,15 @@ const PhoneInput = styled("input")`
 
 const ErrorText = styled("div")`
   font-size: 12px;
-  color: red;
+  color: #ef4444;
   margin-top: 4px;
+`;
+
+const InfoText = styled("div")`
+  font-size: 12px;
+  color: var(--theme-text-secondary);
+  margin-top: 4px;
+  font-weight: 500;
 `;
 
 const TermsContainer = styled("div")`
@@ -574,6 +627,7 @@ const TermsItem = styled("div")`
   align-items: flex-start;
   gap: 8px;
   font-size: 14px;
+  color: var(--theme-text-primary);
 
   & input {
     width: 18px;
@@ -583,6 +637,7 @@ const TermsItem = styled("div")`
 
   & label {
     line-height: 1.4;
+    color: var(--theme-text-primary);
   }
 
   & a {

@@ -4,6 +4,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { useTranslation } from "react-i18next";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminLayout from "./layouts/adminLayout";
@@ -57,10 +58,17 @@ import Disputes from "./pages/Disputes";
 import OpenDisputes from "./pages/Disputes/OpenDisputes";
 import InProgress from "./pages/Disputes/InProgress";
 import ResolvedDisputes from "./pages/Disputes/Resolved";
+import CreateDispute from "./pages/Disputes/CreateDispute";
+import DisputeDetail from "./pages/Disputes/DisputeDetail";
+import MyDisputes from "./pages/Disputes/MyDisputes";
 
 // Other Pages
 import Analytics from "./pages/Analytics";
+import Notifications from "./pages/Notifications";
 import Transactions from "./pages/Transactions";
+import Pay from "./pages/Transactions/Pay";
+import PaymentCallback from "./pages/PaymentCallback";
+import PaymentCancelled from "./pages/PaymentCancelled";
 
 // Admin Pages
 import CreateAdmin from "./pages/Admin/CreateAdmin";
@@ -78,10 +86,13 @@ import useRefreshOnLoad from "./hooks/useRefreshOnLoad";
 import AddCourse from "./pages/Courses/AddCourse";
 import ViewCourse from "./pages/Courses/ViewCourse";
 import CourseDetail from "./pages/Courses/CourseDetail";
+import CourseAnalytics from "./pages/Courses/CourseAnalytics";
 
 function App() {
+  const { t } = useTranslation();
   const isLoading = useRefreshOnLoad();
-  const role = useSelector((state: any) => state.auth.role);
+  const roleRaw = useSelector((state: any) => state.auth.role);
+  const role = roleRaw ? String(roleRaw).toLowerCase().trim() : undefined;
 
   // Show loading spinner while checking authentication
   if (isLoading) {
@@ -89,7 +100,7 @@ function App() {
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
           <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-purple-600 border-r-transparent"></div>
-          <p className="mt-4 text-gray-600 font-medium">Loading...</p>
+          <p className="mt-4 text-gray-600 font-medium">{t("app.loading")}</p>
         </div>
       </div>
     );
@@ -97,7 +108,7 @@ function App() {
 
   // Decide layout based on role
   const DashboardLayout =
-    role === "admin" || role === "superadmin" || role === "verifyDocAdmin"
+    role === "admin" || role === "superadmin" || role === "verifydocadmin"
       ? AdminLayout
       : role === "student"
       ? StudentLayout
@@ -131,6 +142,10 @@ function App() {
     { path: "/auth/verify-email", Component: VerifyEmail },
     { path: "/auth/change-password", Component: ChangePassword },
     { path: "/auth/me", Component: TestRefresh },
+
+    /** ---------------- PAYMENT CALLBACK (Public - Pesapal redirect) ---------------- **/
+    { path: "/payment/callback", Component: PaymentCallback },
+    { path: "/payment/cancelled", Component: PaymentCancelled },
 
     /** ---------------- PROTECTED DASHBOARD ROUTES ---------------- **/
     {
@@ -279,6 +294,7 @@ function App() {
             },
             {
               path: "jobs/applications",
+              // Employer/superadmin manage incoming applications. Students should use "My Applications".
               element: <ProtectedRoute allowedRoles={["employer", "superadmin"]} />,
               children: [
                 {
@@ -342,6 +358,10 @@ function App() {
               path: "disputes",
               Component: Disputes,
             },
+             {
+              path: "disputes/create",
+              Component: CreateDispute,
+            },
             {
               path: "disputes/open",
               Component: OpenDisputes,
@@ -354,14 +374,30 @@ function App() {
               path: "disputes/resolved",
               Component: ResolvedDisputes,
             },
+            {
+              path: "disputes/my-disputes",
+              Component: MyDisputes,
+            },
+            {
+              path: "disputes/:id",
+              Component: DisputeDetail,
+            },
             // Other Routes
             {
               path: "analytics",
               Component: Analytics,
             },
             {
+              path: "notifications",
+              Component: Notifications,
+            },
+            {
               path: "transactions",
               Component: Transactions,
+            },
+            {
+              path: "transactions/pay",
+              Component: Pay,
             },
             {
               path: "courses/add",
@@ -394,19 +430,22 @@ function App() {
 export default App;
 
 /** 404 PAGE **/
-const NotFound = () => (
-  <div
-    style={{
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      height: "100vh",
-      color: "#7F56D9",
-      fontFamily: "Inter, sans-serif",
-    }}
-  >
-    <h1 style={{ fontSize: "50px", marginBottom: "20px" }}>404</h1>
-    <p style={{ fontSize: "18px" }}>Page Not Found</p>
-  </div>
-);
+const NotFound = () => {
+  const { t } = useTranslation();
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "100vh",
+        color: "#7F56D9",
+        fontFamily: "Inter, sans-serif",
+      }}
+    >
+      <h1 style={{ fontSize: "50px", marginBottom: "20px" }}>404</h1>
+      <p style={{ fontSize: "18px" }}>{t("common.pageNotFound")}</p>
+    </div>
+  );
+};

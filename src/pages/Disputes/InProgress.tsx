@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ClockIcon } from "@heroicons/react/24/outline";
 import CustomTable, {
   type Column,
@@ -10,132 +11,149 @@ import {
   MessageOutlined as MessageIcon,
 } from "@mui/icons-material";
 
-interface Dispute {
-  id: number;
-  type: string;
-  student: string;
-  employer: string;
-  description: string;
-  assignedTo: string;
-  startedDate: string;
-}
+import { getAllDisputes, type Dispute } from "../../services/api/disputesApi";
+import { useNavigate } from "react-router-dom";
+import Loader from "../../components/Loader";
 
 const InProgress: React.FC = () => {
-  const disputes: Dispute[] = [
-    {
-      id: 1,
-      type: "Service Quality",
-      student: "Sarah Wilson",
-      employer: "Marketing Pro",
-      description: "Dispute over service quality standards",
-      assignedTo: "Admin John",
-      startedDate: "2024-03-08",
-    },
-    {
-      id: 2,
-      type: "Timeline",
-      student: "David Lee",
-      employer: "DevShop",
-      description: "Project deadline extension dispute",
-      assignedTo: "Admin Sarah",
-      startedDate: "2024-03-09",
-    },
-  ];
+  const { t } = useTranslation();
+  const [disputes, setDisputes] = useState<Dispute[]>([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchDisputes();
+  }, []);
+
+  const fetchDisputes = async () => {
+    try {
+      setLoading(true);
+      // Fetch disputes with status "Under Review" or "Mediation" (in progress)
+      const result = await getAllDisputes({ 
+        status: ["Under Review", "Mediation"], 
+        page: 1, 
+        limit: 100 
+      });
+      setDisputes(result.data || []);
+    } catch (error) {
+      console.error("Failed to fetch in-progress disputes:", error);
+      setDisputes([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const columns: Column<Dispute>[] = [
     {
       id: "type",
-      label: "Type",
+      label: t("disputes.type"),
       minWidth: 150,
       format: (value) => (
         <Chip
           label={value}
           size="small"
           sx={{
-            bgcolor: "#fef3c7",
-            color: "#92400e",
+            bgcolor: "var(--chip-warning-bg)",
+            color: "var(--chip-warning-text)",
             fontWeight: 600,
           }}
         />
       ),
     },
     {
-      id: "description",
-      label: "Description",
+      id: "title",
+      label: t("disputes.description"),
       minWidth: 250,
       format: (value) => (
-        <Typography sx={{ fontSize: "0.875rem", color: "#374151" }}>
+        <Typography
+          sx={{
+            fontSize: "0.875rem",
+            color: "var(--theme-text-primary, #374151)",
+            fontWeight: 600,
+          }}
+        >
           {value}
         </Typography>
       ),
     },
     {
       id: "student",
-      label: "Student",
+      label: t("disputes.student"),
       minWidth: 150,
+       format: (value: any, row: any) => {
+        return row.reported_by === 'student' ? (value?.full_name || t("disputes.na")) : "-";
+      },
     },
     {
       id: "employer",
-      label: "Employer",
+      label: t("disputes.employer"),
       minWidth: 150,
+      format: (value: any, row: any) => {
+        return row.reported_by === 'employer' ? (value?.full_name || t("disputes.na")) : "-";
+      },
     },
     {
-      id: "assignedTo",
-      label: "Assigned To",
+      id: "moderator",
+      label: t("disputes.assignedTo"),
       minWidth: 130,
-      format: (value) => (
+      format: (value: any) => (
         <Chip
-          label={value}
-          size="small"
+          label={value?.full_name || t("disputes.unassigned")} 
+                   size="small"
           sx={{
-            bgcolor: "#dbeafe",
-            color: "#1e40af",
+            bgcolor: "var(--chip-role-admin-bg)",
+            color: "var(--chip-role-admin-text)",
             fontWeight: 600,
           }}
         />
       ),
     },
     {
-      id: "startedDate",
-      label: "Started",
+      id: "created_at",
+      label: t("disputes.started"),
       minWidth: 120,
+            format: (value) => new Date(value).toLocaleDateString(),
     },
   ];
 
   const actions: TableAction<Dispute>[] = [
     {
-      label: "View Details",
+      label: t("disputes.viewDetails"),
       icon: <ViewIcon fontSize="small" />,
       onClick: (row) => {
-        console.log("View dispute:", row);
-      },
+        navigate(`/dashboard/disputes/${row.dispute_id}`);
+            },
       color: "primary",
     },
     {
-      label: "Message",
+      label: t("disputes.message"),
       icon: <MessageIcon fontSize="small" />,
       onClick: (row) => {
-        console.log("Message:", row);
+                navigate(`/dashboard/disputes/${row.dispute_id}`);
       },
       color: "primary",
     },
   ];
+
+   if (loading) {
+    return <Loader />;
+  }
 
   return (
     <div className="space-y-6 animate-fadeIn">
       <div>
         <h1 className="text-2xl md:text-4xl font-extrabold text-gray-900 flex items-center gap-2 md:gap-3">
           <ClockIcon className="h-8 w-8 md:h-10 md:w-10 text-orange-600" />
-          In Progress Disputes
+          {t("disputes.inProgressTitle")}
         </h1>
         <p className="text-sm md:text-base text-gray-500 mt-2">
-          Disputes currently being reviewed and resolved
+          {t("disputes.inProgressSubtitle")}
         </p>
       </div>
 
       <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-lg">
         <p className="text-orange-800 font-medium text-sm md:text-base">
-          🔄 {disputes.length} disputes under review
+          🔄 {t("disputes.inProgressCountMessage", { count: disputes.length })}
         </p>
       </div>
 
@@ -144,7 +162,7 @@ const InProgress: React.FC = () => {
         data={disputes}
         actions={actions}
         searchable={true}
-        searchPlaceholder="Search disputes..."
+        searchPlaceholder={t("disputes.searchPlaceholder")}
         rowsPerPageOptions={[5, 10, 25]}
         defaultRowsPerPage={10}
       />

@@ -16,7 +16,7 @@ type InputField = {
   error?: string | boolean;
   names?: string[];
   values?: string[];
-  refs?: React.RefObject<HTMLInputElement>[];
+  refs?: React.RefObject<HTMLInputElement | null>[];
 };
 
 interface RestPasswordTemplateProps {

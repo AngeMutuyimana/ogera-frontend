@@ -155,6 +155,7 @@ const VideoStepInput: React.FC<{
 };
 
 const AddCourse: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { id: courseId } = useParams<{ id: string }>();
   const isEditMode = !!courseId;
@@ -313,6 +314,107 @@ const AddCourse: React.FC = () => {
     );
   }
 
+  // Initialize upload state for a step
+  const initializeStepUploadState = (index: number) => {
+    if (!stepUploadStates[index]) {
+      setStepUploadStates((prev) => ({
+        ...prev,
+        [index]: {
+          inputType: "url",
+          file: null,
+          isUploading: false,
+          uploadError: null,
+        },
+      }));
+    }
+  };
+
+  // Handle file selection
+  const handleFileChange = async (index: number, file: File | null, stepType: CourseStep["step_type"]) => {
+    if (!file) return;
+
+    // Validate file type
+    if (stepType === "pdf" && file.type !== "application/pdf") {
+      toast.error("Please select a PDF file");
+      return;
+    }
+    if (stepType === "image" && !file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      toast.error("File size must be less than 10MB");
+      return;
+    }
+
+    // Update state
+    setStepUploadStates((prev) => ({
+      ...prev,
+      [index]: {
+        ...prev[index],
+        file,
+        isUploading: true,
+        uploadError: null,
+      },
+    }));
+
+    try {
+      // Upload file
+      const response = await uploadCourseContent(file, stepType === "image" || stepType === "pdf" ? stepType : "image");
+      
+      if (response.success && response.data.file_url) {
+        // Update step content with the uploaded file URL
+        const newSteps = [...steps];
+        newSteps[index].step_content = response.data.file_url;
+        setSteps(newSteps);
+
+        // Update upload state
+        setStepUploadStates((prev) => ({
+          ...prev,
+          [index]: {
+            ...prev[index],
+            isUploading: false,
+            uploadError: null,
+          },
+        }));
+
+        toast.success("File uploaded successfully!");
+      } else {
+        throw new Error(response.message || "Upload failed");
+      }
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to upload file";
+      setStepUploadStates((prev) => ({
+        ...prev,
+        [index]: {
+          ...prev[index],
+          isUploading: false,
+          uploadError: errorMessage,
+        },
+      }));
+      toast.error(errorMessage);
+    }
+  };
+
+  // Handle input type change (URL vs Upload)
+  const handleInputTypeChange = (index: number, inputType: "url" | "upload") => {
+    setStepUploadStates((prev) => ({
+      ...prev,
+      [index]: {
+        ...prev[index] || { file: null, isUploading: false, uploadError: null },
+        inputType,
+      },
+    }));
+
+    // Clear step content when switching input types
+    const newSteps = [...steps];
+    newSteps[index].step_content = "";
+    setSteps(newSteps);
+  };
+
   return (
     <Container>
       <FormContainer onSubmit={formik.handleSubmit}>
@@ -330,11 +432,11 @@ const AddCourse: React.FC = () => {
 
         {/* Course Name */}
         <FormGroup>
-          <Label htmlFor="course_name">Course Name *</Label>
+          <Label htmlFor="course_name">{t("courses.courseNameLabel")}</Label>
           <Input
             id="course_name"
             name="course_name"
-            placeholder="e.g., Introduction to Web Development"
+            placeholder={t("courses.courseNamePlaceholder")}
             value={formik.values.course_name}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
@@ -346,7 +448,7 @@ const AddCourse: React.FC = () => {
 
         {/* Course Type */}
         <FormGroup>
-          <Label htmlFor="type">Course Type *</Label>
+          <Label htmlFor="type">{t("courses.courseTypeLabel")}</Label>
           <Select
             id="type"
             name="type"
@@ -354,7 +456,7 @@ const AddCourse: React.FC = () => {
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
           >
-            <option value="">Select course type</option>
+            <option value="">{t("courses.selectCourseType")}</option>
             <option value="Online">Online</option>
             <option value="In-Person">In-Person</option>
             <option value="Hybrid">Hybrid</option>
@@ -369,11 +471,11 @@ const AddCourse: React.FC = () => {
 
         {/* Tag */}
         <FormGroup>
-          <Label htmlFor="tag">Tag *</Label>
+          <Label htmlFor="tag">{t("courses.tagLabel")}</Label>
           <Input
             id="tag"
             name="tag"
-            placeholder="e.g., Programming, Design, Business, Marketing"
+            placeholder={t("courses.tagPlaceholder")}
             value={formik.values.tag}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
@@ -499,12 +601,12 @@ const AddCourse: React.FC = () => {
 
         {/* Description */}
         <FormGroup>
-          <Label htmlFor="description">Description (Optional)</Label>
+          <Label htmlFor="description">{t("courses.descriptionLabel")}</Label>
           <TextArea
             id="description"
             name="description"
             rows={6}
-            placeholder="Enter course description... (e.g., This course covers the fundamentals of web development including HTML, CSS, and JavaScript)"
+            placeholder={t("courses.descriptionPlaceholder")}
             value={formik.values.description}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
@@ -521,7 +623,7 @@ const AddCourse: React.FC = () => {
         {/* Course Steps Section */}
         <StepsSection>
           <StepsHeader>
-            <Label>Course Steps (Optional)</Label>
+            <Label>{t("courses.courseStepsLabel")}</Label>
             <HelperText>
               Add learning steps for this course. Each step can be a video,
               link, PDF, image, or text content.
@@ -596,10 +698,10 @@ const AddCourse: React.FC = () => {
                     value={step.step_content}
                     onChange={(e) => {
                       const newSteps = [...steps];
-                      newSteps[index].step_content = e.target.value;
+                      newSteps[index].step_title = e.target.value;
                       setSteps(newSteps);
                     }}
-                    placeholder="Enter text content for this step..."
+                    placeholder="e.g., Introduction to HTML"
                   />
                 ) : step.step_type === "video" ? (
                   <VideoStepInput
@@ -617,8 +719,19 @@ const AddCourse: React.FC = () => {
                     value={step.step_content}
                     onChange={(e) => {
                       const newSteps = [...steps];
-                      newSteps[index].step_content = e.target.value;
+                      newSteps[index].step_type = e.target.value as CourseStep["step_type"];
+                      newSteps[index].step_content = ""; // Reset content when type changes
                       setSteps(newSteps);
+                      // Reset upload state when type changes
+                      setStepUploadStates((prev) => ({
+                        ...prev,
+                        [index]: {
+                          inputType: "url",
+                          file: null,
+                          isUploading: false,
+                          uploadError: null,
+                        },
+                      }));
                     }}
                     placeholder={
                       step.step_type === "link"
@@ -664,12 +777,12 @@ const AddCourse: React.FC = () => {
         {/* Action Buttons */}
         <ButtonContainer>
           <Button
-            text="Cancel"
+            text={t("courses.cancel")}
             onClick={() => navigate("/dashboard/courses/view")}
             disabled={isSubmitting}
           />
           <Button
-            text={isSubmitting ? "Creating..." : "Create Course"}
+            text={isSubmitting ? t("courses.creating") : t("courses.createCourseButton")}
             onClick={() => formik.handleSubmit()}
             disabled={isSubmitting}
           />
@@ -681,11 +794,12 @@ const AddCourse: React.FC = () => {
 
 export default AddCourse;
 
-// Styled Components
+// Styled Components - theme-aware for dark mode
 const Container = styled("div")`
   padding: 24px;
   min-height: 100vh;
-  background: #f9fafb;
+  background: var(--theme-page-bg);
+  transition: background 0.35s ease;
 
   @media (min-width: 640px) {
     padding: 32px;
@@ -699,7 +813,8 @@ const Container = styled("div")`
 const FormContainer = styled("form")`
   max-width: 800px;
   margin: 0 auto;
-  background: white;
+  background: var(--theme-card-bg);
+  color: var(--theme-text-primary);
   border-radius: 12px;
   padding: 32px;
   box-shadow:
@@ -725,8 +840,9 @@ const IconWrapper = styled("div")`
 const Title = styled("h1")`
   font-size: 24px;
   font-weight: 700;
-  color: #111827;
+  color: var(--theme-text-primary);
   margin-bottom: 8px;
+  transition: color 0.35s ease;
 
   @media (min-width: 640px) {
     font-size: 28px;
@@ -735,8 +851,9 @@ const Title = styled("h1")`
 
 const Subtitle = styled("p")`
   font-size: 12px;
-  color: #6b7280;
+  color: var(--theme-text-secondary);
   margin: 0;
+  transition: color 0.35s ease;
 
   @media (min-width: 640px) {
     font-size: 14px;
@@ -753,15 +870,18 @@ const Label = styled("label")`
   margin-bottom: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #374151;
+  color: var(--theme-text-secondary);
+  transition: color 0.35s ease;
 `;
 
 const Input = styled("input")`
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--theme-border);
   font-size: 14px;
-  transition: border-color 0.2s;
+  background: var(--theme-input-bg);
+  color: var(--theme-text-primary);
+  transition: border-color 0.2s, background 0.35s ease, color 0.35s ease;
 
   &:focus {
     outline: none;
@@ -770,16 +890,19 @@ const Input = styled("input")`
   }
 
   &::placeholder {
-    color: #9ca3af;
+    color: var(--theme-text-secondary);
+    opacity: 0.8;
   }
 `;
 
 const TextArea = styled("textarea")`
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--theme-border);
   font-size: 14px;
-  transition: border-color 0.2s;
+  background: var(--theme-input-bg);
+  color: var(--theme-text-primary);
+  transition: border-color 0.2s, background 0.35s ease, color 0.35s ease;
   resize: vertical;
   font-family: inherit;
   min-height: 120px;
@@ -791,18 +914,20 @@ const TextArea = styled("textarea")`
   }
 
   &::placeholder {
-    color: #9ca3af;
+    color: var(--theme-text-secondary);
+    opacity: 0.8;
   }
 `;
 
 const Select = styled("select")`
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--theme-border);
   font-size: 14px;
-  background: white;
+  background: var(--theme-input-bg);
+  color: var(--theme-text-primary);
   cursor: pointer;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, background 0.35s ease, color 0.35s ease;
   width: 100%;
 
   &:focus {
@@ -813,6 +938,8 @@ const Select = styled("select")`
 
   option {
     padding: 8px;
+    background: var(--theme-card-bg);
+    color: var(--theme-text-primary);
   }
 `;
 
@@ -824,8 +951,9 @@ const ErrorText = styled("div")`
 
 const HelperText = styled("div")`
   font-size: 12px;
-  color: #6b7280;
+  color: var(--theme-text-secondary);
   margin-top: 4px;
+  transition: color 0.35s ease;
 `;
 
 const ButtonContainer = styled("div")`
@@ -834,7 +962,8 @@ const ButtonContainer = styled("div")`
   justify-content: flex-end;
   margin-top: 32px;
   padding-top: 24px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--theme-border);
+  transition: border-color 0.35s ease;
 
   @media (max-width: 640px) {
     flex-direction: column-reverse;
@@ -848,7 +977,8 @@ const ButtonContainer = styled("div")`
 const StepsSection = styled("div")`
   margin-top: 32px;
   padding-top: 32px;
-  border-top: 2px solid #e5e7eb;
+  border-top: 2px solid var(--theme-border);
+  transition: border-color 0.35s ease;
 `;
 
 const StepsHeader = styled("div")`
@@ -856,11 +986,12 @@ const StepsHeader = styled("div")`
 `;
 
 const StepCard = styled("div")`
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: var(--theme-table-header-bg);
+  border: 1px solid var(--theme-border);
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 16px;
+  transition: background 0.35s ease, border-color 0.35s ease;
 `;
 
 const StepHeader = styled("div")`
@@ -939,18 +1070,95 @@ const AddStepButton = styled("button")`
   gap: 8px;
   width: 100%;
   padding: 12px;
-  background: #f3f4f6;
-  border: 2px dashed #d1d5db;
+  background: var(--theme-table-header-bg);
+  border: 2px dashed var(--theme-border);
   border-radius: 8px;
-  color: #6b7280;
+  color: var(--theme-text-secondary);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
 
   &:hover {
-    background: #e5e7eb;
     border-color: #7f56d9;
     color: #7f56d9;
   }
+`;
+
+const InputTypeContainer = styled("div")`
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+`;
+
+const InputTypeOption = styled("div")`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #7f56d9;
+  }
+
+  label {
+    font-size: 14px;
+    color: var(--theme-text-secondary);
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.35s ease;
+  }
+`;
+
+const FileUploadContainer = styled("div")`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const FileInput = styled("input")`
+  display: none;
+`;
+
+const FileUploadLabel = styled("label")`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--theme-table-header-bg);
+  border: 2px dashed var(--theme-border);
+  border-radius: 8px;
+  color: var(--theme-text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #7f56d9;
+    color: #7f56d9;
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+`;
+
+const FileInfo = styled("div")`
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: -4px;
+`;
+
+const SuccessText = styled("div")`
+  font-size: 12px;
+  color: #10b981;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 `;
