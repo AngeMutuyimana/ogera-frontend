@@ -67,6 +67,7 @@ import Analytics from "./pages/Analytics";
 import Notifications from "./pages/Notifications";
 import Transactions from "./pages/Transactions";
 import Pay from "./pages/Transactions/Pay";
+import MoMoPayments from "./pages/Transactions/MoMoPayments";
 import PaymentCallback from "./pages/PaymentCallback";
 import PaymentCancelled from "./pages/PaymentCancelled";
 
@@ -398,6 +399,16 @@ function App() {
             {
               path: "transactions/pay",
               Component: Pay,
+            },
+            {
+              path: "transactions/momo-payments",
+              element: <ProtectedRoute allowedRoles={["superadmin", "admin"]} />,
+              children: [
+                {
+                  index: true,
+                  Component: MoMoPayments,
+                },
+              ],
             },
             {
               path: "courses/add",
