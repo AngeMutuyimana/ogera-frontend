@@ -16,8 +16,10 @@ import { useSelector } from "react-redux";
 interface CreateJobFormValues {
   job_title: string;
   category: string;
-  budget: number | "";
+  budget: string;
   duration: string;
+  duration_start: string;
+  duration_end: string;
   location: string;
   description?: string;
   requirements?: string;
@@ -28,11 +30,25 @@ interface CreateJobFormValues {
   employer_id?: string; // For superadmin only
 }
 
+const renderLabel = (text: string) => {
+  if (!text.includes("*")) return text;
+  const labelText = text.replaceAll("*", "").trim();
+  return (
+    <>
+      {labelText} <RequiredMark>*</RequiredMark>
+    </>
+  );
+};
+
 const CreateJob: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const role = useSelector((state: any) => state.auth.role);
+  const [durationStart, setDurationStart] = useState("");
+  const [durationEnd, setDurationEnd] = useState("");
+  const [skillsInput, setSkillsInput] = useState("");
+  const [skillsList, setSkillsList] = useState<string[]>([]);
 
   const validationSchema = Yup.object({
     job_title: Yup.string()
@@ -42,16 +58,31 @@ const CreateJob: React.FC = () => {
     category: Yup.string()
       .required(t("pages.jobs.validationCategoryRequired"))
       .test("not-empty", t("pages.jobs.pleaseSelectCategory"), (value) => value !== "" && value !== undefined),
-    budget: Yup.number()
-      .positive(t("pages.jobs.validationBudgetPositive"))
-      .required(t("pages.jobs.validationBudgetRequired")),
+    budget: Yup.string()
+      .required(t("pages.jobs.validationBudgetRequired"))
+      .matches(/^\d{1,10}$/, t("pages.jobs.validationBudgetNumbersOnlyMax10"))
+      .test("positive", t("pages.jobs.validationBudgetPositive"), (value) => {
+        if (!value) return false;
+        const n = Number(value);
+        return Number.isFinite(n) && n > 0;
+      }),
+    duration_start: Yup.string().required(t("pages.jobs.validationDurationStartRequired")),
+    duration_end: Yup.string()
+      .required(t("pages.jobs.validationDurationEndRequired"))
+      .test("end-after-start", t("pages.jobs.validationDurationEndAfterStart"), function (value) {
+        const start = this.parent.duration_start as string | undefined;
+        if (!start || !value) return true;
+        // Compare date strings (YYYY-MM-DD). Lexicographic compare works.
+        return value >= start;
+      }),
     duration: Yup.string()
       .min(2, t("pages.jobs.validationDurationMin"))
       .max(100, t("pages.jobs.validationDurationMax"))
       .required(t("pages.jobs.validationDurationRequired")),
     location: Yup.string()
       .min(2, t("pages.jobs.validationLocationMin"))
-      .max(255, t("pages.jobs.validationLocationMax"))
+      .max(15, t("pages.jobs.validationLocationMax15"))
+      .matches(/^[A-Za-z\s]+$/, t("pages.jobs.validationLocationLettersOnly"))
       .required(t("pages.jobs.validationLocationRequired")),
     description: Yup.string().optional(),
     requirements: Yup.string().optional(),
@@ -85,8 +116,10 @@ const CreateJob: React.FC = () => {
   const initialValues: CreateJobFormValues = {
     job_title: job?.job_title || "",
     category: job?.category || "",
-    budget: job?.budget || "",
+    budget: job?.budget != null ? String(job.budget) : "",
     duration: job?.duration || "",
+    duration_start: "",
+    duration_end: "",
     location: job?.location || "",
     description: job?.description || "",
     requirements: job?.requirements || "",
@@ -185,8 +218,10 @@ const CreateJob: React.FC = () => {
       formik.setValues({
         job_title: job.job_title || "",
         category: job.category || "",
-        budget: job.budget || "",
+        budget: job.budget != null ? String(job.budget) : "",
         duration: job.duration || "",
+        duration_start: "",
+        duration_end: "",
         location: job.location || "",
         description: job.description || "",
         requirements: job.requirements || "",
@@ -196,6 +231,31 @@ const CreateJob: React.FC = () => {
         status: job.status || "Active",
         employer_id: "",
       });
+
+      // Populate duration start/end if the stored duration contains a range.
+      // Expected formats we support loosely: "start - end" or "start to end".
+      const rawDuration = (job.duration || "").trim();
+      const parts = rawDuration.includes(" - ")
+        ? rawDuration.split(" - ")
+        : rawDuration.toLowerCase().includes(" to ")
+          ? rawDuration.split(/ to /i)
+          : [];
+      if (parts.length === 2) {
+        setDurationStart(parts[0].trim());
+        setDurationEnd(parts[1].trim());
+        formik.setFieldValue("duration_start", parts[0].trim());
+        formik.setFieldValue("duration_end", parts[1].trim());
+      }
+      // Populate skills chips (comma separated string)
+      const rawSkills = (job.skills || "").trim();
+      if (rawSkills) {
+        const nextSkills = rawSkills
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        setSkillsList(Array.from(new Set(nextSkills)));
+      }
+
       // Load questions if they exist
       if (job.questions && job.questions.length > 0) {
         setQuestions(job.questions.map(q => ({
@@ -233,6 +293,23 @@ const CreateJob: React.FC = () => {
     }
   }, [isCreateSuccess, createData, isUpdateSuccess, updateData, isEditMode, resetForm, navigate, t]);
 
+  const syncSkillsToFormik = (next: string[]) => {
+    setSkillsList(next);
+    formik.setFieldValue("skills", next.join(", "));
+  };
+
+  const addSkill = (raw: string) => {
+    const skill = raw.trim();
+    if (!skill) return;
+    const exists = skillsList.some((s) => s.toLowerCase() === skill.toLowerCase());
+    if (exists) return;
+    syncSkillsToFormik([...skillsList, skill]);
+  };
+
+  const removeSkill = (skill: string) => {
+    syncSkillsToFormik(skillsList.filter((s) => s !== skill));
+  };
+
   return (
     <Container>
       <FormContainer onSubmit={formik.handleSubmit}>
@@ -249,7 +326,7 @@ const CreateJob: React.FC = () => {
         {/* Employer ID - Only for superadmin */}
         {role === "superadmin" && (
           <FormGroup>
-            <Label htmlFor="employer_id">{t("pages.jobs.employerIdOptional")}</Label>
+            <Label htmlFor="employer_id">{renderLabel(t("pages.jobs.employerIdOptional"))}</Label>
             <Input
               id="employer_id"
               name="employer_id"
@@ -266,7 +343,7 @@ const CreateJob: React.FC = () => {
 
         {/* Job Title */}
         <FormGroup>
-          <Label htmlFor="job_title">{t("pages.jobs.jobTitleLabel")}</Label>
+          <Label htmlFor="job_title">{renderLabel(t("pages.jobs.jobTitleLabel"))}</Label>
           <Input
             id="job_title"
             name="job_title"
@@ -280,11 +357,11 @@ const CreateJob: React.FC = () => {
           )}
         </FormGroup>
 
-               <InputRow>
-        {/* Category */}
-        <FormGroup>
+        <InputRow>
+          {/* Category */}
+          <FormGroup>
           <Label htmlFor="category">
-            {t("pages.jobs.categoryLabel")}
+            {renderLabel(t("pages.jobs.categoryLabel"))}
           </Label>
           {isLoadingCategories ? (
             <div>
@@ -338,7 +415,7 @@ const CreateJob: React.FC = () => {
               </Select>
               {formik.touched.category && formik.errors.category && (
                 <ErrorText id="category-error" role="alert">
-                  ❌ {formik.errors.category}
+                   {formik.errors.category}
                 </ErrorText>
               )}
               {!formik.errors.category && formik.values.category && (
@@ -351,12 +428,92 @@ const CreateJob: React.FC = () => {
               </HelperText>
             </div>
           )}
+          </FormGroup>
+
+          {/* Budget (moved next to Category) */}
+          <FormGroup>
+            <Label htmlFor="budget">{renderLabel(t("pages.jobs.budgetLabel"))}</Label>
+            <Input
+              id="budget"
+              name="budget"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              placeholder={t("pages.jobs.budgetPlaceholder")}
+              value={formik.values.budget}
+              onChange={(e) => {
+                // Only allow digits (no alphabets/symbols)
+                const digitsOnly = e.target.value.replace(/[^\d]/g, "").slice(0, 10);
+                formik.setFieldValue("budget", digitsOnly);
+              }}
+              onBlur={formik.handleBlur}
+            />
+            {formik.touched.budget && formik.errors.budget && (
+              <ErrorText>{formik.errors.budget}</ErrorText>
+            )}
+          </FormGroup>
+        </InputRow>
+
+        {/* Duration (moved below Category+Budget) */}
+        <FormGroup>
+          <Label>{renderLabel(t("pages.jobs.durationLabel"))}</Label>
+          <DurationGrid>
+            <div>
+              <DurationLabel htmlFor="duration_start">Start</DurationLabel>
+              <Input
+                id="duration_start"
+                name="duration_start"
+                type="date"
+                value={durationStart}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setDurationStart(next);
+                  formik.setFieldValue("duration_start", next);
+                  const durationString = next && durationEnd ? `${next} - ${durationEnd}` : next || durationEnd;
+                  formik.setFieldValue("duration", durationString || "");
+                }}
+                onBlur={() => {
+                  formik.setFieldTouched("duration", true);
+                  formik.setFieldTouched("duration_start", true);
+                }}
+              />
+              {formik.touched.duration_start && formik.errors.duration_start && (
+                <ErrorText>{formik.errors.duration_start}</ErrorText>
+              )}
+            </div>
+            <div>
+              <DurationLabel htmlFor="duration_end">End</DurationLabel>
+              <Input
+                id="duration_end"
+                name="duration_end"
+                type="date"
+                value={durationEnd}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setDurationEnd(next);
+                  formik.setFieldValue("duration_end", next);
+                  const durationString = durationStart && next ? `${durationStart} - ${next}` : durationStart || next;
+                  formik.setFieldValue("duration", durationString || "");
+                }}
+                onBlur={() => {
+                  formik.setFieldTouched("duration", true);
+                  formik.setFieldTouched("duration_end", true);
+                }}
+              />
+              {formik.touched.duration_end && formik.errors.duration_end && (
+                <ErrorText>{formik.errors.duration_end}</ErrorText>
+              )}
+            </div>
+          </DurationGrid>
+          {formik.touched.duration && formik.errors.duration && (
+            <ErrorText>{formik.errors.duration}</ErrorText>
+          )}
         </FormGroup>
 
         {/* Status - Only for superadmin */}
         {role === "superadmin" && (
           <FormGroup>
-            <Label htmlFor="status">{t("pages.jobs.statusLabel")}</Label>
+            <Label htmlFor="status">{renderLabel(t("pages.jobs.statusLabel"))}</Label>
             <Select
               id="status"
               name="status"
@@ -373,49 +530,10 @@ const CreateJob: React.FC = () => {
             )}
           </FormGroup>
         )}
-                </InputRow>
-
-
-        {/* Budget */}
-        <InputRow>
-        <FormGroup>
-          <Label htmlFor="budget">{t("pages.jobs.budgetLabel")}</Label>
-          <Input
-            id="budget"
-            name="budget"
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder={t("pages.jobs.budgetPlaceholder")}
-            value={formik.values.budget}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-          />
-          {formik.touched.budget && formik.errors.budget && (
-            <ErrorText>{formik.errors.budget}</ErrorText>
-          )}
-        </FormGroup>
-
-        {/* Duration */}
-        <FormGroup>
-          <Label htmlFor="duration">{t("pages.jobs.durationLabel")}</Label>
-          <Input
-            id="duration"
-            name="duration"
-            placeholder={t("pages.jobs.durationPlaceholder")}
-            value={formik.values.duration}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-          />
-          {formik.touched.duration && formik.errors.duration && (
-            <ErrorText>{formik.errors.duration}</ErrorText>
-          )}
-        </FormGroup>
-        </InputRow>
 
         {/* Location */}
         <FormGroup>
-          <Label htmlFor="location">{t("pages.jobs.locationLabel")}</Label>
+          <Label htmlFor="location">{renderLabel(t("pages.jobs.locationLabel"))}</Label>
           <Input
             id="location"
             name="location"
@@ -431,7 +549,7 @@ const CreateJob: React.FC = () => {
 
         {/* Description */}
         <FormGroup>
-          <Label htmlFor="description">{t("pages.jobs.descriptionOptional")}</Label>
+          <Label htmlFor="description">{renderLabel(t("pages.jobs.descriptionOptional"))}</Label>
           <TextArea
             id="description"
             name="description"
@@ -448,7 +566,7 @@ const CreateJob: React.FC = () => {
 
         {/* Requirements */}
         <FormGroup>
-          <Label htmlFor="requirements">{t("pages.jobs.requirementsOptional")}</Label>
+          <Label htmlFor="requirements">{renderLabel(t("pages.jobs.requirementsOptional"))}</Label>
           <TextArea
             id="requirements"
             name="requirements"
@@ -465,15 +583,44 @@ const CreateJob: React.FC = () => {
 
         {/* Skills */}
         <FormGroup>
-          <Label htmlFor="skills">{t("pages.jobs.skillsOptional")}</Label>
-          <Input
-            id="skills"
-            name="skills"
-            placeholder={t("pages.jobs.skillsPlaceholder")}
-            value={formik.values.skills}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-          />
+          <Label htmlFor="skills">{renderLabel(t("pages.jobs.skillsOptional"))}</Label>
+          <SkillsWrapper>
+            <SkillsChips>
+              {skillsList.map((s) => (
+                <SkillChip key={s}>
+                  <ChipDot />
+                  <span>{s}</span>
+                  <ChipRemove type="button" onClick={() => removeSkill(s)} aria-label={`Remove ${s}`}>
+                    ×
+                  </ChipRemove>
+                </SkillChip>
+              ))}
+              <SkillInput
+                id="skills"
+                name="skills"
+                placeholder={skillsList.length ? "" : t("pages.jobs.skillsPlaceholder")}
+                value={skillsInput}
+                onChange={(e) => setSkillsInput(e.target.value)}
+                onBlur={() => {
+                  formik.setFieldTouched("skills", true);
+                  if (skillsInput.trim()) {
+                    addSkill(skillsInput);
+                    setSkillsInput("");
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === ",") {
+                    e.preventDefault();
+                    addSkill(skillsInput);
+                    setSkillsInput("");
+                  }
+                  if (e.key === "Backspace" && !skillsInput && skillsList.length > 0) {
+                    removeSkill(skillsList[skillsList.length - 1]);
+                  }
+                }}
+              />
+            </SkillsChips>
+          </SkillsWrapper>
           {formik.touched.skills && formik.errors.skills && (
             <ErrorText>{formik.errors.skills}</ErrorText>
           )}
@@ -482,7 +629,7 @@ const CreateJob: React.FC = () => {
         {/* Employment Type */}
                 <InputRow>
         <FormGroup>
-          <Label htmlFor="employment_type">{t("pages.jobs.employmentTypeOptional")}</Label>
+          <Label htmlFor="employment_type">{renderLabel(t("pages.jobs.employmentTypeOptional"))}</Label>
           <Select
             id="employment_type"
             name="employment_type"
@@ -504,7 +651,7 @@ const CreateJob: React.FC = () => {
 
         {/* Experience Level */}
         <FormGroup>
-          <Label htmlFor="experience_level">{t("pages.jobs.experienceLevelOptional")}</Label>
+          <Label htmlFor="experience_level">{renderLabel(t("pages.jobs.experienceLevelOptional"))}</Label>
           <Select
             id="experience_level"
             name="experience_level"
@@ -527,7 +674,7 @@ const CreateJob: React.FC = () => {
         {/* Questions Section */}
         <QuestionsSection>
           <QuestionsHeader>
-            <Label>{t("pages.jobs.applicationQuestionsOptional")}</Label>
+            <Label>{renderLabel(t("pages.jobs.applicationQuestionsOptional"))}</Label>
             <HelperText>
               {t("pages.jobs.applicationQuestionsHelper")}
             </HelperText>
@@ -549,7 +696,7 @@ const CreateJob: React.FC = () => {
               </QuestionHeader>
               
               <FormGroup>
-                <Label htmlFor={`question_text_${index}`}>{t("pages.jobs.questionText")}</Label>
+                <Label htmlFor={`question_text_${index}`}>{renderLabel(t("pages.jobs.questionText"))}</Label>
                 <Input
                   id={`question_text_${index}`}
                   value={question.question_text}
@@ -563,7 +710,7 @@ const CreateJob: React.FC = () => {
               </FormGroup>
 
               <FormGroup>
-                <Label htmlFor={`question_type_${index}`}>{t("pages.jobs.questionType")}</Label>
+                <Label htmlFor={`question_type_${index}`}>{renderLabel(t("pages.jobs.questionType"))}</Label>
                 <Select
                   id={`question_type_${index}`}
                   value={question.question_type}
@@ -586,7 +733,7 @@ const CreateJob: React.FC = () => {
               {question.question_type === "multiple_choice" && (
                 <FormGroup>
                   <Label htmlFor={`question_options_${index}`}>
-                    {t("pages.jobs.optionsCommaSeparated")}
+                    {renderLabel(t("pages.jobs.optionsCommaSeparated"))}
                   </Label>
                   <Input
                     id={`question_options_${index}`}
@@ -742,9 +889,14 @@ const FormGroup = styled("div")`
 const Label = styled("label")`
   margin-bottom: 8px;
   font-size: 14px;
-  font-weight: 500;
-  color: var(--theme-text-secondary);
+  font-weight: 650;
+  color: var(--theme-text-primary);
   transition: color 0.35s ease;
+`;
+
+const RequiredMark = styled("span")`
+  color: #ef4444;
+  font-weight: 800;
 `;
 
 // Change: Add a grid helper for side-by-side inputs
@@ -763,15 +915,17 @@ const Input = styled("input")`
   height: 40px;
   padding: 8px 12px;
   border-radius: 6px;
-  border: 1px solid var(--theme-border);
+  border: 1px solid rgba(100, 116, 139, 0.7);
   font-size: 14px;
   background: var(--theme-input-bg);
   color: var(--theme-text-primary);
   transition: border-color 0.2s, background 0.35s ease, color 0.35s ease;
+  width: 100%;
 
   &:focus {
     outline: none;
     border-color: #7f56d9;
+    box-shadow: 0 0 0 3px rgba(127, 86, 217, 0.18);
   }
 
   &::placeholder {
@@ -783,7 +937,7 @@ const Input = styled("input")`
 const TextArea = styled("textarea")`
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid var(--theme-border);
+  border: 1px solid rgba(100, 116, 139, 0.7);
   font-size: 14px;
   background: var(--theme-input-bg);
   color: var(--theme-text-primary);
@@ -794,6 +948,7 @@ const TextArea = styled("textarea")`
   &:focus {
     outline: none;
     border-color: #7f56d9;
+    box-shadow: 0 0 0 3px rgba(127, 86, 217, 0.18);
   }
 
   &::placeholder {
@@ -806,7 +961,7 @@ const Select = styled("select")`
   height: 40px;
   padding: 0 12px;
   border-radius: 6px;
-  border: 1px solid var(--theme-border);
+  border: 1px solid rgba(100, 116, 139, 0.7);
   font-size: 14px;
   background: var(--theme-input-bg);
   color: var(--theme-text-primary);
@@ -817,6 +972,7 @@ const Select = styled("select")`
   &:focus {
     outline: none;
     border-color: #7f56d9;
+    box-shadow: 0 0 0 3px rgba(127, 86, 217, 0.18);
   }
 
   option {
@@ -837,6 +993,108 @@ const HelperText = styled("div")`
   color: var(--theme-text-secondary);
   margin-top: 4px;
   transition: color 0.35s ease;
+`;
+
+const DurationGrid = styled("div")`
+  display: flex;
+  gap: 0px;
+  margin-top: -2px;
+  max-width: 520px;
+
+  & > div {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  /* Visually join start/end inputs (no gap, no double border). */
+  & > div:first-of-type input {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  & > div:last-of-type input {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: 0;
+  }
+`;
+
+const DurationLabel = styled("label")`
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--theme-text-secondary);
+  margin-bottom: 4px;
+`;
+
+const SkillsWrapper = styled("div")`
+  border: 1px solid rgba(100, 116, 139, 0.7);
+  background: var(--theme-input-bg);
+  border-radius: 8px;
+  padding: 8px 10px;
+  transition: border-color 0.2s;
+
+  &:focus-within {
+    border-color: #7f56d9;
+    box-shadow: 0 0 0 3px rgba(127, 86, 217, 0.18);
+  }
+`;
+
+const SkillsChips = styled("div")`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+`;
+
+const SkillChip = styled("span")`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(124, 58, 237, 0.10);
+  border: 1px solid rgba(124, 58, 237, 0.25);
+  color: var(--theme-text-primary);
+  border-radius: 999px;
+  font-size: 13px;
+  line-height: 1;
+`;
+
+const ChipDot = styled("span")`
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #7c3aed;
+  display: inline-block;
+`;
+
+const ChipRemove = styled("button")`
+  border: none;
+  background: transparent;
+  color: rgba(100, 116, 139, 0.9);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+
+  &:hover {
+    color: #ef4444;
+  }
+`;
+
+const SkillInput = styled("input")`
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--theme-text-primary);
+  font-size: 14px;
+  min-width: 180px;
+  height: 30px;
+
+  &::placeholder {
+    color: var(--theme-text-secondary);
+    opacity: 0.8;
+  }
 `;
 
 const QuestionsSection = styled("div")`
