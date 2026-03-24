@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { useTranslation } from "react-i18next";
@@ -36,6 +36,7 @@ const JobDetails: React.FC = () => {
   const [savedJobs, setSavedJobs] = useState<Set<string>>(new Set());
   const [momoError, setMomoError] = useState("");
   const [payError, setPayError] = useState("");
+  const [isFundModalOpen, setIsFundModalOpen] = useState(false);
   const [fundJob, { isLoading: isFunding }] = useFundJobMutation();
   const [getMoMoStatus] = useLazyGetMoMoStatusQuery();
   const [approveWorkAndPay, { isLoading: isPaying }] = useApproveWorkAndPayMutation();
@@ -47,6 +48,13 @@ const JobDetails: React.FC = () => {
   const hasApplied = applicationCheck?.data?.hasApplied || false;
   const fundingStatus = job?.funding_status || "Unfunded";
   const isEmployerView = (role === "employer" || role === "superadmin") && currentUserId && job?.employer_id === currentUserId;
+
+  const feeInfo = useMemo(() => {
+    const budget = Number(job?.budget ?? 0) || 0;
+    const platformFee = Math.round(budget * 0.1);
+    const total = budget + platformFee;
+    return { budget, platformFee, total };
+  }, [job?.budget]);
 
   
 
@@ -316,36 +324,113 @@ const JobDetails: React.FC = () => {
                   <Button
                     backgroundcolor="#7c3aed"
                     text={isFunding ? "Sending request…" : "Fund with MoMo"}
-                    onClick={async () => {
+                    onClick={() => {
                       setMomoError("");
-                      try {
-                        const res = await fundJob({ jobId: id! }).unwrap();
-                        if (res.success && res.data?.referenceId) {
-                          const refId = res.data.referenceId;
-                          const interval = setInterval(async () => {
-                            try {
-                              const statusRes = await getMoMoStatus(refId).unwrap();
-                              const status = statusRes.data?.status;
-                              if (status === "SUCCESSFUL") {
-                                clearInterval(interval);
-                                dispatch(apiSlice.util.invalidateTags(["MoMoPayments"]));
-                                refetch();
-                              }
-                            } catch {
-                              // ignore poll errors
-                            }
-                          }, 20000);
-                          setTimeout(() => clearInterval(interval), 120000);
-                          refetch();
-                        }
-                      } catch (e: unknown) {
-                        const err = e as { data?: { message?: string }; message?: string };
-                        setMomoError(err?.data?.message || err?.message || "Failed to send payment request.");
-                      }
+                      setIsFundModalOpen(true);
                     }}
                     disabled={isFunding}
                   />
                 )}
+              </div>
+            )}
+
+            {/* Fund confirmation modal */}
+            {isFundModalOpen && (
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+                onClick={() => !isFunding && setIsFundModalOpen(false)}
+              >
+                <div
+                  className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Confirm job funding</h3>
+                      <p className="text-sm text-gray-500 mt-1">
+                        This payment will be sent to the <strong>Ogera wallet</strong> for this job.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="p-2 rounded-lg hover:bg-gray-100 text-gray-500"
+                      onClick={() => !isFunding && setIsFundModalOpen(false)}
+                      aria-label="Close"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+                    <div className="flex items-center justify-between text-sm text-gray-700">
+                      <span>Job amount</span>
+                      <span className="font-semibold">{feeInfo.budget.toLocaleString()} RWF</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm text-gray-700 mt-2">
+                      <span>Platform fee (10%)</span>
+                      <span className="font-semibold">{feeInfo.platformFee.toLocaleString()} RWF</span>
+                    </div>
+                    <div className="h-px bg-gray-200 my-3" />
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-900 font-semibold">Total to pay</span>
+                      <span className="text-xl font-extrabold text-purple-700">{feeInfo.total.toLocaleString()} RWF</span>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-gray-600 mt-4">
+                    After you submit, you’ll receive an MTN MoMo prompt on your phone. Approve it to mark this job as <strong>Funded</strong>.
+                  </p>
+
+                  {momoError && (
+                    <div className="mt-3 p-2 bg-red-100 text-red-700 rounded text-sm">{momoError}</div>
+                  )}
+
+                  <div className="mt-5 flex gap-2 justify-end">
+                    <button
+                      type="button"
+                      className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+                      onClick={() => !isFunding && setIsFundModalOpen(false)}
+                      disabled={isFunding}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-60"
+                      disabled={isFunding}
+                      onClick={async () => {
+                        setMomoError("");
+                        try {
+                          const res = await fundJob({ jobId: id! }).unwrap();
+                          if (res.success && res.data?.referenceId) {
+                            setIsFundModalOpen(false);
+                            const refId = res.data.referenceId;
+                            const interval = setInterval(async () => {
+                              try {
+                                const statusRes = await getMoMoStatus(refId).unwrap();
+                                const status = statusRes.data?.status;
+                                if (status === "SUCCESSFUL") {
+                                  clearInterval(interval);
+                                  dispatch(apiSlice.util.invalidateTags(["MoMoPayments"]));
+                                  refetch();
+                                }
+                              } catch {
+                                // ignore poll errors
+                              }
+                            }, 8000);
+                            setTimeout(() => clearInterval(interval), 120000);
+                            refetch();
+                          }
+                        } catch (e: unknown) {
+                          const err = e as { data?: { message?: string }; message?: string };
+                          setMomoError(err?.data?.message || err?.message || "Failed to send payment request.");
+                        }
+                      }}
+                    >
+                      {isFunding ? "Sending…" : `Pay ${feeInfo.total.toLocaleString()} RWF`}
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
