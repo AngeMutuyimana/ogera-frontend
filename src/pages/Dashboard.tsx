@@ -28,6 +28,12 @@ interface DashboardMetrics {
   totalEarnings: number;
 }
 
+interface ActivityItem {
+  id?: string;
+  description?: string;
+  created_at?: string;
+}
+
 type ChartRow = {
   day: string;
   [key: string]: string | number;
@@ -55,6 +61,9 @@ const Dashboard: React.FC = () => {
   const [studentMetrics, setStudentMetrics] = useState<any | null>(null);
   const [studentLoading, setStudentLoading] = useState(false);
   const [studentError, setStudentError] = useState<string | null>(null);
+  // Superadmin recent activity fetched from backend
+  const [adminActivities, setAdminActivities] = useState<ActivityItem[]>([]);
+  const [adminActivitiesLoading, setAdminActivitiesLoading] = useState(false);
 
   // Fetch dashboard metrics for superadmin
   useEffect(() => {
@@ -116,6 +125,29 @@ const Dashboard: React.FC = () => {
           setStudentError(String(err));
         })
         .finally(() => setStudentLoading(false));
+    }
+  }, [role, accessToken]);
+
+  // Fetch top 5 recent activities for superadmin from activity_logs
+  useEffect(() => {
+    if (role === "superadmin") {
+      setAdminActivitiesLoading(true);
+      fetch("/api/dashboard/recent-activities?limit=5", {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.success && Array.isArray(data.data)) {
+            setAdminActivities(data.data);
+          } else {
+            setAdminActivities([]);
+          }
+        })
+        .catch((error) => {
+          console.error("[Dashboard] Failed to fetch recent activities:", error);
+          setAdminActivities([]);
+        })
+        .finally(() => setAdminActivitiesLoading(false));
     }
   }, [role, accessToken]);
 
@@ -319,13 +351,13 @@ const Dashboard: React.FC = () => {
         t("dashboard.recentActivityEmployer5"),
       ];
     }
-    return [
-      t("dashboard.recentActivityAdmin1"),
-      t("dashboard.recentActivityAdmin2"),
-      t("dashboard.recentActivityAdmin3"),
-      t("dashboard.recentActivityAdmin4"),
-      t("dashboard.recentActivityAdmin5"),
-    ];
+    if (adminActivitiesLoading) return ["..."];
+    if (adminActivities.length > 0) {
+      return adminActivities
+        .slice(0, 5)
+        .map((activity) => activity.description || t("common.na"));
+    }
+    return [t("common.noData")];
   };
 
   const getSubtitle = () => {

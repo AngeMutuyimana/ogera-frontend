@@ -180,6 +180,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                         {location.pathname === "/dashboard/academic/pending" && t("sidebar.pendingReviews")}
                         {location.pathname === "/dashboard/academic/approved" && t("sidebar.approved")}
                         {location.pathname === "/dashboard/academic/rejected" && t("sidebar.rejected")}
+                        {location.pathname === "/dashboard/academic/resubmission-required" && t("sidebar.resubmissionRequired")}
                         {/* {location.pathname === "/dashboard/academic/performance" && t("sidebar.performanceTrack")} */}
                         {/* {location.pathname === "/dashboard/academic/locks" && t("sidebar.accountLocks")} */}
                       </span>
@@ -262,6 +263,29 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                         : "group-hover/item:text-white"
                     }`}>
                       {t("sidebar.rejected")}
+                    </span>
+                  </li>
+                  <li
+                    className={`flex items-center gap-2 cursor-pointer py-2 px-2 rounded-md transition-all duration-200 group/item ${
+                      isActive("/dashboard/academic/resubmission-required")
+                        ? "bg-[#9F7AEA]/20 text-[#9F7AEA]"
+                        : "hover:text-purple-300 hover:bg-[#9F7AEA]/10 text-white/60"
+                    }`}
+                    onClick={() =>
+                      handleNavigation("/dashboard/academic/resubmission-required")
+                    }
+                  >
+                    <ArrowPathIcon className={`h-4 w-4 transition-colors ${
+                      isActive("/dashboard/academic/resubmission-required")
+                        ? "text-amber-400"
+                        : "text-white/40 group-hover/item:text-amber-400"
+                    }`} />
+                    <span className={`transition-colors ${
+                      isActive("/dashboard/academic/resubmission-required")
+                        ? "text-white font-medium"
+                        : "group-hover/item:text-white"
+                    }`}>
+                      {t("sidebar.resubmissionRequired")}
                     </span>
                   </li>
                   {/* <li
@@ -726,6 +750,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                         {location.pathname === "/dashboard/academic/pending" && t("sidebar.pendingReviews")}
                         {location.pathname === "/dashboard/academic/approved" && t("sidebar.approved")}
                         {location.pathname === "/dashboard/academic/rejected" && t("sidebar.rejected")}
+                        {location.pathname === "/dashboard/academic/resubmission-required" && t("sidebar.resubmissionRequired")}
                         {location.pathname === "/dashboard/academic/performance" && t("sidebar.performanceTrack")}
                         {/* {location.pathname === "/dashboard/academic/locks" && t("sidebar.accountLocks")} */}
                       </span>
@@ -808,6 +833,29 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                         : "group-hover/item:text-white"
                     }`}>
                       {t("sidebar.rejected")}
+                    </span>
+                  </li>
+                  <li
+                    className={`flex items-center gap-2 cursor-pointer py-2 px-2 rounded-md transition-all duration-200 group/item ${
+                      isActive("/dashboard/academic/resubmission-required")
+                        ? "bg-[#9F7AEA]/20 text-[#9F7AEA]"
+                        : "hover:text-purple-300 hover:bg-[#9F7AEA]/10 text-white/60"
+                    }`}
+                    onClick={() =>
+                      handleNavigation("/dashboard/academic/resubmission-required")
+                    }
+                  >
+                    <ArrowPathIcon className={`h-4 w-4 transition-colors ${
+                      isActive("/dashboard/academic/resubmission-required")
+                        ? "text-amber-400"
+                        : "text-white/40 group-hover/item:text-amber-400"
+                    }`} />
+                    <span className={`transition-colors ${
+                      isActive("/dashboard/academic/resubmission-required")
+                        ? "text-white font-medium"
+                        : "group-hover/item:text-white"
+                    }`}>
+                      {t("sidebar.resubmissionRequired")}
                     </span>
                   </li>
                   {/* <li

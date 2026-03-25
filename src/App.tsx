@@ -34,6 +34,7 @@ import SuspendedUsers from "./pages/Users/Suspended";
 import PendingReviews from "./pages/AcademicVerification/PendingReviews";
 import Approved from "./pages/AcademicVerification/Approved";
 import Rejected from "./pages/AcademicVerification/Rejected";
+import ResubmissionRequired from "./pages/AcademicVerification/ResubmissionRequired";
 import PerformanceTrack from "./pages/AcademicVerification/PerformanceTrack";
 import AccountLocks from "./pages/AcademicVerification/AccountLocks";
 
@@ -253,6 +254,10 @@ function App() {
             {
               path: "academic/rejected",
               Component: Rejected,
+            },
+            {
+              path: "academic/resubmission-required",
+              Component: ResubmissionRequired,
             },
             {
               path: "academic/performance",
