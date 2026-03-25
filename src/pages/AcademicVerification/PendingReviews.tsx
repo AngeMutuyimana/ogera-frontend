@@ -124,7 +124,11 @@ const PendingReviews: React.FC = () => {
       setStudentSuccess(null);
 
       // Decide whether to upload new or re-upload based on status
-      if (myVerification && myVerification.status === "rejected") {
+      if (
+        myVerification &&
+        (myVerification.status === "rejected" ||
+          myVerification.status === "resubmission_required")
+      ) {
         const { reuploadAcademicVerification } = await import(
           "../../services/api/academicVerificationApi"
         );
@@ -159,14 +163,20 @@ const PendingReviews: React.FC = () => {
   // ---------- handlers (admin) ----------
   const handleReview = async (
     id: string,
-    status: "accepted" | "rejected"
+    status: "accepted" | "rejected" | "resubmission_required"
   ): Promise<void> => {
     try {
       setReviewLoadingId(id);
       setAdminError(null);
 
-      const rejection_reason =
-        status === "rejected" ? rejectionNotes[id] || "" : undefined;
+      const needsReason = status === "rejected" || status === "resubmission_required";
+      const rejection_reason = needsReason ? rejectionNotes[id]?.trim() || "" : undefined;
+
+      if (needsReason && !rejection_reason) {
+        setAdminError(t("pages.academic.reasonRequired"));
+        setReviewLoadingId(null);
+        return;
+      }
 
       await reviewAcademicVerification({ id, status, rejection_reason });
       await loadPendingForAdmin();
@@ -295,11 +305,17 @@ const PendingReviews: React.FC = () => {
                   <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
                     myVerification.status === "accepted"
                       ? "bg-green-100 text-green-700"
-                      : myVerification.status === "rejected"
+                      : myVerification.status === "rejected" || myVerification.status === "resubmission_required"
                       ? "bg-red-100 text-red-700"
                       : "bg-yellow-100 text-yellow-700"
                   }`}>
-                    {myVerification.status === "accepted" ? t("pages.academic.approved") : myVerification.status === "rejected" ? t("pages.academic.rejected") : t("pages.academic.pending")}
+                    {myVerification.status === "accepted"
+                      ? t("pages.academic.approved")
+                      : myVerification.status === "rejected"
+                      ? t("pages.academic.rejected")
+                      : myVerification.status === "resubmission_required"
+                      ? t("pages.academic.resubmissionRequired")
+                      : t("pages.academic.pending")}
                   </span>
                 </div>
                 {myVerification.rejection_reason && (
@@ -317,7 +333,9 @@ const PendingReviews: React.FC = () => {
           {/* Upload Card */}
           <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-3">
             <h2 className="text-base font-bold text-gray-800 mb-2">
-              {myVerification?.status === "rejected" ? t("pages.academic.reupload") : t("pages.academic.upload")}
+              {myVerification?.status === "rejected" || myVerification?.status === "resubmission_required"
+                ? t("pages.academic.reupload")
+                : t("pages.academic.upload")}
             </h2>
 
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 mb-2">
@@ -431,15 +449,15 @@ const PendingReviews: React.FC = () => {
                       </span>
                     </div>
 
-                    {/* Rejection Reason */}
+                    {/* Review reason (required for reject/resubmission required) */}
                     <div>
                       <label className="block text-gray-700 font-medium text-xs mb-1">
-                        {t("pages.academic.rejectionReason")} <span className="text-red-500">*</span>
+                        {t("pages.academic.reviewReason")} <span className="text-red-500">*</span>
                       </label>
                       <textarea
                         className="w-full rounded-lg border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 resize-none"
                         rows={2}
-                        placeholder={t("pages.academic.rejectionReasonPlaceholder")}
+                        placeholder={t("pages.academic.reviewReasonPlaceholder")}
                         value={rejectionNotes[item.id] || ""}
                         onChange={(e) =>
                           setRejectionNotes((prev) => ({
@@ -477,6 +495,17 @@ const PendingReviews: React.FC = () => {
                       onClick={() => handleReview(item.id, "rejected")}
                     >
                       {reviewLoadingId === item.id ? t("pages.academic.rejecting") : t("pages.academic.reject")}
+                    </button>
+                    <button
+                      className={`flex-1 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium transition-all text-xs disabled:opacity-50 ${
+                        reviewLoadingId === item.id ? 'animate-pulse' : ''
+                      }`}
+                      disabled={reviewLoadingId === item.id}
+                      onClick={() => handleReview(item.id, "resubmission_required")}
+                    >
+                      {reviewLoadingId === item.id
+                        ? t("pages.academic.markingResubmission")
+                        : t("pages.academic.resubmission")}
                     </button>
                   </div>
                 </div>

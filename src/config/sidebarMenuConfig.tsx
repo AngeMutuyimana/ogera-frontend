@@ -61,6 +61,7 @@ export const SIDEBAR_MENU_CONFIG: MenuItemConfig[] = [
       { label: "Pending Reviews", path: "/dashboard/academic/pending", labelKey: "sidebar.pendingReviews" },
       { label: "Approved", path: "/dashboard/academic/approved", labelKey: "sidebar.approved" },
       { label: "Rejected", path: "/dashboard/academic/rejected", labelKey: "sidebar.rejected" },
+      { label: "Resubmission Required", path: "/dashboard/academic/resubmission-required", labelKey: "sidebar.resubmissionRequired" },
       { label: "Performance Track", path: "/dashboard/academic/performance", labelKey: "sidebar.performanceTrack" },
       { label: "Account Locks", path: "/dashboard/academic/locks", labelKey: "sidebar.accountLocks" },
     ],

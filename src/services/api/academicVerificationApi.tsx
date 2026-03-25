@@ -1,6 +1,10 @@
 import api from "./axiosInstance";
 
-export type AcademicVerificationStatus = "pending" | "accepted" | "rejected";
+export type AcademicVerificationStatus =
+  | "pending"
+  | "accepted"
+  | "rejected"
+  | "resubmission_required";
 export type StorageType = "local" | "s3";
 
 export interface AcademicVerification {
@@ -123,7 +127,7 @@ export const getAcademicVerificationsByStatus = async (
 // Review verification (accept/reject)
 export const reviewAcademicVerification = async (options: {
   id: string;
-  status: "accepted" | "rejected";
+  status: "accepted" | "rejected" | "resubmission_required";
   rejection_reason?: string;
 }) => {
   const res = await api.patch<PaginatedResponse<AcademicVerification>>(
