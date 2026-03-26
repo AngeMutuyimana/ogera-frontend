@@ -64,8 +64,8 @@
     "notifications": "Amatangazo"
   },
   "login": {
-    "welcome": "Murakaza neza kuri Ogera 👋",
-    "signInSubtext": "Injira kugira ngo ufate konti yawe ya Ogera kandi ukomere kubona amafaranga ugiye wigisha.",
+    "welcome": "Murakaza neza kuri Ogera!",
+    "signInSubtext": "Twishimiye ko wagarutse. Reka dukomeze kwiga no gukura, hamwe.",
     "emailAddress": "Aderesi ya Imeyili",
     "enterEmail": "Injiza aderesi yawe ya imeyili",
     "password": "Ijambobanga",
