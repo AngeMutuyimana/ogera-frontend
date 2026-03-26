@@ -64,8 +64,8 @@
     "notifications": "Arifa"
   },
   "login": {
-    "welcome": "Karibu Ogera 👋",
-    "signInSubtext": "Ingia kufikia akaunti yako ya Ogera na uendelee kupata mapato unapojifunza.",
+    "welcome": "Karibu Ogera!",
+    "signInSubtext": "Nimefurahi umerejea. Tuendelee kujifunza na kukua pamoja.",
     "emailAddress": "Anwani Ya Barua Pepe",
     "enterEmail": "Ingiza anwani yako ya barua pepe",
     "password": "Nenosiri",

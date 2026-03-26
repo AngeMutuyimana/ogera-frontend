@@ -64,8 +64,8 @@
     "notifications": "Izaziso"
   },
   "login": {
-    "welcome": "Siyakwamukela ku-Ogera 👋",
-    "signInSubtext": "Ngena ngemvume ukuze uthole i-akhawunti yakho ye-Ogera uphinde uqhubeke nokuhola ngenkathi ufunda.",
+    "welcome": "Siyakwamukela ku-Ogera!",
+    "signInSubtext": "Ngiyajabula ukuthi ubuyile. Ake siqhubeke sifunda futhi sikhule ndawonye.",
     "emailAddress": "Ikheli Le-imeyili",
     "enterEmail": "Faka ikheli lakho le-imeyili",
     "password": "Iphasiwedi",
