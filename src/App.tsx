@@ -17,6 +17,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import VerifyOtp from "./pages/VerifyOtp";
 import VerifyEmail from "./pages/VerifyEmail";
+import Verification from "./pages/Verification";
 import ChangePassword from "./pages/ChangePassword";
 import TestRefresh from "./pages/TestRefresh";
 import Dashboard from "./pages/Dashboard";
@@ -142,6 +143,7 @@ function App() {
     { path: "/auth/reset-password", Component: ResetPassword },
     { path: "/auth/verify-otp", Component: VerifyOtp },
     { path: "/auth/verify-email", Component: VerifyEmail },
+    { path: "/auth/verification", Component: Verification },
     { path: "/auth/change-password", Component: ChangePassword },
     { path: "/auth/me", Component: TestRefresh },
 

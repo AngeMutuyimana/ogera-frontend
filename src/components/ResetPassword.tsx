@@ -26,6 +26,7 @@ interface RestPasswordTemplateProps {
   buttonText?: string;
   showResend?: boolean;
   disabled?: boolean;
+  secondaryAction?: React.ReactNode;
 }
 
 const RestPasswordTemplate: React.FC<RestPasswordTemplateProps> = ({
@@ -35,6 +36,7 @@ const RestPasswordTemplate: React.FC<RestPasswordTemplateProps> = ({
   buttonText = "Submit",
   showResend = false,
   disabled = false,
+  secondaryAction,
 }) => {
   return (
     <PassMainContainer>
@@ -90,6 +92,8 @@ const RestPasswordTemplate: React.FC<RestPasswordTemplateProps> = ({
           text={buttonText}
           disabled={disabled}
         />
+
+        {!!secondaryAction && secondaryAction}
 
         {showResend && (
           <ResendClick>

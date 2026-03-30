@@ -69,13 +69,15 @@ const Register = () => {
     validationSchema: registerValidationSchema,
     onSubmit: async (values) => {
       try {
-        // Combine country code with phone number
-        const fullPhoneNumber = `${countryCode}${values.mobile_number}`;
+        // Combine country code with phone number and normalize to E.164.
+        // Ensures backend always receives a clean number like +19389105027.
+        const rawFullPhoneNumber = `${countryCode}${values.mobile_number}`;
+        const normalizedFullPhoneNumber = `+${rawFullPhoneNumber.replace(/^\+/, "").replace(/\D/g, "")}`;
         
         const payload = {
           full_name: values.full_name,
           email: values.email,
-          mobile_number: fullPhoneNumber,
+          mobile_number: normalizedFullPhoneNumber,
           password: values.password,
           role: values.accountType,
           national_id_number:
@@ -122,12 +124,27 @@ const Register = () => {
 
     if (data && isSuccess) {
       toast.success(t("register.registrationSuccess"), { duration: 5000 });
+      const registeredEmail = formik.values.email;
+
+      // In development, backend may return the OTP (because SMS can be console-only).
+      const phoneVerificationOtp =
+        (data as any)?.data?.phoneVerificationOtp as string | undefined;
+      const phoneNumber =
+        (data as any)?.data?.phoneNumber as string | undefined;
+
+      if (phoneNumber) {
+        localStorage.setItem("pendingVerificationPhoneNumber", phoneNumber);
+      }
+      if (phoneVerificationOtp) {
+        localStorage.setItem("pendingVerificationOtp", phoneVerificationOtp);
+      }
+
       resetForm();
-      // Show verification message and navigate after a delay
       setTimeout(() => {
-        navigate("/auth/login", {
-          state: { showVerificationMessage: true, email: formik.values.email },
-        });
+        localStorage.setItem("pendingVerificationEmail", registeredEmail);
+        localStorage.setItem("pendingVerificationEmailVerified", "false");
+        localStorage.setItem("pendingVerificationPhoneVerified", "false");
+        navigate("/auth/login?fromRegistration=1");
       }, 2000);
     }
   }, [isError, error, data, isSuccess, resetForm, navigate]);

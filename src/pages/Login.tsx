@@ -11,7 +11,7 @@ import { useEffect, useState, useRef } from "react";
 import { loginValidationSchema } from "../validation/Index";
 import type { LoginFormValues } from "../type/Index";
 import ReuseButton from "../components/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import { loginApi } from "../services/api/loginApi";
@@ -34,8 +34,10 @@ const Login = () => {
   const [verifying2FA, setVerifying2FA] = useState(false);
   const [showLostAuthenticatorModal, setShowLostAuthenticatorModal] = useState(false);
   const [isLostAuthenticatorClicked, setIsLostAuthenticatorClicked] = useState(false);
+  const [showVerifyAccount, setShowVerifyAccount] = useState(false);
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const dispatch = useDispatch();
 
   // Load reCAPTCHA script only if a valid site key is provided
@@ -56,6 +58,17 @@ const Login = () => {
       }
     };
   }, []);
+
+  // Show "Verify account" button if registration left pending verification context.
+  useEffect(() => {
+    const fromRegistration = searchParams.get("fromRegistration") === "1";
+    const hasPending = Boolean(localStorage.getItem("pendingVerificationEmail"));
+    const emailVerified = localStorage.getItem("pendingVerificationEmailVerified") === "true";
+    const phoneVerified = localStorage.getItem("pendingVerificationPhoneVerified") === "true";
+    setShowVerifyAccount(
+      fromRegistration && hasPending && !(emailVerified && phoneVerified)
+    );
+  }, [searchParams]);
 
   const handleClickShowPassword = () => setShowPassword((prev) => !prev);
 
@@ -336,6 +349,16 @@ const Login = () => {
                     text={loading ? t("login.pleaseWait") : t("login.signIn")}
                     disabled={loading}
                   />
+
+              {showVerifyAccount && (
+                <ReuseButton
+                  backgroundcolor="#111827"
+                  type="button"
+                  text="Verify account"
+                  disabled={loading}
+                  onClick={() => navigate("/auth/verification")}
+                />
+              )}
 
                   <SignUpText>
                     {t("login.dontHaveAccount")}{" "}
