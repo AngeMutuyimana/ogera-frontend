@@ -10,7 +10,7 @@ import { useEffect, useState, useRef } from "react";
 import { loginValidationSchema } from "../validation/Index";
 import type { LoginFormValues } from "../type/Index";
 import ReuseButton from "../components/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import { loginApi } from "../services/api/loginApi";
@@ -33,8 +33,10 @@ const Login = () => {
   const [verifying2FA, setVerifying2FA] = useState(false);
   const [showLostAuthenticatorModal, setShowLostAuthenticatorModal] = useState(false);
   const [isLostAuthenticatorClicked, setIsLostAuthenticatorClicked] = useState(false);
+  const [showVerifyAccount, setShowVerifyAccount] = useState(false);
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -50,6 +52,17 @@ const Login = () => {
       }
     };
   }, []);
+
+  // Show "Verify account" button if registration left pending verification context.
+  useEffect(() => {
+    const fromRegistration = searchParams.get("fromRegistration") === "1";
+    const hasPending = Boolean(localStorage.getItem("pendingVerificationEmail"));
+    const emailVerified = localStorage.getItem("pendingVerificationEmailVerified") === "true";
+    const phoneVerified = localStorage.getItem("pendingVerificationPhoneVerified") === "true";
+    setShowVerifyAccount(
+      fromRegistration && hasPending && !(emailVerified && phoneVerified)
+    );
+  }, [searchParams]);
 
   const handleClickShowPassword = () => setShowPassword((prev) => !prev);
 
@@ -236,6 +249,73 @@ const Login = () => {
                     type="button"
                   >
                     {t("login.lostAuthenticator")}
+                  </LostAuthenticatorLink>
+                  <ReuseButton
+                    backgroundcolor="#16a34a"
+                    type="button"
+                    text={verifying2FA ? t("login.verifying") : t("login.verifyAndContinue")}
+                    disabled={verifying2FA}
+                    onClick={handleVerify2FALogin as any}
+                  />
+                </FormGroup>
+              )}
+
+              {/* <ForgotPassword href="/auth/forgot-password">Forgot Password?</ForgotPassword> */}
+
+              {/* reCAPTCHA */}
+              {!twoFactorRequired && RECAPTCHA_SITE_KEY && (
+                <RecaptchaContainer>
+                  <div
+                    ref={reCaptchaRef}
+                    className="g-recaptcha"
+                    data-sitekey={RECAPTCHA_SITE_KEY}
+                  ></div>
+                </RecaptchaContainer>
+              )}
+
+              {!twoFactorRequired && (
+                <>
+                  <ReuseButton
+                    backgroundcolor="#7f56d9"
+                    type="submit"
+                    text={loading ? t("login.pleaseWait") : t("login.signIn")}
+                    disabled={loading}
+                  />
+
+              {showVerifyAccount && (
+                <ReuseButton
+                  backgroundcolor="#111827"
+                  type="button"
+                  text="Verify account"
+                  disabled={loading}
+                  onClick={() => navigate("/auth/verification")}
+                />
+              )}
+
+                  <SignUpText>
+                    {t("login.dontHaveAccount")}{" "}
+                    <a href="/auth/register">{t("login.signUp")}</a>
+                  </SignUpText>
+                </>
+              )}
+            </LoginFormContainer>
+          </LeftContent>
+        </LoginLeftContainer>
+
+        {/* Right Section */}
+        <LoginRightContainer>
+          <Overlay />
+          <RightContent>
+            <RightCard>
+              <h2>{t("login.empoweringAfrica")}</h2>
+              <p>{t("login.ogeraDescription")}</p>
+            </RightCard>
+
+            <BottomText>
+              {t("login.ogeraDedicated")}
+            </BottomText>
+          </RightContent>
+        </LoginRightContainer>
                 </LostAuthenticatorLink>
                 <ReuseButton
                   backgroundcolor="#16a34a"

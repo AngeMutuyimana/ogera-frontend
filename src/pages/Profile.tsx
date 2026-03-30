@@ -33,7 +33,7 @@ import ChangePasswordModal from "../components/ChangePasswordModal";
 import EditProfileModal from "../components/EditProfileModal";
 import TrustScoreCard from "../components/TrustScoreCard";
 import PhoneVerificationModal from "../components/PhoneVerificationModal";
-import { useResendVerificationEmailMutation, useSendPhoneVerificationOTPMutation } from "../services/api/authApi";
+import { useResendVerificationEmailMutation } from "../services/api/authApi";
 import { useNavigate } from "react-router-dom";
 import {
   PencilIcon,
@@ -108,7 +108,6 @@ const Profile: React.FC = () => {
   const [addAccomplishment] = useAddAccomplishmentMutation();
   const [deleteAccomplishment] = useDeleteAccomplishmentMutation();
   const [resendVerificationEmail] = useResendVerificationEmailMutation();
-  const [_sendPhoneVerificationOTP] = useSendPhoneVerificationOTPMutation();
   const navigate = useNavigate();
 
   // Fetch TrustScore
@@ -169,6 +168,22 @@ const Profile: React.FC = () => {
 
   const userData = profileData || user;
   const userRole = profileData?.role?.roleName || role;
+  const normalizedUserRole = (userRole || "").toString().toLowerCase();
+  const shouldShowVerifyAccountButton =
+    normalizedUserRole !== "admin" && normalizedUserRole !== "superadmin";
+
+  const isEmailVerified = Boolean(profileData?.email_verified);
+  const isPhoneVerified = Boolean(profileData?.phone_verified);
+  const isAccountVerified = isEmailVerified && isPhoneVerified;
+  const isVerifyAccountButtonDisabled = loading || !profileData;
+  const verificationEmail = userData?.email || "";
+
+  const handleVerifyAccountClick = () => {
+    if (isAccountVerified) return;
+    if (!verificationEmail) return;
+    localStorage.setItem("pendingVerificationEmail", verificationEmail);
+    navigate(`/auth/verification?email=${encodeURIComponent(verificationEmail)}`);
+  };
 
   // Get data from full profile
   const extendedProfile = fullProfileData?.data?.extendedProfile;
@@ -375,14 +390,39 @@ const Profile: React.FC = () => {
                   <PencilIcon className="w-5 h-5" />
                 </button>
           </div>
-              <p className="text-lg text-gray-700 mb-1">
-                {currentEmployment
-                  ? currentEmployment.job_title
-                  : role === "student" ? t("profile.softwareDeveloper") : t("profile.professional")}
-                {currentEmployment && (
-                  <span className="text-gray-600"> {t("profile.at")} {currentEmployment.company_name}</span>
+              <div className="flex flex-wrap items-center gap-3 mb-1">
+                <p className="text-lg text-gray-700">
+                  {currentEmployment
+                    ? currentEmployment.job_title
+                    : role === "student"
+                      ? t("profile.softwareDeveloper")
+                      : t("profile.professional")}
+                  {currentEmployment && (
+                    <span className="text-gray-600">
+                      {" "}
+                      {t("profile.at")} {currentEmployment.company_name}
+                    </span>
+                  )}
+                </p>
+
+                {shouldShowVerifyAccountButton && (
+                  <button
+                    type="button"
+                    onClick={handleVerifyAccountClick}
+                    disabled={isVerifyAccountButtonDisabled || !verificationEmail}
+                    className={`text-xs text-purple-600 hover:text-purple-700 font-medium underline transition-all ${
+                      isAccountVerified
+                        ? "opacity-60 cursor-not-allowed hover:text-purple-600"
+                        : isVerifyAccountButtonDisabled || !verificationEmail
+                          ? "opacity-50 cursor-not-allowed"
+                          : ""
+                    }`}
+                    title={isAccountVerified ? "Account verified" : "Verify account"}
+                  >
+                    Verify account
+                  </button>
                 )}
-              </p>
+              </div>
 
               <div className="flex flex-wrap gap-4 mt-4 text-sm text-gray-600">
                 <div className="flex items-center gap-2">
@@ -1326,7 +1366,13 @@ const Profile: React.FC = () => {
       {/* Existing Modals */}
       <ChangePasswordModal isOpen={isChangePasswordModalOpen} onClose={() => setIsChangePasswordModalOpen(false)} userEmail={userData?.email || ""} />
       <EditProfileModal isOpen={isEditProfileModalOpen} onClose={() => setIsEditProfileModalOpen(false)} profileData={profileData} onUpdateSuccess={handleProfileUpdateSuccess} userRole={userRole || ""} />
-      <PhoneVerificationModal isOpen={isPhoneVerificationModalOpen} onClose={() => setIsPhoneVerificationModalOpen(false)} onSuccess={handlePhoneVerificationSuccess} phoneNumber={profileData?.mobile_number} />
+      <PhoneVerificationModal
+        isOpen={isPhoneVerificationModalOpen}
+        onClose={() => setIsPhoneVerificationModalOpen(false)}
+        onSuccess={handlePhoneVerificationSuccess}
+        phoneNumber={profileData?.mobile_number}
+        email={userData?.email}
+      />
     </div>
   );
 };
