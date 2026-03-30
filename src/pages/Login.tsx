@@ -1,6 +1,5 @@
 import { styled } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
-import loginImage from "../assets/login.png";
 import logo from "../assets/Logo.png";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import IconButton from "@mui/material/IconButton";
@@ -40,18 +39,13 @@ const Login = () => {
   const [searchParams] = useSearchParams();
   const dispatch = useDispatch();
 
-  // Load reCAPTCHA script only if a valid site key is provided
   useEffect(() => {
-    if (!RECAPTCHA_SITE_KEY) {
-      return; // Don't load reCAPTCHA if no key is configured
-    }
-
+    if (!RECAPTCHA_SITE_KEY) return;
     const script = document.createElement('script');
     script.src = 'https://www.google.com/recaptcha/api.js';
     script.async = true;
     script.defer = true;
     document.head.appendChild(script);
-
     return () => {
       if (document.head.contains(script)) {
         document.head.removeChild(script);
@@ -76,18 +70,13 @@ const Login = () => {
     const decoded: any = jwtDecode(accessToken);
     const role = decoded.role;
     const user = { id: decoded.user_id };
-
-    // Fetch user data including permissions immediately after login
     const BASE_URL = import.meta.env.VITE_API_URL;
     try {
       const userRes = await axios.get(`${BASE_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${accessToken}` },
         withCredentials: true,
       });
-
       const userData = (userRes.data as any).user;
-
-      // Update Redux with complete user data including permissions
       dispatch(
         setCredentials({
           user: userData,
@@ -97,41 +86,36 @@ const Login = () => {
         })
       );
     } catch (error: any) {
-      console.error("⚠️ [LOGIN] Failed to fetch user data, using basic info:", error);
-      // Fallback: store basic info without permissions (will be fetched on page load)
-      dispatch(
-        setCredentials({
-          user,
-          accessToken,
-          role,
-        })
-      );
-    }
+      console.error("⚠️ [LOGIN] Failed to fetch user data:", error);
+      dispatch(setCredentials({ user, accessToken, role }));
+     // User-friendly fallback message
+  toast.error(
+    t("login.partialSuccess") || "Login successful, but we couldn't load your full profile. Please refresh."
+  );
 
+  // Safe fallback authentication state
+  dispatch(
+    setCredentials({
+      user,
+      accessToken,
+      role,
+    })
+  );
+    }
     toast.success(t("login.loggedInSuccess"));
     formik.resetForm();
-
-    // Reset reCAPTCHA widget after successful login
     if (RECAPTCHA_SITE_KEY && (window as any).grecaptcha && reCaptchaRef.current) {
       (window as any).grecaptcha.reset();
     }
-
-    // Allow navigation for all roles (including custom admin roles)
     navigate("/dashboard");
   };
 
   const formik = useFormik<LoginFormValues>({
-    initialValues: {
-      email: "",
-      password: "",
-      captchaToken: "",
-    },
+    initialValues: { email: "", password: "", captchaToken: "" },
     validationSchema: loginValidationSchema,
     onSubmit: async (values) => {
       try {
         setLoading(true);
-
-        // Get CAPTCHA token from the checkbox widget (only if reCAPTCHA is enabled)
         if (RECAPTCHA_SITE_KEY && !twoFactorRequired) {
           if ((window as any).grecaptcha) {
             const token = (window as any).grecaptcha.getResponse();
@@ -141,8 +125,6 @@ const Login = () => {
               return;
             }
             values.captchaToken = token;
-          } else {
-            console.warn('reCAPTCHA not loaded');
           }
         }
 
@@ -151,42 +133,21 @@ const Login = () => {
         if (result?.data?.requires2FA) {
           setTwoFactorRequired(true);
           setTwoFactorToken(result.data.twoFactorToken || "");
-          if (!isLostAuthenticatorClicked) {
-            toast(t("login.enter2FACode"));
-          }
-          setIsLostAuthenticatorClicked(false); // Reset after use
+          if (!isLostAuthenticatorClicked) toast(t("login.enter2FACode"));
+          setIsLostAuthenticatorClicked(false);
           return;
         }
 
         const accessToken = result?.data?.accessToken;
-        if (!accessToken) {
-          throw new Error("Login failed: access token missing");
-        }
-
+        if (!accessToken) throw new Error("Login failed: access token missing");
         await finishLogin(accessToken);
       } catch (error: any) {
-        // Log error details for debugging
-        console.log("🔍 Login error:", error);
-        console.log("🔍 Error response:", error?.response);
-        console.log("🔍 Error status:", error?.response?.status);
-        console.log("🔍 Error message:", error?.response?.data?.message);
-        console.log("🔍 Error payload:", error?.payload);
-        console.log("🔍 Error type:", error?.type);
-        
         const errorMessage = error?.response?.data?.message || error?.payload?.message || error?.message || "";
-
-        // Suppress reCAPTCHA client error when 2FA step is active
-        const isNoRecaptchaClientsError =
-          typeof errorMessage === "string" &&
-          errorMessage.toLowerCase().includes("no recaptcha clients exist");
-
+        const isNoRecaptchaClientsError = typeof errorMessage === "string" && errorMessage.toLowerCase().includes("no recaptcha clients exist");
         if (!(twoFactorRequired && isNoRecaptchaClientsError)) {
           toast.error(errorMessage || t("login.loginFailed"));
         }
-        // Reset CAPTCHA on error
-        if (RECAPTCHA_SITE_KEY && (window as any).grecaptcha) {
-          (window as any).grecaptcha.reset();
-        }
+        if (RECAPTCHA_SITE_KEY && (window as any).grecaptcha) (window as any).grecaptcha.reset();
       } finally {
         setLoading(false);
       }
@@ -206,24 +167,10 @@ const Login = () => {
       }
       setVerifying2FA(true);
       const res = await verifyLogin2FA(twoFactorToken, twoFactorCode.trim());
-      const accessToken = res.data.accessToken;
-      setTwoFactorRequired(false);
-      setTwoFactorToken("");
-      setTwoFactorCode("");
-      await finishLogin(accessToken);
+      await finishLogin(res.data.accessToken);
     } catch (error: any) {
-      const msg =
-        error?.response?.data?.message ||
-        error?.message ||
-        t("login.twoFAVerificationFailed");
-
-      const isNoRecaptchaClientsError =
-        typeof msg === "string" &&
-        msg.toLowerCase().includes("no recaptcha clients exist");
-
-      if (!isNoRecaptchaClientsError) {
-        toast.error(msg);
-      }
+      const msg = error?.response?.data?.message || error?.message || t("login.twoFAVerificationFailed");
+      toast.error(msg);
     } finally {
       setVerifying2FA(false);
     }
@@ -232,89 +179,74 @@ const Login = () => {
   return (
     <>
       <LoginMainContainer>
-        {/* Left Section */}
-        <LoginLeftContainer>
-          <LeftContent>
-            <Logo />
+        <GlassCard as="form" onSubmit={formik.handleSubmit}>
+          <Logo />
+          <WelcomeTextContainer>
+            <Heading>{t("login.welcome")}</Heading>
+            <SubHeading>{t("login.signInSubtext")}</SubHeading>
+          </WelcomeTextContainer>
 
-            <WelcomeTextContainer>
-              <Heading>{t("login.welcome")}</Heading>
-              <SubHeading>
-                {t("login.signInSubtext")}
-              </SubHeading>
-            </WelcomeTextContainer>
+          <LoginFormContainer>
+            <FormGroup>
+              <Label htmlFor="email">{t("login.emailAddress")}</Label>
+              <StyledInput
+                id="email"
+                name="email"
+                type="email"
+                placeholder={t("login.enterEmail")}
+                value={formik.values.email}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+              />
+              {formik.touched.email && formik.errors.email && <ErrorText>{formik.errors.email}</ErrorText>}
+            </FormGroup>
 
-            <LoginFormContainer as="form" onSubmit={formik.handleSubmit}>
-              {/* Email */}
+            <FormGroup>
+              <Label htmlFor="password">{t("login.password")}</Label>
+              <TextField
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                placeholder={t("login.enterPassword")}
+                variant="outlined"
+                fullWidth
+                size="small"
+                value={formik.values.password}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                InputProps={{
+                  style: { borderRadius: "8px", fontSize: "14px", backgroundColor: "rgba(255,255,255,0.9)" },
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={handleClickShowPassword} edge="end">
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              {formik.touched.password && formik.errors.password && <ErrorText>{formik.errors.password}</ErrorText>}
+            </FormGroup>
+
+            <ForgotPassword href="/auth/forgot-password">{t("login.forgotPassword")}</ForgotPassword>
+
+            {twoFactorRequired && (
               <FormGroup>
-                <Label htmlFor="email">{t("login.emailAddress")}</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder={t("login.enterEmail")}
-                  value={formik.values.email}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
+                <Label htmlFor="twoFactorCode">{t("login.twoFactorCode")}</Label>
+                <StyledInput
+                  id="twoFactorCode"
+                  name="twoFactorCode"
+                  type="text"
+                  placeholder={t("login.enterSixDigitCode")}
+                  value={twoFactorCode}
+                  onChange={(e: any) => setTwoFactorCode(e.target.value)}
                 />
-                {formik.touched.email && formik.errors.email && (
-                  <ErrorText>{formik.errors.email}</ErrorText>
-                )}
-              </FormGroup>
-
-              {/* Password */}
-              <FormGroup>
-                <Label htmlFor="password">{t("login.password")}</Label>
-                <TextField
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder={t("login.enterPassword")}
-                  variant="outlined"
-                  fullWidth
-                  size="small"
-                  value={formik.values.password}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  InputProps={{
-                    style: { borderRadius: "8px", fontSize: "14px" },
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton onClick={handleClickShowPassword} edge="end">
-                          {showPassword ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-                {formik.touched.password && formik.errors.password && (
-                  <ErrorText>{formik.errors.password}</ErrorText>
-                )}
-              </FormGroup>
-
-              <ForgotPassword href="/auth/forgot-password">
-                {t("login.forgotPassword")}
-              </ForgotPassword>
-
-              {/* 2FA Step (only when required) */}
-              {twoFactorRequired && (
-                <FormGroup>
-                  <Label htmlFor="twoFactorCode">{t("login.twoFactorCode")}</Label>
-                  <Input
-                    id="twoFactorCode"
-                    name="twoFactorCode"
-                    type="text"
-                    inputMode="numeric"
-                    placeholder={t("login.enterSixDigitCode")}
-                    className="mb-3"
-                    value={twoFactorCode}
-                    onChange={(e: any) => setTwoFactorCode(e.target.value)}
-                  />
-                  <LostAuthenticatorLink
+                <LostAuthenticatorLink
                     onClick={() => {
                       setIsLostAuthenticatorClicked(true);
                       setShowLostAuthenticatorModal(true);
                     }}
+                    type="button"
                   >
                     {t("login.lostAuthenticator")}
                   </LostAuthenticatorLink>
@@ -384,9 +316,39 @@ const Login = () => {
             </BottomText>
           </RightContent>
         </LoginRightContainer>
+                </LostAuthenticatorLink>
+                <ReuseButton
+                  backgroundcolor="#16a34a"
+                  type="button"
+                  text={verifying2FA ? t("login.verifying") : t("login.verifyAndContinue")}
+                  onClick={handleVerify2FALogin as any}
+                />
+              </FormGroup>
+            )}
+
+            {!twoFactorRequired && RECAPTCHA_SITE_KEY && (
+              <RecaptchaContainer>
+                <div ref={reCaptchaRef} className="g-recaptcha" data-sitekey={RECAPTCHA_SITE_KEY}></div>
+              </RecaptchaContainer>
+            )}
+
+            {!twoFactorRequired && (
+              <>
+                <ReuseButton
+                  backgroundcolor="#7f56d9"
+                  type="submit"
+                  text={loading ? t("login.pleaseWait") : t("login.signIn")}
+                  disabled={loading}
+                />
+                <SignUpText>
+                  {t("login.dontHaveAccount")} <a href="/auth/register">{t("login.signUp")}</a>
+                </SignUpText>
+              </>
+            )}
+          </LoginFormContainer>
+        </GlassCard>
       </LoginMainContainer>
       
-      {/* Lost Authenticator Modal */}
       <LostAuthenticatorModal
         isOpen={showLostAuthenticatorModal}
         onClose={() => setShowLostAuthenticatorModal(false)}
@@ -399,214 +361,124 @@ const Login = () => {
 
 export default Login;
 
-/* ---------------- Theme-aware styles (dark mode supported via CSS variables) ---------------- */
+
 
 const LoginMainContainer = styled("div")`
   width: 100%;
-  max-width: 100vw;
   min-height: 100vh;
-  display: flex;
-  flex-direction: row;
-  font-family: Inter, sans-serif;
-  overflow: hidden;
-  background: var(--theme-page-bg);
-  transition: background 0.35s ease;
-  @media (max-width: 600px) {
-    flex-direction: column;
-  }
-`;
-
-const LoginLeftContainer = styled("div")`
-  width: 50vw;
-  min-height: 100vh;
-  background-color: var(--theme-card-bg);
-  color: var(--theme-text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.35s ease, color 0.35s ease;
-  @media (max-width: 600px) {
-    width: 100%;
-    min-height: 100vh;
-    padding: 20px;
-  }
+  background: linear-gradient(135deg, #0c0a18, 0%, #0c0a18 100%);
+  font-family: 'Inter', sans-serif;
 `;
 
-const LeftContent = styled("div")`
-  width: 70%;
-  display: flex;
-  flex-direction: column;
-  gap: 30px;
-`;
-
-const Logo = styled("div")`
-  background: url(${logo}) no-repeat center center;
-  background-size: contain;
-  height: 40px;
-  width: 120px;
-  margin-bottom: 20px;
-`;
-
-const WelcomeTextContainer = styled("div")`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-`;
-
-const Heading = styled("p")`
-  font-size: 26px;
-  font-weight: 600;
-  color: var(--theme-text-primary);
-`;
-
-const SubHeading = styled("p")`
-  font-size: 15px;
-  color: var(--theme-text-secondary);
-`;
-
-const LoginFormContainer = styled("form")`
+const GlassCard = styled("form")`
+  width: 100%;
+  max-width: 450px;
+  padding: 40px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
   gap: 20px;
 `;
 
+const Logo = styled("div")`
+  background: url(${logo}) no-repeat center center;
+  background-size: contain;
+  height: 50px;
+  width: 150px;
+  margin: 0 auto;
+`;
+
+const WelcomeTextContainer = styled("div")`
+  text-align: center;
+  color: #ffffff;
+`;
+
+const Heading = styled("h1")`
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+`;
+
+const SubHeading = styled("p")`
+  font-size: 14px;
+  opacity: 0.8;
+  margin: 5px 0 0 0;
+`;
+
+const LoginFormContainer = styled("div")`
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+`;
+
 const FormGroup = styled("div")`
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 `;
 
 const Label = styled("label")`
   font-size: 13px;
+  color: #ffffff;
   font-weight: 500;
-  color: var(--theme-text-primary);
 `;
 
-const Input = styled("input")`
-  padding: 12px 15px;
+const StyledInput = styled("input")`
+  padding: 12px;
   border-radius: 8px;
-  border: 1px solid var(--theme-border);
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
   font-size: 14px;
   outline: none;
-  background-color: var(--theme-input-bg);
-  color: var(--theme-text-primary);
-  transition: border-color 0.2s ease, background-color 0.35s ease, color 0.35s ease;
-  &:focus {
-    border-color: #7f56d9;
-  }
+  &:focus { box-shadow: 0 0 0 2px #7f56d9; }
 `;
 
 const ForgotPassword = styled("a")`
   font-size: 12px;
-  color: #7f56d9;
-  cursor: pointer;
-  align-self: flex-end;
+  color: #ffffff;
+  text-align: right;
   text-decoration: none;
-  &:hover {
-    text-decoration: underline;
-  }
+  opacity: 0.8;
+  &:hover { opacity: 1; text-decoration: underline; }
 `;
 
 const RecaptchaContainer = styled("div")`
   display: flex;
   justify-content: center;
-  margin: 10px 0;
-  & .g-recaptcha {
-    transform: scale(0.9);
-    transform-origin: 0 0;
-  }
+  transform: scale(0.85);
 `;
 
 const SignUpText = styled("p")`
   font-size: 13px;
-  margin: 0 auto;
+  color: #ffffff;
+  text-align: center;
   margin-top: 10px;
-  color: var(--theme-text-secondary);
-  & a {
-    color: #7f56d9;
-    text-decoration: none;
-    font-weight: 500;
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-`;
-
-const LoginRightContainer = styled("div")`
-  width: 50vw;
-  min-height: 100vh;
-  position: relative;
-  background: url(${loginImage}) no-repeat center center;
-  background-size: cover;
-  border-top-left-radius: 30px;
-  border-bottom-left-radius: 30px;
-  overflow: hidden;
-  @media (max-width: 600px) {
-    display: none;
-  }
-`;
-
-const Overlay = styled("div")`
-  position: absolute;
-  inset: 0;
-  background: #7f56d9;
-  opacity: 0.5;
-`;
-
-const RightContent = styled("div")`
-  position: relative;
-  color: white;
-  padding: 60px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-`;
-
-const RightCard = styled("div")`
-  background: rgba(0, 0, 0, 0.3);
-  padding: 20px;
-  border-radius: 10px;
-  max-width: 450px;
-  margin: 0 auto;
-  h2 {
-    font-size: 30px;
-    font-weight: 900;
-    margin-bottom: 10px;
-  }
-  p {
-    font-size: 14px;
-    line-height: 1.5;
-  }
-`;
-
-const BottomText = styled("p")`
-  margin: 0 auto;
-  margin-top: 20px;
-  font-size: 14px;
-  opacity: 0.7;
+  & a { color: #ffffff; font-weight: 700; text-decoration: underline; }
 `;
 
 const ErrorText = styled("div")`
-  font-size: 12px;
-  color: #ef4444;
-  margin-top: 4px;
+  font-size: 11px;
+  color: #ff8a8a;
+  margin-top: 2px;
 `;
 
 const LostAuthenticatorLink = styled("button")`
   font-size: 12px;
-  color: #7f56d9;
+  color: #ffffff;
   cursor: pointer;
   align-self: flex-start;
-  text-decoration: none;
   margin-bottom: 8px;
   background: none;
   border: none;
   padding: 0;
-  &:hover {
-    text-decoration: underline;
-  }
+  text-decoration: underline;
+  opacity: 0.8;
+  &:hover { opacity: 1; }
 `;
-
-

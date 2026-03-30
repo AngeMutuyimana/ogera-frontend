@@ -64,8 +64,8 @@
     "notifications": "Notifications"
   },
   "login": {
-    "welcome": "Bienvenue sur Ogera 👋",
-    "signInSubtext": "Connectez-vous pour accéder à votre compte Ogera et continuer à gagner tout en apprenant.",
+    "welcome": "Bienvenue sur Ogera!",
+    "signInSubtext": "Ravi de vous revoir. Continuons d'apprendre et de progresser ensemble.",
     "emailAddress": "Adresse e-mail",
     "enterEmail": "Entrez votre adresse e-mail",
     "password": "Mot de passe",
