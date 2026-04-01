@@ -75,7 +75,9 @@ const AllJobs: React.FC = () => {
   // Calculate statistics
   const totalJobs = filteredJobs.length;
   const activeJobs = filteredJobs.filter((job) => job.status === "Active").length;
-  const pendingJobs = filteredJobs.filter((job) => job.status === "Pending").length;
+  const pendingJobs = role === "student"
+    ? (studentApplications?.data || []).filter((application: any) => application.status === "Pending").length
+    : filteredJobs.filter((job) => job.status === "Pending").length;
   const totalApplicants = filteredJobs.reduce((sum, job) => sum + (job.applications || 0), 0);
 
   const toggleSaveJob = (jobId: string) => {
@@ -91,6 +93,7 @@ const AllJobs: React.FC = () => {
   };
 
   const handleApply = (job: any) => {
+    if (job.status === "Completed") return;
     setSelectedJob(job);
     setIsModalOpen(true);
   };
@@ -249,6 +252,9 @@ className="w-full pl-9 pr-8 py-1.5 md:py-2 text-xs md:text-sm border border-gray
             const employerName = job.employer?.full_name || t("pages.jobs.unknownEmployer");
             const companyInitial = employerName.charAt(0).toUpperCase();
             const isSaved = savedJobs.has(job.job_id);
+            const isCompletedJob = job.status === "Completed";
+            const hasAlreadyApplied = appliedJobIds.has(job.job_id);
+            const isApplyDisabled = hasAlreadyApplied || isCompletedJob;
 
             return (
               <div
@@ -362,16 +368,29 @@ className="w-full pl-9 pr-8 py-1.5 md:py-2 text-xs md:text-sm border border-gray
                   {/* Action Buttons */}
                   <div className="flex flex-col sm:flex-row md:flex-col gap-1.5 md:ml-4 md:flex-shrink-0">
                     {role === "student" ? (
-                      <button
-                        onClick={() => !appliedJobIds.has(job.job_id) && handleApply(job)}
-                        disabled={appliedJobIds.has(job.job_id)}
-className={`px-3 md:px-4 py-1.5 md:py-2 rounded-md font-medium transition shadow-sm whitespace-nowrap text-xs md:text-sm flex-1 sm:flex-none cursor-pointer ${                          appliedJobIds.has(job.job_id)
-                            ? "bg-gray-400 text-white cursor-not-allowed"
-                            : "bg-blue-600 hover:bg-blue-700 text-white"
-                        }`}
-                      >
-                        {appliedJobIds.has(job.job_id) ? t("jobs.applied") : t("pages.jobs.applyNow")}
-                      </button>
+                      <div className="relative group flex-1 sm:flex-none">
+                        <button
+                          onClick={() => !isApplyDisabled && handleApply(job)}
+                          disabled={isApplyDisabled}
+className={`w-full px-3 md:px-4 py-1.5 md:py-2 rounded-md font-medium transition shadow-sm whitespace-nowrap text-xs md:text-sm cursor-pointer ${                          isApplyDisabled
+                              ? "bg-gray-400 text-white cursor-not-allowed"
+                              : "bg-blue-600 hover:bg-blue-700 text-white"
+                          }`}
+                        >
+                          {hasAlreadyApplied
+                            ? t("pages.jobs.applied")
+                            : isCompletedJob
+                            ? t("pages.jobs.completed", { defaultValue: "Completed" })
+                            : t("pages.jobs.applyNow")}
+                        </button>
+                        {isCompletedJob && (
+                          <div className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 w-56 -translate-x-1/2 rounded-md bg-gray-900 px-3 py-2 text-center text-xs text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100">
+                            {t("pages.jobs.completedNoApplyMessage", {
+                              defaultValue: "This job is already completed, so applications are closed.",
+                            })}
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <>
                         <button

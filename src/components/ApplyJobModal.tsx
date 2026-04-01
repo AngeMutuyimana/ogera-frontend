@@ -97,6 +97,12 @@ const ApplyJobModal: React.FC<ApplyJobModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (job.status === "Completed") {
+      toast.error("This job is already completed and no longer accepts applications.");
+      onClose();
+      return;
+    }
     
     // Validate required questions
     if (job.questions && job.questions.length > 0) {

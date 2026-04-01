@@ -28,10 +28,43 @@ interface DashboardMetrics {
   totalEarnings: number;
 }
 
-interface ActivityItem {
-  id?: string;
-  description?: string;
+interface ApiErrorPayload {
+  message?: string;
+}
+
+interface EmployerNotificationItem {
+  notification_id: string;
+  type?: string;
+  title?: string;
+  message?: string;
   created_at?: string;
+  application?: {
+    status?: string;
+    job?: {
+      job_title?: string;
+    };
+  };
+}
+
+interface StudentNotificationItem {
+  notification_id: string;
+  type?: string;
+  title?: string;
+  message?: string;
+  created_at?: string;
+  application?: {
+    status?: string;
+    job?: {
+      job_title?: string;
+    };
+  };
+}
+
+interface EmployerDashboardResponse {
+  jobsPosted: { value: number; change: number | null };
+  applicationsReceived: { value: number; change: number | null };
+  activeHires: { value: number; change: number | null };
+  totalSpent: { value: number; change: number | null; currency: string | null };
 }
 
 type ChartRow = {
@@ -39,12 +72,25 @@ type ChartRow = {
   [key: string]: string | number;
 };
 
+type StatItem = {
+  title: string;
+  value: string;
+  change?: string;
+  trending: "up" | "down";
+  icon: React.ReactNode;
+  color: string;
+  bg: string;
+  changeBg: string;
+};
+
 const Dashboard: React.FC = () => {
+  const ACTIVITY_LIMIT = 5;
   const { t } = useTranslation();
   const user = useSelector((state: any) => state.auth.user);
   const roleRaw = useSelector((state: any) => state.auth.role);
   const accessToken = useSelector((state: any) => state.auth.accessToken);
   const role = roleRaw ? String(roleRaw).toLowerCase().trim() : undefined;
+  const isAdminDashboardRole = role === "superadmin" || Boolean(role?.includes("admin"));
   const hour = new Date().getHours();
   const greeting =
     hour < 12
@@ -61,23 +107,42 @@ const Dashboard: React.FC = () => {
   const [studentMetrics, setStudentMetrics] = useState<any | null>(null);
   const [studentLoading, setStudentLoading] = useState(false);
   const [studentError, setStudentError] = useState<string | null>(null);
-  // Superadmin recent activity fetched from backend
-  const [adminActivities, setAdminActivities] = useState<ActivityItem[]>([]);
+  // Employer-specific metrics fetched from backend
+  const [employerMetrics, setEmployerMetrics] = useState<EmployerDashboardResponse | null>(null);
+  const [employerLoading, setEmployerLoading] = useState(false);
+  const [employerError, setEmployerError] = useState<string | null>(null);
+  // Student recent activity from notifications
+  const [studentActivities, setStudentActivities] = useState<StudentNotificationItem[]>([]);
+  const [studentActivitiesLoading, setStudentActivitiesLoading] = useState(false);
+  // Employer recent activity from notifications
+  const [employerActivities, setEmployerActivities] = useState<EmployerNotificationItem[]>([]);
+  const [employerActivitiesLoading, setEmployerActivitiesLoading] = useState(false);
+  // Superadmin recent activity from notifications
+  const [adminActivities, setAdminActivities] = useState<EmployerNotificationItem[]>([]);
   const [adminActivitiesLoading, setAdminActivitiesLoading] = useState(false);
 
-  // Fetch dashboard metrics for superadmin
+  const parseApiErrorMessage = (status: number, payload?: ApiErrorPayload) => {
+    const backendMessage = payload?.message?.trim();
+    if (backendMessage) return `${status}: ${backendMessage}`;
+    return `HTTP ${status}`;
+  };
+
+  // Fetch dashboard metrics for all admin-type roles
   useEffect(() => {
-    // Only superadmin should fetch these metrics
-    if (role === "superadmin") {
+    if (isAdminDashboardRole) {
       setMetricsLoading(true);
       setMetricsError(null);
-      console.log("[Dashboard] Fetching metrics for superadmin...");
+      console.log("[Dashboard] Fetching metrics for admin-type role...");
       fetch("/api/dashboard/metrics", {
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       })
-        .then((res) => {
+        .then(async (res) => {
           console.log("[Dashboard] Response status:", res.status);
-          return res.json();
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            throw new Error(parseApiErrorMessage(res.status, data));
+          }
+          return data;
         })
         .then((data) => {
           console.log("[Dashboard] Response data:", data);
@@ -94,13 +159,13 @@ const Dashboard: React.FC = () => {
         .catch((error) => {
           console.error("[Dashboard] Failed to fetch dashboard metrics:", error);
           setMetrics(null);
-          setMetricsError(String(error));
+          setMetricsError(error?.message || String(error));
         })
         .finally(() => {
           setMetricsLoading(false);
         });
     }
-  }, [role]);
+  }, [isAdminDashboardRole, accessToken]);
 
   // Fetch student-specific dashboard metrics
   useEffect(() => {
@@ -128,11 +193,83 @@ const Dashboard: React.FC = () => {
     }
   }, [role, accessToken]);
 
-  // Fetch top 5 recent activities for superadmin from activity_logs
+  // Fetch employer-specific dashboard metrics
   useEffect(() => {
-    if (role === "superadmin") {
+    if (role === "employer") {
+      setEmployerLoading(true);
+      setEmployerError(null);
+      fetch("/api/dashboard/employer", {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.success && data.data) {
+            setEmployerMetrics(data.data);
+          } else {
+            setEmployerMetrics(null);
+            setEmployerError("Invalid response from server");
+          }
+        })
+        .catch((error) => {
+          console.error("[Dashboard] Failed to fetch employer metrics:", error);
+          setEmployerMetrics(null);
+          setEmployerError(String(error));
+        })
+        .finally(() => setEmployerLoading(false));
+    }
+  }, [role, accessToken]);
+
+  // Fetch top 5 recent notifications for student activity feed
+  useEffect(() => {
+    if (role === "student") {
+      setStudentActivitiesLoading(true);
+      fetch(`/api/notifications?limit=${ACTIVITY_LIMIT}`, {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.success && Array.isArray(data.data)) {
+            setStudentActivities(data.data);
+          } else {
+            setStudentActivities([]);
+          }
+        })
+        .catch((error) => {
+          console.error("[Dashboard] Failed to fetch student notifications:", error);
+          setStudentActivities([]);
+        })
+        .finally(() => setStudentActivitiesLoading(false));
+    }
+  }, [role, accessToken, ACTIVITY_LIMIT]);
+
+  // Fetch top 5 recent notifications for employer activity feed
+  useEffect(() => {
+    if (role === "employer") {
+      setEmployerActivitiesLoading(true);
+      fetch(`/api/notifications?limit=${ACTIVITY_LIMIT}`, {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.success && Array.isArray(data.data)) {
+            setEmployerActivities(data.data);
+          } else {
+            setEmployerActivities([]);
+          }
+        })
+        .catch((error) => {
+          console.error("[Dashboard] Failed to fetch employer notifications:", error);
+          setEmployerActivities([]);
+        })
+        .finally(() => setEmployerActivitiesLoading(false));
+    }
+  }, [role, accessToken, ACTIVITY_LIMIT]);
+
+  // Fetch top 5 recent notifications for all admin-type roles activity feed
+  useEffect(() => {
+    if (isAdminDashboardRole) {
       setAdminActivitiesLoading(true);
-      fetch("/api/dashboard/recent-activities?limit=5", {
+      fetch(`/api/notifications?limit=${ACTIVITY_LIMIT}`, {
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       })
         .then((res) => res.json())
@@ -144,14 +281,26 @@ const Dashboard: React.FC = () => {
           }
         })
         .catch((error) => {
-          console.error("[Dashboard] Failed to fetch recent activities:", error);
+          console.error("[Dashboard] Failed to fetch admin-type notifications:", error);
           setAdminActivities([]);
         })
         .finally(() => setAdminActivitiesLoading(false));
     }
-  }, [role, accessToken]);
+  }, [isAdminDashboardRole, accessToken, ACTIVITY_LIMIT]);
 
-  const getStats = () => {
+  const getStats = (): StatItem[] => {
+    const formatNumber = (v: unknown) => {
+      if (v === null || v === undefined) return t("common.na");
+      if (typeof v === "number") return v.toLocaleString();
+      if (!Number.isNaN(Number(v))) return String(v);
+      return String(v);
+    };
+    const formatChange = (value: number | null | undefined) => {
+      if (value === null || value === undefined) return undefined;
+      if (value > 0) return `+${value}`;
+      return String(value);
+    };
+
     if (role === "student") {
       // Use backend-provided student metrics when available
       const appsValue = studentMetrics?.applications?.value ?? null;
@@ -191,8 +340,17 @@ const Dashboard: React.FC = () => {
         {
           title: t("dashboard.interviews"),
           value: studentLoading ? "..." : (interviewsValue !== null && interviewsValue !== undefined ? String(interviewsValue) : (studentMetrics?.interviews?.note || t("common.na"))),
-          change: undefined,
-          trending: 'up' as const,
+          change: interviewsValue !== null && interviewsValue !== undefined && studentMetrics?.interviews?.growthPercentage !== null && studentMetrics?.interviews?.growthPercentage !== undefined
+            ? (studentMetrics.interviews.growthPercentage >= 0
+                ? `+${studentMetrics.interviews.growthPercentage}%`
+                : `${studentMetrics.interviews.growthPercentage}%`)
+            : undefined,
+          trending:
+            studentMetrics?.interviews?.growthPercentage !== null &&
+            studentMetrics?.interviews?.growthPercentage !== undefined &&
+            studentMetrics.interviews.growthPercentage < 0
+              ? 'down' as const
+              : 'up' as const,
           icon: <UserGroupIcon className="h-4 w-4" />,
           color: 'text-orange-600',
           bg: 'bg-orange-50',
@@ -211,63 +369,65 @@ const Dashboard: React.FC = () => {
       ];
     }
     if (role === "employer") {
+      const jobsPostedValue = employerMetrics?.jobsPosted?.value ?? null;
+      const jobsPostedChange = employerMetrics?.jobsPosted?.change ?? null;
+      const applicationsReceivedValue = employerMetrics?.applicationsReceived?.value ?? null;
+      const applicationsReceivedChange = employerMetrics?.applicationsReceived?.change ?? null;
+      const activeHiresValue = employerMetrics?.activeHires?.value ?? null;
+      const activeHiresChange = employerMetrics?.activeHires?.change ?? null;
+      const totalSpentValue = employerMetrics?.totalSpent?.value ?? null;
+      const totalSpentChange = employerMetrics?.totalSpent?.change ?? null;
+      const totalSpentCurrency = employerMetrics?.totalSpent?.currency ?? "$";
+
       return [
         {
           title: t("dashboard.jobsPosted"),
-          value: "18",
-          change: "+3",
-          trending: "up" as const,
+          value: employerLoading ? "..." : (jobsPostedValue !== null ? formatNumber(jobsPostedValue) : (employerError ? t("dashboard.error") : t("common.na"))),
+          change: formatChange(jobsPostedChange),
+          trending: (jobsPostedChange ?? 0) >= 0 ? "up" as const : "down" as const,
           icon: <BriefcaseIcon className="h-4 w-4" />,
           color: "text-indigo-600",
           bg: "bg-indigo-50",
-          changeBg: "bg-green-50 text-green-700",
+          changeBg: (jobsPostedChange ?? 0) >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600",
         },
         {
           title: t("dashboard.applicationsReceived"),
-          value: "245",
-          change: "+12.4%",
-          trending: "up" as const,
+          value: employerLoading ? "..." : (applicationsReceivedValue !== null ? formatNumber(applicationsReceivedValue) : (employerError ? t("dashboard.error") : t("common.na"))),
+          change: formatChange(applicationsReceivedChange),
+          trending: (applicationsReceivedChange ?? 0) >= 0 ? "up" as const : "down" as const,
           icon: <UserGroupIcon className="h-4 w-4" />,
           color: "text-emerald-600",
           bg: "bg-emerald-50",
-          changeBg: "bg-green-50 text-green-700",
+          changeBg: (applicationsReceivedChange ?? 0) >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600",
         },
         {
           title: t("dashboard.activeHires"),
-          value: "12",
-          change: "+2",
-          trending: "up" as const,
+          value: employerLoading ? "..." : (activeHiresValue !== null ? formatNumber(activeHiresValue) : (employerError ? t("dashboard.error") : t("common.na"))),
+          change: formatChange(activeHiresChange),
+          trending: (activeHiresChange ?? 0) >= 0 ? "up" as const : "down" as const,
           icon: <AcademicCapIcon className="h-4 w-4" />,
           color: "text-orange-600",
           bg: "bg-orange-50",
-          changeBg: "bg-green-50 text-green-700",
+          changeBg: (activeHiresChange ?? 0) >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600",
         },
         {
           title: t("dashboard.totalSpent"),
-          value: "$34,500",
-          change: "+8.7%",
-          trending: "up" as const,
+          value: employerLoading ? "..." : (totalSpentValue !== null ? `${totalSpentCurrency}${formatNumber(totalSpentValue)}` : (employerError ? t("dashboard.error") : t("common.na"))),
+          change: formatChange(totalSpentChange),
+          trending: (totalSpentChange ?? 0) >= 0 ? "up" as const : "down" as const,
           icon: <ChartBarIcon className="h-4 w-4" />,
           color: "text-[#7F56D9]",
           bg: "bg-purple-50",
-          changeBg: "bg-green-50 text-green-700",
+          changeBg: (totalSpentChange ?? 0) >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600",
         },
       ];
     }
     // superadmin / default
-    const formatNumber = (v: unknown) => {
-      if (v === null || v === undefined) return "N/A";
-      if (typeof v === "number") return v.toLocaleString();
-      // if value is a numeric string, still show it raw
-      if (!Number.isNaN(Number(v))) return String(v);
-      return String(v);
-    };
-
     return [
       {
         title: t("dashboard.totalUsers"),
-        value: metricsLoading ? "..." : (metrics ? formatNumber(metrics.totalUsers) : (metricsError ? t("dashboard.error") : t("common.na"))),
-        change: "+12.5%",
+        value: metricsLoading ? "..." : (metrics ? formatNumber(metrics.totalUsers) : (metricsError ? `ERR (${metricsError})` : t("common.na"))),
+        change: undefined,
         trending: "up" as const,
         icon: <UserGroupIcon className="h-4 w-4" />,
         color: "text-indigo-600",
@@ -276,8 +436,8 @@ const Dashboard: React.FC = () => {
       },
       {
         title: t("dashboard.totalStudents"),
-        value: metricsLoading ? "..." : (metrics ? formatNumber(metrics.totalStudents) : (metricsError ? t("dashboard.error") : t("common.na"))),
-        change: "+8.2%",
+        value: metricsLoading ? "..." : (metrics ? formatNumber(metrics.totalStudents) : (metricsError ? `ERR (${metricsError})` : t("common.na"))),
+        change: undefined,
         trending: "up" as const,
         icon: <AcademicCapIcon className="h-4 w-4" />,
         color: "text-emerald-600",
@@ -286,9 +446,9 @@ const Dashboard: React.FC = () => {
       },
       {
         title: t("dashboard.activeJobs"),
-        value: metricsLoading ? "..." : (metrics ? formatNumber(metrics.activeJobs) : (metricsError ? t("dashboard.error") : t("common.na"))),
-        change: "-3.1%",
-        trending: "down" as const,
+        value: metricsLoading ? "..." : (metrics ? formatNumber(metrics.activeJobs) : (metricsError ? `ERR (${metricsError})` : t("common.na"))),
+        change: undefined,
+        trending: "up" as const,
         icon: <BriefcaseIcon className="h-4 w-4" />,
         color: "text-orange-600",
         bg: "bg-orange-50",
@@ -296,8 +456,8 @@ const Dashboard: React.FC = () => {
       },
       {
         title: t("dashboard.totalEarnings"),
-        value: metricsLoading ? "..." : (metrics ? (`$${formatNumber(metrics.totalEarnings)}`) : (metricsError ? t("dashboard.error") : t("common.na"))),
-        change: "+18.7%",
+        value: metricsLoading ? "..." : (metrics ? (`$${formatNumber(metrics.totalEarnings)}`) : (metricsError ? `ERR (${metricsError})` : t("common.na"))),
+        change: undefined,
         trending: "up" as const,
         icon: <ChartBarIcon className="h-4 w-4" />,
         color: "text-[#7F56D9]",
@@ -333,29 +493,51 @@ const Dashboard: React.FC = () => {
   };
 
   const getRecentActivity = () => {
+    const toActivityMessage = (item: {
+      type?: string;
+      message?: string;
+      title?: string;
+      application?: { status?: string; job?: { job_title?: string } };
+    }) => {
+      const message = item.message?.trim();
+      if (message) return message;
+
+      const jobTitle = item.application?.job?.job_title?.trim();
+      const status = item.application?.status?.trim().toLowerCase();
+      if (jobTitle && status && item.type === "application_status") {
+        return `Your application for "${jobTitle}" has been ${status}`;
+      }
+
+      return item.title?.trim() || t("common.na");
+    };
+
+    const mapTopFiveMessages = (items: Array<{ type?: string; message?: string; title?: string; created_at?: string; application?: { status?: string; job?: { job_title?: string } } }>) =>
+      [...items]
+        .sort((a, b) => {
+          const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return bTime - aTime;
+        })
+        .slice(0, ACTIVITY_LIMIT)
+        .map((item) => toActivityMessage(item));
+
     if (role === "student") {
-      return [
-        t("dashboard.recentActivityStudent1"),
-        t("dashboard.recentActivityStudent2"),
-        t("dashboard.recentActivityStudent3"),
-        t("dashboard.recentActivityStudent4"),
-        t("dashboard.recentActivityStudent5"),
-      ];
+      if (studentActivitiesLoading) return ["..."];
+      if (studentActivities.length > 0) {
+        return mapTopFiveMessages(studentActivities);
+      }
+      return [t("common.noData")];
     }
     if (role === "employer") {
-      return [
-        t("dashboard.recentActivityEmployer1"),
-        t("dashboard.recentActivityEmployer2"),
-        t("dashboard.recentActivityEmployer3"),
-        t("dashboard.recentActivityEmployer4"),
-        t("dashboard.recentActivityEmployer5"),
-      ];
+      if (employerActivitiesLoading) return ["..."];
+      if (employerActivities.length > 0) {
+        return mapTopFiveMessages(employerActivities);
+      }
+      return [t("common.noData")];
     }
     if (adminActivitiesLoading) return ["..."];
     if (adminActivities.length > 0) {
-      return adminActivities
-        .slice(0, 5)
-        .map((activity) => activity.description || t("common.na"));
+      return mapTopFiveMessages(adminActivities);
     }
     return [t("common.noData")];
   };
@@ -450,14 +632,16 @@ const Dashboard: React.FC = () => {
               <div className={`p-1.5 rounded ${item.bg}`}>
                 <span className={item.color}>{item.icon}</span>
               </div>
-              <span className={`inline-flex items-center gap-0.5 text-[9px] font-semibold px-1 py-0.5 rounded-full animate-trend ${item.changeBg}`}>
-                {item.trending === "up" ? (
-                  <ArrowTrendingUpIcon className="h-2.5 w-2.5" />
-                ) : (
-                  <ArrowTrendingDownIcon className="h-2.5 w-2.5" />
-                )}
-                {item.change}
-              </span>
+              {item.change ? (
+                <span className={`inline-flex items-center gap-0.5 text-[9px] font-semibold px-1 py-0.5 rounded-full animate-trend ${item.changeBg}`}>
+                  {item.trending === "up" ? (
+                    <ArrowTrendingUpIcon className="h-2.5 w-2.5" />
+                  ) : (
+                    <ArrowTrendingDownIcon className="h-2.5 w-2.5" />
+                  )}
+                  {item.change}
+                </span>
+              ) : null}
             </div>
             <p className="text-base font-bold text-gray-900">{item.value}</p>
             <p className="text-[11px] text-gray-500">{item.title}</p>

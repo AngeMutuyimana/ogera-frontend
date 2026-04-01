@@ -713,6 +713,7 @@
       "acceptedApplicationsTitle": "Accepted Applications",
       "acceptedApplicationsSubtitle": "View all accepted job applications for your posted jobs",
       "viewAllApplications": "View All Applications",
+      "browseJobs": "Browse Jobs",
       "totalAccepted": "Total Accepted",
       "noAcceptedYet": "No accepted applications yet",
       "noAcceptedMessage": "You haven't accepted any job applications yet.",

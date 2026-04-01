@@ -60,7 +60,7 @@ const StudentRejectedApplications: React.FC = () => {
         </div>
         <button
           onClick={() => navigate("/dashboard/jobs/my-applications")}
-          className=" text-sm font-medium bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg font-semibold transition shadow-sm cursor-pointer"
+          className="text-sm font-medium bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg font-semibold transition shadow-sm cursor-pointer"
         >
           {t("pages.jobs.viewAllApplications")}
         </button>
@@ -87,7 +87,7 @@ const StudentRejectedApplications: React.FC = () => {
           </p>
           <button
             onClick={() => navigate("/dashboard/jobs/all")}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition shadow-md"
+            className=" text-sm font-medium bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg font-semibold transition shadow-sm cursor-pointer"
           >
             {t("pages.jobs.browseJobs")}
           </button>
