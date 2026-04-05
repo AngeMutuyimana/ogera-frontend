@@ -46,6 +46,8 @@ const JobDetails: React.FC = () => {
     const isSaved = id ? savedJobs.has(id) : false;
 
   const hasApplied = applicationCheck?.data?.hasApplied || false;
+  const isCompletedJob = job?.status === "Completed";
+  const isApplyDisabled = hasApplied || isCompletedJob;
   const fundingStatus = job?.funding_status || "Unfunded";
   const isEmployerView = (role === "employer" || role === "superadmin") && currentUserId && job?.employer_id === currentUserId;
 
@@ -194,12 +196,27 @@ const JobDetails: React.FC = () => {
           </div>
         </div>
         {role === "student" && (
-          <Button
-            backgroundcolor={hasApplied ? "#6b7280" : "#7f56d9"}
-            text={hasApplied ? t("pages.jobs.applied") : t("pages.jobs.applyNow")}
-            onClick={() => !hasApplied && setIsModalOpen(true)}
-            disabled={hasApplied}
-          />
+          <div className="relative group">
+            <Button
+              backgroundcolor={isApplyDisabled ? "#6b7280" : "#7f56d9"}
+              text={
+                hasApplied
+                  ? t("pages.jobs.applied")
+                  : isCompletedJob
+                  ? t("pages.jobs.completed", { defaultValue: "Completed" })
+                  : t("pages.jobs.applyNow")
+              }
+              onClick={() => !isApplyDisabled && setIsModalOpen(true)}
+              disabled={isApplyDisabled}
+            />
+            {isCompletedJob && (
+              <div className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 w-64 -translate-x-1/2 rounded-md bg-gray-900 px-3 py-2 text-center text-xs text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100">
+                {t("pages.jobs.completedNoApplyMessage", {
+                  defaultValue: "This job is already completed, so applications are closed.",
+                })}
+              </div>
+            )}
+          </div>
         )}
         {(role === "employer" || role === "superadmin") && (
           <div className="flex flex-col sm:flex-row gap-2">
