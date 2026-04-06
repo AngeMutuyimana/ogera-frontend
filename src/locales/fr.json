@@ -1448,7 +1448,40 @@
       "emailStatus": "État de l'e-mail",
       "verified": "✓ Vérifié",
       "notVerified": "✗ Non vérifié",
-      "profileLastUpdated": "Profil mis à jour pour la dernière fois"
+      "profileLastUpdated": "Profil mis à jour pour la dernière fois",
+      "active": "Actif",
+      "notSet": "Non défini",
+      "profileCreated": "Profil créé",
+      "recently": "Récemment",
+      "joined": "Rejoint"
+    },
+    "userProfile": {
+      "loadingProfile": "Chargement du profil...",
+      "regular": "Utilisateur régulier",
+      "editProfile": "Modifier le profil",
+      "email": "E-mail",
+      "phone": "Téléphone",
+      "profileCompletion": "Complétude du profil",
+      "resume": "CV",
+      "resumeUploaded": "CV téléchargé",
+      "downloadResume": "Télécharger",
+      "noResumeUploaded": "Aucun CV téléchargé",
+      "uploadResume": "Télécharger le CV",
+      "uploading": "Téléchargement en cours...",
+      "trustScore": "Score de confiance",
+      "complete": "Complet",
+      "employment": "Emploi",
+      "education": "Éducation",
+      "projects": "Projets",
+      "skills": "Compétences",
+      "accountStatus": "Statut du compte",
+      "emailStatus": "Statut de l'e-mail",
+      "phoneStatus": "Statut du téléphone",
+      "twoFactorAuth": "Authentification à deux facteurs",
+      "verified": "✓ Vérifié",
+      "notVerified": "✗ Non vérifié",
+      "enabled": "Activé",
+      "disabled": "Désactivé"
     }
   }
 }
