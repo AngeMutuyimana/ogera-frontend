@@ -34,14 +34,29 @@ interface SuperAdminProfileProps {
 }
 
 // Reusable Stat Card Component with Loading State - Colorful Design
-const StatCard = ({ icon: Icon, label, value, isLoading }: any) => {
+const StatCard = ({ icon: Icon, label, value, isLoading, index }: any) => {
   const gradients = [
     'from-blue-500 to-blue-600',
     'from-indigo-500 to-indigo-600',
     'from-cyan-500 to-blue-600',
     'from-blue-600 to-indigo-600'
   ];
-  const gradient = gradients[Math.floor(Math.random() * gradients.length)];
+  
+  // Deterministic gradient selection using index or label hash
+  const getGradientIndex = () => {
+    if (index !== undefined) {
+      return index % gradients.length;
+    }
+    // Fallback: hash the label string to get consistent index
+    let hash = 0;
+    for (let i = 0; i < label.length; i++) {
+      hash = ((hash << 5) - hash) + label.charCodeAt(i);
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash) % gradients.length;
+  };
+  
+  const gradient = gradients[getGradientIndex()];
   
   return (
     <div className={`bg-gradient-to-br ${gradient} rounded-lg p-6 text-white shadow-lg hover:shadow-xl transition-all transform hover:scale-105`}>
@@ -67,23 +82,29 @@ const StatCard = ({ icon: Icon, label, value, isLoading }: any) => {
 };
 
 // Reusable Settings Card Component - Colorful Design
-const SettingsCard = ({ icon: Icon, title, description, action, actionLabel }: any) => (
-  <div className="bg-white border border-gray-200 rounded-lg p-6 flex items-start justify-between hover:shadow-lg transition-all hover:border-blue-300">
+const SettingsCard = ({ icon: Icon, title, description, action, actionLabel, disabled }: any) => (
+  <div className={`bg-white border border-gray-200 rounded-lg p-6 flex items-start justify-between transition-all ${disabled ? 'opacity-60' : 'hover:shadow-lg hover:border-blue-300'}`}>
     <div className="flex items-start gap-4">
       <div className="flex-shrink-0">
-        <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+        <div className={`flex items-center justify-center h-12 w-12 rounded-lg text-white ${disabled ? 'bg-gray-400' : 'bg-gradient-to-br from-blue-500 to-indigo-600'}`}>
           <Icon className="h-6 w-6" />
         </div>
       </div>
       <div>
         <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-        <p className="text-gray-600 text-sm mt-1">{description}</p>
+        <p className={`text-sm mt-1 ${disabled ? 'text-gray-400' : 'text-gray-600'}`}>{description}</p>
+        {disabled && <p className="text-xs text-amber-600 mt-2">Coming soon</p>}
       </div>
     </div>
     {actionLabel && (
       <button
         onClick={action}
-        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-5 py-2 rounded-lg font-medium transition-all shadow-md hover:shadow-lg flex-shrink-0 ml-4 transform hover:scale-105"
+        disabled={disabled}
+        className={`px-5 py-2 rounded-lg font-medium transition-all shadow-md flex-shrink-0 ml-4 transform ${
+          disabled
+            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white hover:shadow-lg hover:scale-105'
+        }`}
       >
         {actionLabel}
       </button>
@@ -162,7 +183,7 @@ const SuperAdminProfile: React.FC<SuperAdminProfileProps> = ({
     if (profileData?.created_at) {
       activities.push({
         icon: CheckCircleIcon,
-        title: "Profile Created",
+        title: t('pages.superAdminProfile.profileCreated'),
         description: `Account established for ${userData?.full_name || "User"}`,
         timestamp: new Date(profileData.created_at).toLocaleDateString(),
         status: "success",
@@ -176,7 +197,7 @@ const SuperAdminProfile: React.FC<SuperAdminProfileProps> = ({
         icon: BriefcaseIcon,
         title: `Employment: ${latest.job_title}`,
         description: `at ${latest.company_name}`,
-        timestamp: latest.start_date ? new Date(latest.start_date).toLocaleDateString() : "Recently",
+        timestamp: latest.start_date ? new Date(latest.start_date).toLocaleDateString() : t('pages.superAdminProfile.recently'),
         status: latest.is_current ? "success" : "pending",
       });
     }
@@ -188,7 +209,7 @@ const SuperAdminProfile: React.FC<SuperAdminProfileProps> = ({
         icon: AcademicCapIcon,
         title: `Education: ${latest.degree}`,
         description: `from ${latest.institution_name}`,
-        timestamp: latest.start_year ? `${latest.start_year}` : "Recently",
+        timestamp: latest.start_year ? `${latest.start_year}` : t('pages.superAdminProfile.recently'),
         status: "success",
       });
     }
@@ -200,7 +221,7 @@ const SuperAdminProfile: React.FC<SuperAdminProfileProps> = ({
         icon: SparklesIcon,
         title: `Project: ${latest.project_title}`,
         description: latest.role_in_project || "Project added",
-        timestamp: latest.start_date ? new Date(latest.start_date).toLocaleDateString() : "Recently",
+        timestamp: latest.start_date ? new Date(latest.start_date).toLocaleDateString() : t('pages.superAdminProfile.recently'),
         status: "success",
       });
     }
@@ -224,7 +245,7 @@ const SuperAdminProfile: React.FC<SuperAdminProfileProps> = ({
                   {userInitials}
                 </div>
                 <span className="absolute bottom-0 right-0 bg-green-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full border-2 border-white">
-                  Active
+                  {t('pages.superAdminProfile.active')}
                 </span>
               </div>
 
@@ -244,18 +265,18 @@ const SuperAdminProfile: React.FC<SuperAdminProfileProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm">
                   <div className="flex items-center gap-2 text-gray-700">
                     <span className="text-lg">📱</span>
-                    <span>{profileData?.mobile_number || "Not set"}</span>
+                    <span>{profileData?.mobile_number || t('pages.superAdminProfile.notSet')}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-700">
                     <span className="text-lg">✉️</span>
-                    <span>{userData?.email || "Not set"}</span>
+                    <span>{userData?.email || t('pages.superAdminProfile.notSet')}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-700">
                     <span className="text-lg">📅</span>
-                    <span>Joined {profileData?.created_at ? new Date(profileData.created_at).toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" }) : "Not set"}</span>
+                    <span>{t('pages.superAdminProfile.joined')} {profileData?.created_at ? new Date(profileData.created_at).toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" }) : t('pages.superAdminProfile.notSet')}</span>
                   </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-3">{t('pages.superAdminProfile.profileLastUpdated')} {profileData?.updated_at ? new Date(profileData.updated_at).toLocaleDateString() : "Recently"}</p>
+                <p className="text-xs text-gray-500 mt-3">{t('pages.superAdminProfile.profileLastUpdated')} {profileData?.updated_at ? new Date(profileData.updated_at).toLocaleDateString() : t('pages.superAdminProfile.recently')}</p>
               </div>
             </div>
 
@@ -277,7 +298,7 @@ const SuperAdminProfile: React.FC<SuperAdminProfileProps> = ({
                   style={{ width: `${profileCompletion}%` }}
                 ></div>
               </div>
-              <p className="text-blue-100 text-xs mt-3">{profileCompletion}% complete - {100 - profileCompletion}% {t('pages.superAdminProfile.toGo')}</p>
+              <p className="text-blue-100 text-xs mt-3">{profileCompletion}% complete - {100 - profileCompletion} {t('pages.superAdminProfile.toGo')}</p>
             </div>
           </div>
         </div>
@@ -334,24 +355,28 @@ const SuperAdminProfile: React.FC<SuperAdminProfileProps> = ({
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <StatCard
+                      index={0}
                       icon={BriefcaseIcon}
                       label={t('pages.superAdminProfile.employmentRecords')}
                       value={employments?.length || 0}
                       isLoading={isFullProfileLoading}
                     />
                     <StatCard
+                      index={1}
                       icon={AcademicCapIcon}
                       label={t('pages.superAdminProfile.educationRecords')}
                       value={educations?.length || 0}
                       isLoading={isFullProfileLoading}
                     />
                     <StatCard
+                      index={2}
                       icon={SparklesIcon}
                       label={t('pages.superAdminProfile.projects')}
                       value={projects?.length || 0}
                       isLoading={isFullProfileLoading}
                     />
                     <StatCard
+                      index={3}
                       icon={CheckCircleIcon}
                       label={t('pages.superAdminProfile.skills')}
                       value={keySkills?.length || 0}
@@ -437,6 +462,7 @@ const SuperAdminProfile: React.FC<SuperAdminProfileProps> = ({
                     }
                     action={() => {}}
                     actionLabel={profileData?.two_factor_enabled ? t('pages.superAdminProfile.manageTwoFA') : t('pages.superAdminProfile.enableTwoFA')}
+                    disabled={true}
                   />
                 </div>
               </div>
