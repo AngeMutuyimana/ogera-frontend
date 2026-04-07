@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckCircleIcon, EyeIcon, CalendarIcon, UserIcon, ClockIcon } from "@heroicons/react/24/outline";
+import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import type { AcademicVerification } from "../../services/api/academicVerificationApi";
 import { getAcademicVerificationsByStatus } from "../../services/api/academicVerificationApi";
 import api from "../../services/api/axiosInstance";
