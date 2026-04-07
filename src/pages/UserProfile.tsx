@@ -13,10 +13,11 @@ import {
 } from "@heroicons/react/24/outline";
 
 interface UserProfileProps {
-  profileData: any;
+  profileData: any; // choose correct type (any vs unknown)
   user: any;
   userRole: string;
   loading: boolean;
+
   isFullProfileLoading?: boolean;
   activeSection?: any;
   setActiveSection?: (section: any) => void;
@@ -27,12 +28,13 @@ interface UserProfileProps {
   setIsEditProfileModalOpen?: (open: boolean) => void;
   employments?: any[];
   educations?: any[];
-  profileData: unknown;
-  user: unknown;
-  userRole: string;
-  loading: boolean;
+  
+  // include these if your branch uses them
+  projects?: any;
+  keySkills?: any;
+  trustScoreResponse?: any;
+  isTrustScoreLoading?: boolean;
 }
-
 const UserProfile: React.FC<UserProfileProps> = ({
   profileData,
   user,
