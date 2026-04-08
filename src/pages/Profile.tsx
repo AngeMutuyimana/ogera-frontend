@@ -143,7 +143,7 @@ const Profile: React.FC = () => {
     isLoading: isTrustScoreLoading,
     refetch: refetchTrustScore,
   } = useGetMyTrustScoreQuery(undefined, {
-    skip: !profileData,
+    skip: !profileData || isSuperAdmin,
   });
 
   // Fetch Dashboard Metrics (for superadmin)
@@ -163,16 +163,12 @@ const Profile: React.FC = () => {
   });
 
   // Fetch Wallet Balance (for superadmin)
-  const {
-    data: _walletBalanceData,
-  } = useGetWalletBalanceQuery(undefined, {
+  useGetWalletBalanceQuery(undefined, {
     skip: !isSuperAdmin,
   });
 
   // Fetch All Users (for superadmin - user counts)
-  const {
-    data: _allUsersData,
-  } = useGetAllUsersQuery({ page: 1, limit: 1 }, {
+  useGetAllUsersQuery({ page: 1, limit: 1 }, {
     skip: !isSuperAdmin,
   });
 
@@ -642,7 +638,7 @@ const Profile: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-4xl font-bold mb-2">{t("profile.welcome")} 👋</h2>
-                  <p className="text-lg opacity-90">{t("profile.adminPanelDescription") || "Manage system settings and user oversight"}</p>
+                  <p className="text-lg opacity-90">{t("profile.adminPanelDescription")}</p>
                 </div>
                 <div className="w-24 h-24 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm">
                   <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -665,8 +661,8 @@ const Profile: React.FC = () => {
                     {isDashboardMetricsLoading ? "..." : dashboardMetricsData?.data?.totalUsers || 0}
                   </span>
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-1">{t("profile.totalUsers") || "Total Users"}</h3>
-                <p className="text-sm text-gray-600">{t("profile.activeInSystem") || "Active in system"}</p>
+                <h3 className="font-semibold text-gray-900 mb-1">{t("profile.totalUsers")}</h3>
+                <p className="text-sm text-gray-600">{t("profile.activeInSystem")}</p>
               </div>
 
               <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all cursor-default">
@@ -676,10 +672,10 @@ const Profile: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                     </svg>
                   </div>
-                  <span className="text-2xl font-bold text-green-600">92%</span>
+                  <span className="text-2xl font-bold text-green-600" title="Demo metric - system health monitoring coming soon">98%</span>
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-1">{t("profile.systemHealth") || "System Health"}</h3>
-                <p className="text-sm text-gray-600">{t("profile.allOperational") || "All systems operational"}</p>
+                <h3 className="font-semibold text-gray-900 mb-1">{t("profile.systemHealth")}</h3>
+                <p className="text-sm text-gray-600"><span className="text-xs italic text-gray-400">[Demo]</span> {t("profile.allOperational")}</p>
               </div>
 
               <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all cursor-default">
@@ -693,8 +689,8 @@ const Profile: React.FC = () => {
                     {isDashboardMetricsLoading ? "..." : dashboardMetricsData?.data?.activeJobs || 0}
                   </span>
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-1">{t("profile.activeJobs") || "Active Jobs"}</h3>
-                <p className="text-sm text-gray-600">{t("profile.hiringSoon") || "Hiring soon"}</p>
+                <h3 className="font-semibold text-gray-900 mb-1">{t("profile.activeJobs")}</h3>
+                <p className="text-sm text-gray-600">{t("profile.hiringSoon")}</p>
               </div>
 
               <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all cursor-default">
@@ -708,8 +704,8 @@ const Profile: React.FC = () => {
                     {isJobPaymentsLoading ? "..." : (jobPaymentsData?.data?.length || 0)}
                   </span>
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-1">{t("profile.transactions") || "Transactions"}</h3>
-                <p className="text-sm text-gray-600">{t("profile.thisMonth") || "This month"}</p>
+                <h3 className="font-semibold text-gray-900 mb-1">{t("profile.transactions")}</h3>
+                <p className="text-sm text-gray-600">{t("profile.thisMonth")}</p>
               </div>
             </div>
 
@@ -723,36 +719,36 @@ const Profile: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    {t("profile.systemSettings") || "System Settings"}
+                    {t("profile.systemSettings")}
                   </h3>
                 </div>
                 <div className="p-6">
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-[#f5f3ff] rounded-lg">
+                    <div className="flex items-center justify-between p-4 bg-[#f5f3ff] rounded-lg opacity-60">
                       <div>
-                        <p className="font-semibold text-gray-900">{t("profile.maintenanceMode") || "Maintenance Mode"}</p>
-                        <p className="text-sm text-gray-600">{t("profile.toggleMaintenance") || "Toggle site maintenance"}</p>
+                        <p className="font-semibold text-gray-900">{t("profile.maintenanceMode")}</p>
+                        <p className="text-sm text-gray-600"><span className="text-xs italic text-gray-400">[Demo]</span> {t("profile.toggleMaintenance")}</p>
                       </div>
-                      <button className="cursor-pointer relative inline-flex h-8 w-14 items-center rounded-full bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-[#7f56d9] focus:ring-offset-2">
+                      <button disabled className="relative inline-flex h-8 w-14 items-center rounded-full bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-[#7f56d9] focus:ring-offset-2 cursor-not-allowed" title="Coming soon">
                         <span className="inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform translate-x-1"></span>
                       </button>
                     </div>
                     <div className="flex items-center justify-between p-4 bg-[#f5f3ff] rounded-lg">
                       <div>
-                        <p className="font-semibold text-gray-900">{t("profile.backupDB") || "Database Backup"}</p>
-                        <p className="text-sm text-gray-600">{t("profile.lastBackup") || "Last backup: 2 hours ago"}</p>
+                        <p className="font-semibold text-gray-900">{t("profile.backupDB")}</p>
+                        <p className="text-sm text-gray-600"><span className="text-xs italic text-gray-400">[Demo]</span> {t("profile.lastBackup")}</p>
                       </div>
                       <button className="cursor-pointer px-4 py-2 bg-[#7f56d9] hover:bg-[#5b3ba5] text-white rounded-lg font-semibold transition-all">
-                        {t("profile.backup") || "Backup"}
+                        {t("profile.backup")}
                       </button>
                     </div>
                     <div className="flex items-center justify-between p-4 bg-[#f5f3ff] rounded-lg">
                       <div>
-                        <p className="font-semibold text-gray-900">{t("profile.emailLogs") || "Email Logs"}</p>
-                        <p className="text-sm text-gray-600">{t("profile.viewEmailHistory") || "View email history"}</p>
+                        <p className="font-semibold text-gray-900">{t("profile.emailLogs")}</p>
+                        <p className="text-sm text-gray-600">{t("profile.viewEmailHistory")}</p>
                       </div>
                       <button className="cursor-pointer px-4 py-2 border-2 border-[#7f56d9] text-[#7f56d9] rounded-lg font-semibold hover:bg-[#f5f3ff] transition-all">
-                        {t("profile.view") || "View"}
+                        {t("profile.view")}
                       </button>
                     </div>
                   </div>
@@ -766,33 +762,33 @@ const Profile: React.FC = () => {
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM9 20H4v-2a3 3 0 014-3h2a3 3 0 014 3v2z" />
                     </svg>
-                    {t("profile.userManagement") || "User Management"}
+                    {t("profile.userManagement")}
                   </h3>
                 </div>
                 <div className="p-6">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-4 bg-[#f5f3ff] rounded-lg">
                       <div>
-                        <p className="font-semibold text-gray-900">{t("profile.verifyUsers") || "Verify Users"}</p>
-                        <p className="text-sm text-gray-600">{t("profile.pendingVerification") || "12 pending"}</p>
+                        <p className="font-semibold text-gray-900">{t("profile.verifyUsers")}</p>
+                        <p className="text-sm text-gray-600"><span className="text-xs italic text-gray-400">[Demo]</span> {t("profile.pendingVerification")}</p>
                       </div>
                       <button className="cursor-pointer px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all">
-                        {t("profile.review") || "Review"}
+                        {t("profile.review")}
                       </button>
                     </div>
                     <div className="flex items-center justify-between p-4 bg-[#f5f3ff] rounded-lg">
                       <div>
-                        <p className="font-semibold text-gray-900">{t("profile.suspendUsers") || "Suspend/Ban Users"}</p>
-                        <p className="text-sm text-gray-600">{t("profile.manageBanned") || "Manage banned accounts"}</p>
+                        <p className="font-semibold text-gray-900">{t("profile.suspendUsers")}</p>
+                        <p className="text-sm text-gray-600">{t("profile.manageBanned")}</p>
                       </div>
                       <button className="cursor-pointer px-4 py-2 border-2 border-[#7f56d9] text-[#7f56d9] rounded-lg font-semibold hover:bg-[#f5f3ff] transition-all">
-                        {t("profile.manage") || "Manage"}
+                        {t("profile.manage")}
                       </button>
                     </div>
                     <div className="flex items-center justify-between p-4 bg-[#f5f3ff] rounded-lg">
                       <div>
-                        <p className="font-semibold text-gray-900">{t("profile.updateUserRoles") || "Role Assignments"}</p>
-                        <p className="text-sm text-gray-600">{t("profile.assign") || "Assign roles to users"}</p>
+                        <p className="font-semibold text-gray-900">{t("profile.updateUserRoles")}</p>
+                        <p className="text-sm text-gray-600">{t("profile.assign")}</p>
                       </div>
                       <button className="cursor-pointer px-4 py-2 border-2 border-[#7f56d9] text-[#7f56d9] rounded-lg font-semibold hover:bg-[#f5f3ff] transition-all">
                         {t("profile.assign") || "Assign"}
@@ -810,22 +806,22 @@ const Profile: React.FC = () => {
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
-                  {t("profile.reportsAnalytics") || "Reports & Analytics"}
+                  {t("profile.reportsAnalytics")}
                 </h3>
               </div>
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <button className="cursor-pointer p-4 border-2 border-[#e0d8f0] rounded-lg hover:border-[#7f56d9] hover:shadow-lg transition-all text-left">
-                    <p className="font-semibold text-gray-900 mb-1">{t("profile.userActivity") || "User Activity Report"}</p>
-                    <p className="text-sm text-gray-600">{t("profile.lastWeek") || "View last week's activity"}</p>
+                    <p className="font-semibold text-gray-900 mb-1">{t("profile.userActivity")}</p>
+                    <p className="text-sm text-gray-600">{t("profile.lastWeek")}</p>
                   </button>
                   <button className="cursor-pointer p-4 border-2 border-[#e0d8f0] rounded-lg hover:border-[#7f56d9] hover:shadow-lg transition-all text-left">
-                    <p className="font-semibold text-gray-900 mb-1">{t("profile.jobPostings") || "Job Postings Report"}</p>
-                    <p className="text-sm text-gray-600">{t("profile.postingMetrics") || "View posting metrics"}</p>
+                    <p className="font-semibold text-gray-900 mb-1">{t("profile.jobPostings")}</p>
+                    <p className="text-sm text-gray-600">{t("profile.postingMetrics")}</p>
                   </button>
                   <button className="cursor-pointer p-4 border-2 border-[#e0d8f0] rounded-lg hover:border-[#7f56d9] hover:shadow-lg transition-all text-left">
-                    <p className="font-semibold text-gray-900 mb-1">{t("profile.transactionReport") || "Transaction Report"}</p>
-                    <p className="text-sm text-gray-600">{t("profile.paymentMetrics") || "View payment metrics"}</p>
+                    <p className="font-semibold text-gray-900 mb-1">{t("profile.transactionReport")}</p>
+                    <p className="text-sm text-gray-600">{t("profile.paymentMetrics")}</p>
                   </button>
                 </div>
               </div>
