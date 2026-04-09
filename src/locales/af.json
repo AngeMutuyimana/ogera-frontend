@@ -34,7 +34,7 @@
     "pendingReviews": "Hangende Resensies",
     "approved": "Goedkeur",
     "rejected": "Afgekeur",
-    "resubmissionRequired": "Resubmission Required",
+    "resubmissionRequired": "Herinsending Vereis",
     "performanceTrack": "Prestasiespoor",
     "accountLocks": "Rekening Slotte",
     "jobs": "Werke",
@@ -1081,9 +1081,9 @@
       "noPendingVerifications": "Geen hangende verifikasies nie",
       "rejectionReason": "Verwerping Rede",
       "rejectionReasonPlaceholder": "Vereis vir verwerping...",
-      "reviewReason": "Review Reason",
-      "reviewReasonPlaceholder": "Required for reject or resubmission required...",
-      "reasonRequired": "Reason is required for reject or resubmission required",
+      "reviewReason": "Hersieneingsredes",
+      "reviewReasonPlaceholder": "Vereis vir afkeuring of herinsending vereis...",
+      "reasonRequired": "Redes word vereis vir afkeuring of herinsending vereis",
       "view": "Bekyk",
       "approve": "Keur goed",
       "approving": "Keur goed...",
@@ -1113,11 +1113,11 @@
       "rejectedVerifications": "Verwerpte Verifikasies",
       "rejectedSubtitle": "Akademiese verifikasie-aansoeke wat verwerp is",
       "rejected": "Verwerp",
-      "resubmissionRequired": "Resubmission Required",
+      "resubmissionRequired": "Herinsending Vereis",
       "loadingRejected": "Laai verwerpte verifikasies...",
       "noRejectedYet": "Nog geen verwerpte verifikasies nie",
-      "resubmissionRequiredTitle": "Resubmission Required",
-      "resubmissionRequiredSubtitle": "Documents that must be re-uploaded by students",
+      "resubmissionRequiredTitle": "Herinsending Vereis",
+      "resubmissionRequiredSubtitle": "Dokumente wat deur studente opnuut opgelaai moet word",
       "noResubmissionRequiredYet": "No resubmission-required verifications yet",
       "failedToLoadResubmissionRequired": "Failed to load resubmission-required verifications",
       "rejectionReasonLabel": "Verwerping Rede:",
@@ -1674,5 +1674,13 @@
       "Competent": "Goeie standing met die meeste verifikasies voltooi. Jy het toegang tot kernplatform funksies.",
       "Exceptional": "Volledig geverifieer en in uitstekende standing. Jy het volle toegang tot alle platform funksies."
     }
+  },
+  "permissions": {
+    "updatedSuccess": "Toestemming suksesvol opgedateer",
+    "updateError": "Kon nie toestemming opdateer nie",
+    "view": "Bekyk",
+    "create": "Skep",
+    "edit": "Wysig",
+    "delete": "Verwyder"
   }
 }

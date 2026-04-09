@@ -237,12 +237,6 @@ const PermissionsManagement: React.FC = () => {
         ))}
       </div>
 
-      {/* Info Section */}
-      <div className="bg-blue-50 border-t border-blue-200 px-8 py-4">
-        <p className="text-sm text-blue-700">
-          <span className="font-semibold">💡 Tip:</span> Click on a category to expand it and toggle permissions. Changes are saved automatically.
-        </p>
-      </div>
     </div>
   );
 };

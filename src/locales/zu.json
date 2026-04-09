@@ -34,7 +34,7 @@
     "pendingReviews": "Izibuyekezo Ezilindile",
     "approved": "Kuvunyiwe",
     "rejected": "Yenqatshelwe",
-    "resubmissionRequired": "Resubmission Required",
+    "resubmissionRequired": "Ukuwabuyeleza Kudingeka",
     "performanceTrack": "Ukulandelela Ukusebenza",
     "accountLocks": "Ukuvalwa Kwe-Akaunti",
     "jobs": "Imisebenzi",
@@ -1078,9 +1078,9 @@
       "noPendingVerifications": "Awekho ukuqinisekiswa okulindile",
       "rejectionReason": "Isizathu Sokwenqaba",
       "rejectionReasonPlaceholder": "Sidingeka ukuze wenqabe...",
-      "reviewReason": "Review Reason",
-      "reviewReasonPlaceholder": "Required for reject or resubmission required...",
-      "reasonRequired": "Reason is required for reject or resubmission required",
+      "reviewReason": "Isizathu Sokuhlola",
+      "reviewReasonPlaceholder": "Kudingeka ngokuliphanisa noma ukuwabuyeleza kudingeka...",
+      "reasonRequired": "Isizathu sidingeka ngokuliphanisa noma ukuwabuyeleza kudingeka",
       "view": "Buka",
       "approve": "Vumela",
       "approving": "Iyavumela...",
@@ -1110,11 +1110,11 @@
       "rejectedVerifications": "Ukuqinisekiswa Okuyenqatshelwe",
       "rejectedSubtitle": "Izicelo zokuqinisekwa kwezemfundo ezenqatshelwe",
       "rejected": "Yenqatshelwe",
-      "resubmissionRequired": "Resubmission Required",
+      "resubmissionRequired": "Ukuwabuyeleza Kudingeka",
       "loadingRejected": "Iyaloda ukuqinisekiswa okuyenqatshelwe...",
       "noRejectedYet": "Awekho ukuqinisekiswa okuyenqatshelwe okwamanje",
-      "resubmissionRequiredTitle": "Resubmission Required",
-      "resubmissionRequiredSubtitle": "Documents that must be re-uploaded by students",
+      "resubmissionRequiredTitle": "Ukuwabuyeleza Kudingeka",
+      "resubmissionRequiredSubtitle": "Amadokhumenti okumele abulunyenyu babubuyeleze kabusha",
       "noResubmissionRequiredYet": "No resubmission-required verifications yet",
       "failedToLoadResubmissionRequired": "Failed to load resubmission-required verifications",
       "rejectionReasonLabel": "Isizathu Sokwenqaba:",
@@ -1671,5 +1671,13 @@
       "Competent": "Isimo esihle nokuqinisekisa okuningi okuqediwe. Unokufinyelela kuzici eziyinhloko zepulatifomu.",
       "Exceptional": "Iqinisekisiwe ngokuphelele futhi isesimweni esihle. Unokufinyelela okuphelele kuzo zonke izici zepulatifomu."
     }
+  },
+  "permissions": {
+    "updatedSuccess": "Imvume ibuyekezwe ngempumelelo",
+    "updateError": "Ukubuyekeza imvume kwehlulekile",
+    "view": "Buka",
+    "create": "Dala",
+    "edit": "Hlela",
+    "delete": "Susa"
   }
 }

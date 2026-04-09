@@ -34,7 +34,7 @@
     "pendingReviews": "Mapitio Yanasubiri",
     "approved": "Imekubalika",
     "rejected": "Imekataliwa",
-    "resubmissionRequired": "Resubmission Required",
+    "resubmissionRequired": "Kuwasilisha Tena ni Muhimu",
     "performanceTrack": "Ufuatiliaji Wa Utendaji",
     "accountLocks": "Kufungwa Kwa Akaunti",
     "jobs": "Kazi",
@@ -1081,9 +1081,9 @@
       "noPendingVerifications": "Hakuna uthibitishaji unaosubiri",
       "rejectionReason": "Sababu ya Kukataa",
       "rejectionReasonPlaceholder": "Inahitajika kukataa...",
-      "reviewReason": "Review Reason",
-      "reviewReasonPlaceholder": "Required for reject or resubmission required...",
-      "reasonRequired": "Reason is required for reject or resubmission required",
+      "reviewReason": "Sababu ya Uchunguzi",
+      "reviewReasonPlaceholder": "Inahitajika kwa kukataa au kuwasilisha tena ni muhimu...",
+      "reasonRequired": "Sababu inahitajika kwa kukataa au kuwasilisha tena ni muhimu",
       "view": "Tazama",
       "approve": "Idhinisha",
       "approving": "Inaidhinisha...",
@@ -1113,11 +1113,11 @@
       "rejectedVerifications": "Uthibitishaji Ulioletwa",
       "rejectedSubtitle": "Maombi ya uthibitishaji wa kiakademia yaliyokataliwa",
       "rejected": "Imekataliwa",
-      "resubmissionRequired": "Resubmission Required",
+      "resubmissionRequired": "Kuwasilisha Tena ni Muhimu",
       "loadingRejected": "Inapakia uthibitishaji ulioletwa...",
       "noRejectedYet": "Hakuna uthibitishaji ulioletwa bado",
-      "resubmissionRequiredTitle": "Resubmission Required",
-      "resubmissionRequiredSubtitle": "Documents that must be re-uploaded by students",
+      "resubmissionRequiredTitle": "Kuwasilisha Tena ni Muhimu",
+      "resubmissionRequiredSubtitle": "Nyaraka ambayo wanafunzi lazima wakamatiliziwe upya",
       "noResubmissionRequiredYet": "No resubmission-required verifications yet",
       "failedToLoadResubmissionRequired": "Failed to load resubmission-required verifications",
       "rejectionReasonLabel": "Sababu ya Kukataa:",
@@ -1674,5 +1674,14 @@
       "Competent": "Hali nzuri na uthibitishaji wengi umekamilika. Una ufikiaji wa vipengele vya msingi vya jukwaa.",
       "Exceptional": "Imethibitishwa kikamilifu na katika hali nzuri. Una ufikiaji kamili wa vipengele vyote vya jukwaa."
     }
+  },
+  "permissions": {
+    "updatedSuccess": "Ruhusa imesasishwa kikamilifu",
+    "updateError": "Kushindwa kusasisha ruhusa",
+    "view": "Tazama",
+    "create": "Unda",
+    "edit": "Hariri",
+    "delete": "Futa"
   }
 }
+
