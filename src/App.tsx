@@ -49,8 +49,6 @@ import JobApplications from "./pages/Jobs/JobApplications";
 import ViewJobApplications from "./pages/Jobs/ViewJobApplications";
 import JobDetails from "./pages/Jobs/JobDetails";
 import MyApplications from "./pages/Jobs/MyApplications";
-import StudentAcceptedApplications from "./pages/Jobs/StudentAcceptedApplications";
-import StudentRejectedApplications from "./pages/Jobs/StudentRejectedApplications";
 import EmployerAcceptedApplications from "./pages/Jobs/EmployerAcceptedApplications";
 import EmployerRejectedApplications from "./pages/Jobs/EmployerRejectedApplications";
 
@@ -328,11 +326,11 @@ function App() {
                 },
                 {
                   path: "accepted",
-                  Component: StudentAcceptedApplications,
+                  Component: MyApplications,
                 },
                 {
                   path: "rejected",
-                  Component: StudentRejectedApplications,
+                  Component: MyApplications,
                 },
               ],
             },
