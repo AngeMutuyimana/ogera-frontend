@@ -157,13 +157,13 @@ const JobTasksKanban: React.FC = () => {
           <TaskBoard tasks={kanbanTasks} onMoveTask={handleMoveTask} />
         )}
         {activeTab === "list" && (
-          <TaskListView tasks={tasks} kanbanTasks={kanbanTasks} />
+          <TaskListView tasks={tasks} />
         )}
         {activeTab === "table" && (
-          <TaskTableView tasks={tasks} kanbanTasks={kanbanTasks} />
+          <TaskTableView tasks={tasks} />
         )}
         {activeTab === "timeline" && (
-          <TaskTimelineView tasks={tasks} kanbanTasks={kanbanTasks} />
+          <TaskTimelineView tasks={tasks} />
         )}
       </div>
 

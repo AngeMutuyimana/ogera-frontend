@@ -1,32 +1,30 @@
 import React, { useState } from 'react';
 import { ChevronUpDownIcon, TrashIcon } from '@heroicons/react/24/outline';
-import type { TasksState } from '@/types/task.types';
 
 interface Task {
   task_id: string;
   title: string;
-  description?: string;
+  description?: string | null;
   status: string;
   assigned_student?: {
     user_id: string;
     full_name: string;
     avatar_url?: string;
   };
-  deadline?: string;
-  payment_amount?: number;
+  deadline?: string | null;
+  payment_amount?: number | null;
   created_at?: string;
 }
 
 interface TaskTableViewProps {
   tasks: Task[];
-  kanbanTasks: TasksState;
   onTaskClick?: (task: Task) => void;
 }
 
 type SortField = 'title' | 'status' | 'deadline' | 'payment_amount' | 'assigned_student';
 type SortOrder = 'asc' | 'desc';
 
-const TaskTableView: React.FC<TaskTableViewProps> = ({ tasks, kanbanTasks, onTaskClick }) => {
+const TaskTableView: React.FC<TaskTableViewProps> = ({ tasks, onTaskClick }) => {
   const [sortField, setSortField] = useState<SortField>('created_at' as any);
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
@@ -85,7 +83,7 @@ const TaskTableView: React.FC<TaskTableViewProps> = ({ tasks, kanbanTasks, onTas
     }
   };
 
-  const formatDate = (dateString?: string) => {
+  const formatDate = (dateString?: string | null) => {
     if (!dateString) return '-';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {

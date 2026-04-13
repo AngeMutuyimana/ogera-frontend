@@ -1,29 +1,27 @@
 import React from 'react';
 import { TrashIcon, CheckCircleIcon, ClockIcon, ListBulletIcon } from '@heroicons/react/24/outline';
-import type { TasksState } from '@/types/task.types';
 
 interface Task {
   task_id: string;
   title: string;
-  description?: string;
+  description?: string | null;
   status: string;
   assigned_student?: {
     user_id: string;
     full_name: string;
     avatar_url?: string;
   };
-  deadline?: string;
-  payment_amount?: number;
+  deadline?: string | null;
+  payment_amount?: number | null;
   created_at?: string;
 }
 
 interface TaskListViewProps {
   tasks: Task[];
-  kanbanTasks: TasksState;
   onTaskClick?: (task: Task) => void;
 }
 
-const TaskListView: React.FC<TaskListViewProps> = ({ tasks, kanbanTasks, onTaskClick }) => {
+const TaskListView: React.FC<TaskListViewProps> = ({ tasks, onTaskClick }) => {
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'todo':

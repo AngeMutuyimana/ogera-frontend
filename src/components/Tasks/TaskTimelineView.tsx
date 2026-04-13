@@ -1,29 +1,27 @@
 import React from 'react';
-import { CalendarIcon, CheckCircleIcon, ClockIcon } from '@heroicons/react/24/outline';
-import type { TasksState } from '@/types/task.types';
+import { CalendarIcon } from '@heroicons/react/24/outline';
 
 interface Task {
   task_id: string;
   title: string;
-  description?: string;
+  description?: string | null;
   status: string;
   assigned_student?: {
     user_id: string;
     full_name: string;
     avatar_url?: string;
   };
-  deadline?: string;
-  payment_amount?: number;
+  deadline?: string | null;
+  payment_amount?: number | null;
   created_at?: string;
 }
 
 interface TaskTimelineViewProps {
   tasks: Task[];
-  kanbanTasks: TasksState;
   onTaskClick?: (task: Task) => void;
 }
 
-const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({ tasks, kanbanTasks, onTaskClick }) => {
+const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({ tasks, onTaskClick }) => {
   // Sort tasks by deadline
   const sortedTasks = [...tasks].sort((a, b) => {
     const dateA = a.deadline ? new Date(a.deadline).getTime() : Infinity;
@@ -88,7 +86,7 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({ tasks, kanbanTasks,
     }
   };
 
-  const formatDate = (dateString?: string) => {
+  const formatDate = (dateString?: string | null) => {
     if (!dateString) return 'No deadline';
     const date = new Date(dateString);
     const today = new Date();
@@ -106,7 +104,7 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({ tasks, kanbanTasks,
     }
   };
 
-  const isOverdue = (deadline?: string) => {
+  const isOverdue = (deadline?: string | null) => {
     if (!deadline) return false;
     return new Date(deadline) < new Date();
   };
@@ -122,7 +120,7 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({ tasks, kanbanTasks,
 
   return (
     <div className="space-y-8">
-      {Object.entries(groupedByDeadline).map(([deadline, taskGroup], groupIndex) => {
+      {Object.entries(groupedByDeadline).map(([deadline, taskGroup]) => {
         // Parse the deadline date for sorting
         const [month, day, year] = deadline.split('/').map(Number);
         const deadlineDate = new Date(year, month - 1, day);
