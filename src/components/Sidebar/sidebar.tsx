@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { hasAnyPermission } from "../../utils/permissionUtils";
 import type { Role } from "../../utils/permissionUtils";
 import { SIDEBAR_MENU_CONFIG } from "../../config/sidebarMenuConfig";
+import { FEATURES } from "../../config/featureFlags";
 import {
   HomeIcon,
   UsersIcon,
@@ -379,6 +380,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 )}
               </div>
 
+              {/* Resolution Center - Hidden in V1 via Feature Flag */}
+              {FEATURES.RESOLUTION_CENTER && (
               <div>
                 <div
                   className={`flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 group ${
@@ -441,7 +444,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   </ul>
                 )}
               </div>
+              )}
 
+              {/* Settings - Hidden in V1 via Feature Flag */}
+              {FEATURES.SETTINGS && (
               <div>
                 <div
                   className={`flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 group ${
@@ -503,6 +509,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   </ul>
                 )}
               </div>
+              )}
             </>
           ) : (
             <>

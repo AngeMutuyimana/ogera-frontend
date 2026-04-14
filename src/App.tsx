@@ -7,6 +7,7 @@ import { useSelector } from "react-redux";
 import { useTranslation } from "react-i18next";
 
 import ProtectedRoute from "./components/ProtectedRoute";
+import FeatureGate from "./components/FeatureGate";
 import AdminLayout from "./layouts/adminLayout";
 import StudentLayout from "./layouts/StudentLayout";
 import EmployerLayout from "./layouts/EmployerLayout";
@@ -168,7 +169,11 @@ function App() {
             },
             {
               path: "profile",
-              Component: Profile,
+              element: (
+                <FeatureGate feature="SETTINGS">
+                  <Profile />
+                </FeatureGate>
+              ),
             },
             // User Routes (Permission-based access)
             {
@@ -383,34 +388,62 @@ function App() {
               path: "jobs/:id",
               Component: JobDetails,
             },
-            // Dispute Routes
+            // Dispute Routes - Hidden in V1 via Feature Flag
             {
               path: "disputes",
-              Component: Disputes,
+              element: (
+                <FeatureGate feature="RESOLUTION_CENTER">
+                  <Disputes />
+                </FeatureGate>
+              ),
             },
-             {
+            {
               path: "disputes/create",
-              Component: CreateDispute,
+              element: (
+                <FeatureGate feature="RESOLUTION_CENTER">
+                  <CreateDispute />
+                </FeatureGate>
+              ),
             },
             {
               path: "disputes/open",
-              Component: OpenDisputes,
+              element: (
+                <FeatureGate feature="RESOLUTION_CENTER">
+                  <OpenDisputes />
+                </FeatureGate>
+              ),
             },
             {
               path: "disputes/in-progress",
-              Component: InProgress,
+              element: (
+                <FeatureGate feature="RESOLUTION_CENTER">
+                  <InProgress />
+                </FeatureGate>
+              ),
             },
             {
               path: "disputes/resolved",
-              Component: ResolvedDisputes,
+              element: (
+                <FeatureGate feature="RESOLUTION_CENTER">
+                  <ResolvedDisputes />
+                </FeatureGate>
+              ),
             },
             {
               path: "disputes/my-disputes",
-              Component: MyDisputes,
+              element: (
+                <FeatureGate feature="RESOLUTION_CENTER">
+                  <MyDisputes />
+                </FeatureGate>
+              ),
             },
             {
               path: "disputes/:id",
-              Component: DisputeDetail,
+              element: (
+                <FeatureGate feature="RESOLUTION_CENTER">
+                  <DisputeDetail />
+                </FeatureGate>
+              ),
             },
             // Other Routes
             {
