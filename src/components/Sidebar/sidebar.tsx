@@ -31,7 +31,6 @@ import {
   ShieldCheckIcon,
   PlusIcon,
   EyeIcon,
-  BellIcon,
   DocumentTextIcon,
   BanknotesIcon,
   ListBulletIcon,

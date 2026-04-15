@@ -840,7 +840,7 @@ const Dashboard: React.FC = () => {
 
       {/* Student KPIs */}
       {role === "student" && (() => {
-        const profilePct = profileCompletion?.profile_completion_percentage ?? 0;
+        const profilePct = profileCompletion ?? 0;
         const jobPct = studentMetrics?.rates?.jobCompletionRate ?? 0;
         const successPct = studentMetrics?.rates?.applicationSuccessRate ?? 0;
         return (
