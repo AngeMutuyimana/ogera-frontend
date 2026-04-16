@@ -108,7 +108,7 @@ export const jobsApi = apiSlice.injectEndpoints({
       query: (params) => ({
         url: "/jobs",
         method: "GET",
-        params,
+        params: params ?? undefined,
       }),
       providesTags: ["Job"],
     }),
