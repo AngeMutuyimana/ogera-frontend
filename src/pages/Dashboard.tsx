@@ -109,7 +109,7 @@ const Dashboard: React.FC = () => {
   });
   const [recalcTrust] = useCalculateTrustScoreMutation();
   const { data: leaderboardRes, isLoading: leaderboardLoading } =
-    useGetStudentLeaderboardQuery(8, {
+    useGetStudentLeaderboardQuery(10, {
       skip: role !== "employer" && role !== "superadmin",
     });
   const isAdminDashboardRole = role === "superadmin" || Boolean(role?.includes("admin"));
@@ -681,29 +681,84 @@ const Dashboard: React.FC = () => {
       )}
 
       {(role === "employer" || role === "superadmin") && (
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-          <h2 className="text-xs font-semibold text-gray-800 mb-2">
-            {t("dashboard.topCandidatesTrust")}
-          </h2>
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">
+                {t("dashboard.topCandidatesTrust")}
+              </h2>
+              <p className="text-xs text-gray-500 mt-1">
+                Top 10 students ranked by TrustScore
+              </p>
+            </div>
+            <div className="flex items-center gap-1 rounded-full bg-purple-50 text-purple-700 px-3 py-1 text-xs font-semibold">
+              <StarIconSolid className="h-3.5 w-3.5" />
+              TrustScore
+            </div>
+          </div>
           {leaderboardLoading ? (
-            <p className="text-[11px] text-gray-500">{t("common.loading")}</p>
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="animate-pulse flex items-center justify-between rounded-xl border border-gray-100 px-3 py-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-gray-200" />
+                    <div>
+                      <div className="h-3 w-24 rounded bg-gray-200 mb-2" />
+                      <div className="h-2.5 w-16 rounded bg-gray-100" />
+                    </div>
+                  </div>
+                  <div className="h-8 w-14 rounded-full bg-gray-200" />
+                </div>
+              ))}
+            </div>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-2.5">
               {(leaderboardRes?.data?.leaderboard || []).map((row) => (
                 <li
                   key={row.user_id}
-                  className="flex justify-between items-center text-[11px] border-b border-gray-50 pb-1.5 last:border-0"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gradient-to-r from-white to-purple-50/40 px-3 py-3 transition-all hover:border-purple-200 hover:shadow-sm"
                 >
-                  <span className="font-medium text-gray-800 truncate pr-2">
-                    {row.full_name}
-                  </span>
-                  <span className="text-purple-700 font-bold shrink-0">
-                    {row.trust_score != null ? row.trust_score.toFixed(0) : "—"}
-                  </span>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                        row.rank === 1
+                          ? "bg-yellow-100 text-yellow-700"
+                          : row.rank === 2
+                          ? "bg-slate-100 text-slate-700"
+                          : row.rank === 3
+                          ? "bg-orange-100 text-orange-700"
+                          : "bg-purple-100 text-purple-700"
+                      }`}
+                    >
+                      #{row.rank}
+                    </div>
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-sm font-semibold text-white">
+                      {(row.full_name || "S").trim().charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-gray-900">
+                        {row.full_name}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {row.rank <= 3 ? "Top performer" : "Promising candidate"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <div className="inline-flex min-w-[58px] items-center justify-center rounded-full bg-purple-600 px-3 py-1 text-sm font-bold text-white shadow-sm">
+                      {row.trust_score != null ? row.trust_score.toFixed(0) : "—"}
+                    </div>
+                    <p className="mt-1 text-[11px] text-gray-400">score</p>
+                  </div>
                 </li>
               ))}
               {!leaderboardRes?.data?.leaderboard?.length && (
-                <li className="text-[11px] text-gray-500">{t("common.noData")}</li>
+                <li className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500">
+                  {t("common.noData")}
+                </li>
               )}
             </ul>
           )}

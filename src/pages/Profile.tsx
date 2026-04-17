@@ -58,7 +58,6 @@ import {
   XMarkIcon,
   DocumentTextIcon,
   PencilSquareIcon,
-  StarIcon,
   AcademicCapIcon,
   ComputerDesktopIcon,
   RocketLaunchIcon,
@@ -117,10 +116,12 @@ const Profile: React.FC = () => {
   const [profileSummary, setProfileSummary] = useState<string>("");
   const [isEditingHeadline, setIsEditingHeadline] = useState(false);
   const [isEditingSummary, setIsEditingSummary] = useState(false);
-  const [skillsInput, setSkillsInput] = useState<string>("");
-  const [isEditingSkills, setIsEditingSkills] = useState(false);
   const [isEditingItSkills, setIsEditingItSkills] = useState(false);
   const [itSkillsInput, setItSkillsInput] = useState("");
+  const [totalExperienceYears, setTotalExperienceYears] = useState<string>("0");
+  const [workExperienceDetails, setWorkExperienceDetails] = useState<string>("");
+  const [isSavingWorkExperience, setIsSavingWorkExperience] = useState(false);
+  const [isEditingWorkExperience, setIsEditingWorkExperience] = useState(true);
 
   // RTK Query hooks
   const { data: fullProfileData, isLoading: isFullProfileLoading, refetch: refetchFullProfile } = useGetFullProfileQuery();
@@ -153,7 +154,7 @@ const Profile: React.FC = () => {
     isLoading: isTrustScoreLoading,
     refetch: refetchTrustScore,
   } = useGetMyTrustScoreQuery(undefined, {
-    skip: !profileData || isSuperAdmin,
+    skip: !profileData || isSuperAdmin || normalizedUserRole !== "student",
   });
 
   const [calculateTrustScore] = useCalculateTrustScoreMutation();
@@ -213,12 +214,13 @@ const Profile: React.FC = () => {
       if (ext) {
         setResumeHeadline(ext.resume_headline || "");
         setProfileSummary(ext.profile_summary || "");
+        setWorkExperienceDetails(ext.profile_summary || "");
+        setTotalExperienceYears(String(ext.total_experience_years || 0));
+        const hasSavedWorkExperience =
+          Number(ext.total_experience_years || 0) > 0 ||
+          Boolean((ext.profile_summary || "").trim());
+        setIsEditingWorkExperience(!hasSavedWorkExperience);
       }
-      // Set skills input
-      const keySkills = profileToUse.skills
-        .filter(s => s.skill_type === "key_skill")
-        .map(s => s.skill_name);
-      setSkillsInput(keySkills.join(", "));
     }
   }, [fullProfileData]);
 
@@ -293,6 +295,10 @@ const Profile: React.FC = () => {
     () => String(profileData?.resume_url || ""),
     [profileData?.resume_url]
   );
+  const experienceTrustSignature = useMemo(
+    () => String(extendedProfile?.total_experience_years || 0),
+    [extendedProfile?.total_experience_years]
+  );
 
   useEffect(() => {
     if (isSuperAdmin || normalizedUserRole !== "student" || !profileData?.user_id) {
@@ -316,6 +322,7 @@ const Profile: React.FC = () => {
     employmentsTrustSignature,
     accomplishmentsTrustSignature,
     resumeTrustSignature,
+    experienceTrustSignature,
     normalizedUserRole,
     isSuperAdmin,
     calculateTrustScore,
@@ -398,37 +405,6 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleFileDownload = async (fileUrl: string, defaultFileName: string) => {
-    let filePath = fileUrl;
-
-    if (fileUrl.includes("/api/resumes/download")) {
-      const url = new URL(fileUrl, window.location.origin);
-      filePath = url.searchParams.get("path") || fileUrl;
-    } else if (fileUrl.startsWith("http://") || fileUrl.startsWith("https://")) {
-      window.open(fileUrl, "_blank");
-      return;
-    }
-
-    const response = await api.get(
-      `/resumes/download?path=${encodeURIComponent(filePath)}`,
-      { responseType: "blob" }
-    );
-
-    const fileNameFromPath =
-      filePath.split("/").pop()?.split("?")[0] || defaultFileName;
-    const blob = new Blob([response.data as BlobPart], {
-      type: (response.data as any)?.type || "application/pdf",
-    });
-    const blobUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = blobUrl;
-    link.download = fileNameFromPath;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(blobUrl);
-  };
-
   const handleFileViewInModal = async (fileUrl: string) => {
     let filePath = fileUrl;
 
@@ -463,21 +439,6 @@ const Profile: React.FC = () => {
     setViewerUrl(null);
     setViewerContentType(null);
     setShowViewer(false);
-  };
-
-  // Handle resume download
-  const handleResumeDownload = async () => {
-    if (!profileData?.resume_url) return;
-
-    try {
-      await handleFileDownload(profileData.resume_url, "resume.pdf");
-    } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message ||
-          error?.message ||
-          "Failed to download resume"
-      );
-    }
   };
 
   const handleDeleteResume = async () => {
@@ -572,23 +533,6 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleInternshipCertificateDownload = async () => {
-    if (!internshipCertificate?.credential_url) return;
-
-    try {
-      await handleFileDownload(
-        internshipCertificate.credential_url,
-        "internship-certificate.pdf"
-      );
-    } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message ||
-          error?.message ||
-          "Failed to download internship certificate"
-      );
-    }
-  };
-
   const handleDeleteInternshipCertificate = async () => {
     if (!internshipCertificate?.accomplishment_id) return;
 
@@ -643,20 +587,52 @@ const Profile: React.FC = () => {
     }
   };
 
-  // Handle skills save
-  const handleSaveSkills = async () => {
+  const handleSaveWorkExperience = async () => {
+    const parsedYears = Math.max(0, Number(totalExperienceYears) || 0);
+
     try {
-      const skillNames = skillsInput.split(",").map(s => s.trim()).filter(s => s);
-      const skillsData = skillNames.map(name => ({
-        skill_name: name,
-        skill_type: "key_skill" as const,
-      }));
-      await addBulkSkills({ skills: skillsData });
-      toast.success(t("profile.skillsUpdated"));
-      setIsEditingSkills(false);
+      setIsSavingWorkExperience(true);
+      await updateExtendedProfile({
+        total_experience_years: parsedYears,
+        profile_summary: workExperienceDetails,
+      });
+      toast.success(t("profile.workExperienceUpdated"));
+      setProfileSummary(workExperienceDetails);
+      setTotalExperienceYears(String(parsedYears));
+      setIsEditingWorkExperience(false);
       refetchFullProfile();
+      refetchTrustScore();
     } catch (error: any) {
-      toast.error(error?.data?.message || t("profile.skillsUpdateFailed"));
+      toast.error(error?.data?.message || t("profile.workExperienceUpdateFailed"));
+    } finally {
+      setIsSavingWorkExperience(false);
+    }
+  };
+
+  const handleEditWorkExperience = () => {
+    setIsEditingWorkExperience(true);
+  };
+
+  const handleDeleteWorkExperience = async () => {
+    if (!window.confirm(t("profile.confirmDeleteWorkExperience"))) return;
+
+    try {
+      setIsSavingWorkExperience(true);
+      await updateExtendedProfile({
+        total_experience_years: 0,
+        profile_summary: "",
+      });
+      toast.success(t("profile.workExperienceDeleted"));
+      setTotalExperienceYears("0");
+      setWorkExperienceDetails("");
+      setProfileSummary("");
+      setIsEditingWorkExperience(true);
+      refetchFullProfile();
+      refetchTrustScore();
+    } catch (error: any) {
+      toast.error(error?.data?.message || t("profile.workExperienceDeleteFailed"));
+    } finally {
+      setIsSavingWorkExperience(false);
     }
   };
 
@@ -1265,8 +1241,7 @@ const Profile: React.FC = () => {
                   { key: "resume", label: t("profile.resume"), action: t("profile.update"), icon: <DocumentTextIcon className="w-4 h-4" /> },
                   { key: "internship", label: t("profile.internship", { defaultValue: "Internship" }), action: t("profile.update"), icon: <DocumentTextIcon className="w-4 h-4" /> },
                   { key: "resume-headline", label: t("profile.resumeHeadline"), icon: <PencilSquareIcon className="w-4 h-4" /> },
-                  { key: "key-skills", label: t("profile.keySkills"), icon: <StarIcon className="w-4 h-4" /> },
-                  { key: "employment", label: t("profile.employment"), action: t("profile.add"), icon: <BriefcaseIcon className="w-4 h-4" /> },
+                  { key: "key-skills", label: t("profile.workExperience"), action: t("profile.update"), icon: <BriefcaseIcon className="w-4 h-4" /> },
                   { key: "education", label: t("profile.education"), action: t("profile.add"), icon: <AcademicCapIcon className="w-4 h-4" /> },
                   { key: "it-skills", label: t("profile.itSkills"), icon: <ComputerDesktopIcon className="w-4 h-4" /> },
                   { key: "projects", label: t("profile.projects"), icon: <RocketLaunchIcon className="w-4 h-4" /> },
@@ -1553,76 +1528,187 @@ const Profile: React.FC = () => {
               </div>
             )}
 
-            {/* Key Skills Section */}
+            {/* Work Experience Section */}
             {activeSection === "key-skills" && (
               <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
                 <div className="bg-[#7f56d9] px-6 py-4">
                   <div className="flex items-center justify-between">
                     <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                      </svg>
-                      {t("profile.keySkills")}
+                      <BriefcaseIcon className="w-6 h-6" />
+                      {t("profile.workExperience")}
                     </h2>
-                    <button 
-                      onClick={() => setIsEditingSkills(!isEditingSkills)} 
-                      className="cursor-pointer p-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-all"
+                    <button
+                      onClick={() => { setEditingItem(null); setIsEmploymentModalOpen(true); }}
+                      className="cursor-pointer bg-white/20 hover:bg-white/30 text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
                     >
-                      <PencilIcon className="w-5 h-5" />
+                      <PlusIcon className="w-5 h-5" /> {t("profile.addEmployment")}
                     </button>
                   </div>
                 </div>
                 <div className="p-6">
-                  {isEditingSkills ? (
-                    <div className="space-y-4">
-                      <textarea
-                        value={skillsInput}
-                        onChange={(e) => setSkillsInput(e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-[#e0d8f0] rounded-xl focus:ring-2 focus:ring-[#7f56d9] focus:border-[#7f56d9] resize-none transition-all"
-                        rows={4}
-                        placeholder={t("profile.skillsPlaceholder")}
-                      />
-                      <div className="flex gap-3">
-                        <button 
-                          onClick={handleSaveSkills} 
-                          className="cursor-pointer bg-[#7f56d9] hover:bg-[#5b3ba5] text-white px-6 py-2.5 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl"
-                        >
-                          {t("profile.saveSkills")}
-                        </button>
-                        <button 
-                          onClick={() => setIsEditingSkills(false)} 
-                          className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-xl font-semibold transition-all"
-                        >
-                          {t("profile.cancel")}
-                        </button>
-                      </div>
+                  <div className="space-y-6">
+                    <div className="bg-[#f5f3ff] rounded-xl border-2 border-[#e0d8f0] p-6 space-y-4">
+                      {isEditingWorkExperience ? (
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {t("profile.totalExperienceYears")}
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={totalExperienceYears}
+                              onChange={(e) => setTotalExperienceYears(e.target.value)}
+                              className="w-full px-4 py-3 border-2 border-[#e0d8f0] rounded-xl focus:ring-2 focus:ring-[#7f56d9] focus:border-[#7f56d9] transition-all"
+                              placeholder={t("profile.totalExperienceYearsPlaceholder")}
+                            />
+                          </div>
+                          <textarea
+                            value={workExperienceDetails}
+                            onChange={(e) => setWorkExperienceDetails(e.target.value)}
+                            className="w-full px-4 py-3 border-2 border-[#e0d8f0] rounded-xl focus:ring-2 focus:ring-[#7f56d9] focus:border-[#7f56d9] resize-none transition-all"
+                            rows={5}
+                            placeholder={t("profile.workExperienceDetailsPlaceholder")}
+                          />
+                          <div className="flex gap-3">
+                            <button
+                              onClick={handleSaveWorkExperience}
+                              disabled={isSavingWorkExperience}
+                              className="cursor-pointer bg-[#7f56d9] hover:bg-[#5b3ba5] text-white px-6 py-2.5 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
+                            >
+                              {isSavingWorkExperience ? t("profile.saving") : t("profile.saveWorkExperience")}
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-semibold text-gray-900">{t("profile.workExperience")}</h3>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={handleEditWorkExperience}
+                                className="cursor-pointer p-2 rounded-lg bg-white hover:bg-orange-100 text-orange-600 transition-all shadow-sm hover:shadow-md"
+                                title={t("profile.edit")}
+                              >
+                                <PencilIcon className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={handleDeleteWorkExperience}
+                                disabled={isSavingWorkExperience}
+                                className="cursor-pointer p-2 rounded-lg bg-white hover:bg-red-100 text-red-600 transition-all shadow-sm hover:shadow-md disabled:opacity-50"
+                                title={t("profile.delete")}
+                              >
+                                <TrashIcon className="w-5 h-5" />
+                              </button>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-700 mb-1">{t("profile.totalExperienceYears")}</p>
+                            <p className="text-gray-900 font-medium">
+                              {totalExperienceYears || "0"} {(Number(totalExperienceYears || 0) === 1 ? t("profile.year") : t("profile.years"))}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-700 mb-1">{t("profile.workExperienceDetails")}</p>
+                            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                              {workExperienceDetails?.trim() || t("profile.noWorkExperienceDetails")}
+                            </p>
+                          </div>
+                        </>
+                      )}
                     </div>
-                  ) : (
-                    <div className="flex flex-wrap gap-3">
-                      {keySkills.length > 0 ? (
-                        keySkills.map((skill) => (
-                          <span 
-                            key={skill.skill_id} 
-                            className="px-5 py-2.5 bg-[#f5f3ff] text-[#5b3ba5] rounded-full text-sm font-semibold hover:bg-[#ede9fe] transition-all shadow-sm hover:shadow-md border border-[#e0d8f0] hover:border-[#e0d8f0]  cursor-default"
-                          >
-                            {skill.skill_name}
-                          </span>
+
+                    <div className="space-y-6">
+                      {employments.length > 0 ? (
+                        employments.map((job) => (
+                          <div key={job.employment_id} className="bg-[#f5f3ff] rounded-xl p-6 border-2 border-[#e0d8f0] hover:border-[#e0d8f0] transition-all shadow-sm hover:shadow-md">
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <div className="w-12 h-12 bg-[#7f56d9] rounded-xl flex items-center justify-center shadow-lg">
+                                    <BriefcaseIcon className="w-6 h-6 text-white" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <h3 className="text-xl font-bold text-gray-900">{job.job_title}</h3>
+                                      {job.is_current && (
+                                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">{t("profile.current")}</span>
+                                      )}
+                                    </div>
+                                    <p className="text-lg font-semibold text-[#5b3ba5]">{job.company_name}</p>
+                                    <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
+                                      <span className="capitalize">{job.employment_type.replace("_", " ")}</span>
+                                      <span>•</span>
+                                      <span>{formatDuration(job.start_date, job.end_date, job.is_current)}</span>
+                                    </p>
+                                    {job.notice_period && (
+                                      <p className="text-sm text-gray-600 mt-1 flex items-center gap-1">
+                                        <CalendarIcon className="w-4 h-4" />
+                                        {job.notice_period}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => { setEditingItem(job); setIsEmploymentModalOpen(true); }}
+                                  className="cursor-pointer p-2 rounded-lg bg-white hover:bg-orange-100 text-orange-600 transition-all shadow-sm hover:shadow-md"
+                                  title={t("profile.edit")}
+                                >
+                                  <PencilIcon className="w-5 h-5" />
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    if (window.confirm(t("profile.confirmDeleteEmployment"))) {
+                                      await deleteEmployment(job.employment_id);
+                                      toast.success(t("profile.employmentDeleted"));
+                                    }
+                                  }}
+                                  className="cursor-pointer p-2 rounded-lg bg-white hover:bg-red-100 text-red-600 transition-all shadow-sm hover:shadow-md"
+                                  title={t("profile.delete")}
+                                >
+                                  <TrashIcon className="w-5 h-5" />
+                                </button>
+                              </div>
+                            </div>
+
+                            {job.description && (
+                              <div className="mb-4">
+                                <p className="text-sm font-semibold text-gray-700 mb-2">{t("profile.workExperienceDetails")}</p>
+                                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{job.description}</p>
+                              </div>
+                            )}
+
+                            {job.key_skills && job.key_skills.length > 0 && (
+                              <div>
+                                <p className="text-sm font-semibold text-gray-700 mb-3">{t("profile.keySkillsUsed")}</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {job.key_skills.map((skill, index) => (
+                                    <span key={`${job.employment_id}-${skill}-${index}`} className="px-3 py-1.5 bg-white text-[#5b3ba5] rounded-full text-sm font-medium border border-[#e0d8f0]">
+                                      {skill}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         ))
                       ) : (
                         <div className="w-full p-8 text-center bg-[#f5f3ff] rounded-xl border-2 border-dashed border-[#e0d8f0]">
-                          <StarIcon className="w-10 h-10 text-[#7f56d9] mx-auto mb-3" />
-                          <p className="text-gray-600 font-medium mb-4">{t("profile.addKeySkillsHint")}</p>
+                          <BriefcaseIcon className="w-10 h-10 text-[#7f56d9] mx-auto mb-3" />
+                          <p className="text-gray-600 font-medium mb-4">{t("profile.addEmploymentHint")}</p>
                           <button
-                            onClick={() => setIsEditingSkills(true)}
+                            onClick={() => { setEditingItem(null); setIsEmploymentModalOpen(true); }}
                             className="cursor-pointer bg-[#7f56d9] hover:bg-[#5b3ba5] text-white px-6 py-2.5 rounded-xl font-semibold transition-all"
                           >
                             <PlusIcon className="w-4 h-4 inline mr-1" />
-                            Add Key Skills
+                            {t("profile.addEmployment")}
                           </button>
                         </div>
                       )}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             )}
@@ -2178,7 +2264,7 @@ const Profile: React.FC = () => {
       </div>
 
       {/* TrustScore Section */}
-      {!isSuperAdmin && trustScoreResponse?.data && (
+      {normalizedUserRole === "student" && trustScoreResponse?.data && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
           <TrustScoreCard
             trustScore={trustScoreResponse.data}

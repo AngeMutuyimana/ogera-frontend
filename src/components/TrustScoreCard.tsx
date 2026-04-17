@@ -15,6 +15,18 @@ const TrustScoreCard: React.FC<TrustScoreCardProps> = ({
   variant = "full",
 }) => {
   const { t } = useTranslation();
+  const persistentSuggestions = [
+    {
+      key: "intelligence",
+      label: "Intelligence (I)",
+      items: ["Cognitive test", "Problem metric", "Academic record"],
+    },
+    {
+      key: "experience",
+      label: "Experience (E)",
+      items: ["Work experience", "Project", "Internship certificate", "Accomplishment", "Resume"],
+    },
+  ] as const;
 
   if (isLoading) {
     return (
@@ -160,11 +172,22 @@ const TrustScoreCard: React.FC<TrustScoreCardProps> = ({
         <h3 className="text-lg font-semibold text-gray-900 mb-3">
           {t("profile.trustScoreSuggestions")}
         </h3>
-        <ul className="list-disc list-inside space-y-2 text-sm text-gray-600">
-          {trustScore.suggestions.map((s, i) => (
-            <li key={i}>{s}</li>
+        <div className="space-y-3 text-sm text-gray-700">
+          {persistentSuggestions.map((group) => (
+            <p key={group.key}>
+              <span className="font-semibold">{group.label}</span>
+              {" => "}
+              {group.items.join(", ")}
+            </p>
           ))}
-        </ul>
+          {trustScore.suggestions.length > 0 && (
+            <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
+              {trustScore.suggestions.map((s, i) => (
+                <li key={i}>{s}</li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );

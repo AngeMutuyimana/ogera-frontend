@@ -8,6 +8,7 @@ import {
   BellIcon,
   BookOpenIcon,
   CpuChipIcon,
+  PuzzlePieceIcon,
 } from "@heroicons/react/24/outline";
 import type { ComponentType } from "react";
 
@@ -138,6 +139,18 @@ export const SIDEBAR_MENU_CONFIG: MenuItemConfig[] = [
     hasSubmenu: true,
     submenuItems: [
       { label: "Manage tests", path: "/dashboard/cognitive-tests", labelKey: "sidebar.cognitiveManage" },
+    ],
+  },
+  {
+    permissionRoute: "/problem-metrics",
+    label: "Problem metrics",
+    labelKey: "sidebar.problemMetrics",
+    icon: PuzzlePieceIcon,
+    menuKey: "problemMetrics",
+    basePath: "/dashboard/problem-metrics",
+    hasSubmenu: true,
+    submenuItems: [
+      { label: "Manage puzzles", path: "/dashboard/problem-metrics", labelKey: "sidebar.problemMetricsManage" },
     ],
   },
   {

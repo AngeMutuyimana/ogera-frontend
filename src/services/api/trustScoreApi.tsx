@@ -33,6 +33,7 @@ export interface LeaderboardStudentRow {
   user_id: string;
   full_name: string;
   email: string;
+  rank: number;
   trust_score: number | null;
   trust_level: string | null;
 }

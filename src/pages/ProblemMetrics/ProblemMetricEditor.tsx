@@ -9,41 +9,41 @@ import {
   PencilSquareIcon,
 } from "@heroicons/react/24/outline";
 import {
-  useGetCognitiveTestAdminQuery,
-  useUpdateCognitiveTestMutation,
-  useDeleteCognitiveTestMutation,
-  useAddCognitiveQuestionMutation,
-  useUpdateCognitiveQuestionMutation,
-  useDeleteCognitiveQuestionMutation,
-  type CognitiveCategory,
-  type QuestionDifficulty,
-} from "../../services/api/cognitiveTestApi";
+  useGetProblemMetricAdminQuery,
+  useUpdateProblemMetricMutation,
+  useDeleteProblemMetricMutation,
+  useAddProblemMetricQuestionMutation,
+  useUpdateProblemMetricQuestionMutation,
+  useDeleteProblemMetricQuestionMutation,
+  type ProblemMetricCategory,
+  type ProblemQuestionDifficulty,
+} from "../../services/api/problemMetricApi";
 import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 
-const CognitiveTestEditor: React.FC = () => {
+const ProblemMetricEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { data, isLoading, refetch } = useGetCognitiveTestAdminQuery(id!, { skip: !id });
-  const [updateTest, { isLoading: savingMeta }] = useUpdateCognitiveTestMutation();
-  const [deleteTest, { isLoading: deleting }] = useDeleteCognitiveTestMutation();
-  const [addQuestion, { isLoading: addingQ }] = useAddCognitiveQuestionMutation();
-  const [updateQuestion, { isLoading: updatingQ }] = useUpdateCognitiveQuestionMutation();
-  const [deleteQuestion] = useDeleteCognitiveQuestionMutation();
+  const { data, isLoading, refetch } = useGetProblemMetricAdminQuery(id!, { skip: !id });
+  const [updateMetric, { isLoading: savingMeta }] = useUpdateProblemMetricMutation();
+  const [deleteMetric, { isLoading: deleting }] = useDeleteProblemMetricMutation();
+  const [addQuestion, { isLoading: addingQ }] = useAddProblemMetricQuestionMutation();
+  const [updateQuestion, { isLoading: updatingQ }] = useUpdateProblemMetricQuestionMutation();
+  const [deleteQuestion] = useDeleteProblemMetricQuestionMutation();
 
-  const test = data?.data;
+  const metric = data?.data;
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<CognitiveCategory>("numerical");
+  const [category, setCategory] = useState<ProblemMetricCategory>("visual_puzzle");
   const [metaDirty, setMetaDirty] = useState(false);
 
   React.useEffect(() => {
-    if (test) {
-      setTitle(test.title);
-      setDescription(test.description || "");
-      setCategory(test.category);
+    if (metric) {
+      setTitle(metric.title);
+      setDescription(metric.description || "");
+      setCategory(metric.category);
       setMetaDirty(false);
     }
-  }, [test?.cognitive_test_id, test?.title, test?.description, test?.category]);
+  }, [metric?.problem_metric_id, metric?.title, metric?.description, metric?.category]);
 
   const [qPrompt, setQPrompt] = useState("");
   const [optA, setOptA] = useState("");
@@ -51,18 +51,18 @@ const CognitiveTestEditor: React.FC = () => {
   const [optC, setOptC] = useState("");
   const [optD, setOptD] = useState("");
   const [correct, setCorrect] = useState<0 | 1 | 2 | 3>(0);
-  const [difficulty, setDifficulty] = useState<QuestionDifficulty>("medium");
+  const [difficulty, setDifficulty] = useState<ProblemQuestionDifficulty>("medium");
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
 
   const sortedQuestions = useMemo(() => {
-    if (!test?.questions) return [];
-    return [...test.questions].sort((a, b) => a.sort_order - b.sort_order);
-  }, [test?.questions]);
+    if (!metric?.questions) return [];
+    return [...metric.questions].sort((a, b) => a.sort_order - b.sort_order);
+  }, [metric?.questions]);
 
   const saveMeta = async () => {
     if (!id) return;
     try {
-      await updateTest({
+      await updateMetric({
         id,
         body: {
           title: title.trim(),
@@ -70,7 +70,7 @@ const CognitiveTestEditor: React.FC = () => {
           category,
         },
       }).unwrap();
-      toast.success("Test details saved");
+      toast.success("Problem metric saved");
       setMetaDirty(false);
       refetch();
     } catch (e) {
@@ -80,13 +80,13 @@ const CognitiveTestEditor: React.FC = () => {
   };
 
   const togglePublish = async () => {
-    if (!id || !test) return;
+    if (!id || !metric) return;
     try {
-      await updateTest({
+      await updateMetric({
         id,
-        body: { published: !test.published },
+        body: { published: !metric.published },
       }).unwrap();
-      toast.success(test.published ? "Unpublished" : "Published for students");
+      toast.success(metric.published ? "Unpublished" : "Published for students");
       refetch();
     } catch (e) {
       const err = e as FetchBaseQueryError & { data?: { message?: string } };
@@ -94,12 +94,12 @@ const CognitiveTestEditor: React.FC = () => {
     }
   };
 
-  const handleDeleteTest = async () => {
-    if (!id || !window.confirm("Delete this test and all questions?")) return;
+  const handleDeleteMetric = async () => {
+    if (!id || !window.confirm("Delete this puzzle set and all questions?")) return;
     try {
-      await deleteTest(id).unwrap();
-      toast.success("Test deleted");
-      window.location.href = "/dashboard/cognitive-tests";
+      await deleteMetric(id).unwrap();
+      toast.success("Problem metric deleted");
+      window.location.href = "/dashboard/problem-metrics";
     } catch (e) {
       const err = e as FetchBaseQueryError & { data?: { message?: string } };
       toast.error(err?.data?.message || "Delete failed");
@@ -212,56 +212,56 @@ const CognitiveTestEditor: React.FC = () => {
   };
 
   if (!id) {
-    return <p className="p-8 text-center text-gray-500">Missing test id</p>;
+    return <p className="p-8 text-center text-gray-500">Missing problem metric id</p>;
   }
 
-  if (isLoading || !test) {
-    return <p className="p-8 text-center text-gray-500">Loading…</p>;
+  if (isLoading || !metric) {
+    return <p className="p-8 text-center text-gray-500">Loading...</p>;
   }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12">
       <div className="flex flex-wrap items-center gap-3">
         <Link
-          to="/dashboard/cognitive-tests"
+          to="/dashboard/problem-metrics"
           className="inline-flex items-center gap-1 text-sm text-[#7F56D9] font-medium hover:underline"
         >
           <ArrowLeftIcon className="w-4 h-4" />
-          All tests
+          All problem metrics
         </Link>
       </div>
 
       <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/50 p-6 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Edit test</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Edit puzzle set</h1>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={togglePublish}
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium cursor-pointer ${
-                test.published
+                metric.published
                   ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
                   : "bg-amber-50 text-amber-900 border border-amber-200"
               }`}
             >
-              {test.published ? (
+              {metric.published ? (
                 <>
                   <GlobeAltIcon className="w-4 h-4" /> Published
                 </>
               ) : (
                 <>
-                  <LockClosedIcon className="w-4 h-4" />click to publish
+                  <LockClosedIcon className="w-4 h-4" /> Click to publish
                 </>
               )}
             </button>
             <button
               type="button"
-              onClick={handleDeleteTest}
+              onClick={handleDeleteMetric}
               disabled={deleting}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-red-700 bg-red-50 border border-red-200 cursor-pointer disabled:cursor-not-allowed"
             >
               <TrashIcon className="w-4 h-4" />
-              Delete test
+              Delete puzzle set
             </button>
           </div>
         </div>
@@ -290,19 +290,19 @@ const CognitiveTestEditor: React.FC = () => {
             />
           </label>
           <label className="block">
-            <span className="text-xs font-medium text-gray-500 uppercase">Category</span>
+            <span className="text-xs font-medium text-gray-500 uppercase">Puzzle type</span>
             <select
               className="mt-1 w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
               value={category}
               onChange={(e) => {
-                setCategory(e.target.value as CognitiveCategory);
+                setCategory(e.target.value as ProblemMetricCategory);
                 setMetaDirty(true);
               }}
             >
-              <option value="numerical">Numerical</option>
-              <option value="verbal">Verbal</option>
-              <option value="logical">Logical</option>
-              <option value="mixed">Mixed</option>
+              <option value="visual_puzzle">Visual puzzle</option>
+              <option value="situational_puzzle">Situational puzzle</option>
+              <option value="riddle">Riddle</option>
+              <option value="other">Other puzzle</option>
             </select>
           </label>
         </div>
@@ -313,7 +313,7 @@ const CognitiveTestEditor: React.FC = () => {
             onClick={saveMeta}
             className="px-4 py-2 rounded-xl bg-[#7F56D9] text-white text-sm font-medium disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
           >
-            {savingMeta ? "Saving…" : "Save details"}
+            {savingMeta ? "Saving..." : "Save details"}
           </button>
         )}
       </div>
@@ -323,14 +323,14 @@ const CognitiveTestEditor: React.FC = () => {
           {editingQuestionId ? "Edit question" : "Add question"}
         </h2>
         <p className="text-sm text-gray-500">
-          Four options per question. Set the correct answer for automatic scoring. Difficulty is Easy,
-          Medium, or Hard (for your records).
+          Add each puzzle question with four MCQs, one correct answer, and the selected difficulty.
+          The question must match the selected puzzle type.
         </p>
         <div className="rounded-xl border border-[#7F56D9]/20 bg-[#7F56D9]/5 px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
-          {category === "numerical" && "Numerical tests accept only number-related questions such as calculations, percentages, ratios, or sequences."}
-          {category === "verbal" && "Verbal tests accept only language-related questions such as vocabulary, grammar, sentence meaning, or reading-based questions."}
-          {category === "logical" && "Logical tests accept only reasoning-related questions such as patterns, deductions, rules, or conclusions."}
-          {category === "mixed" && "Mixed tests can contain numerical, verbal, and logical questions."}
+          {category === "visual_puzzle" && "Visual puzzle accepts only visual-related questions such as shapes, patterns, figures, symbols, or diagrams."}
+          {category === "situational_puzzle" && "Situational puzzle accepts only scenario-based questions focused on actions, decisions, or next steps."}
+          {category === "riddle" && "Riddle accepts only riddle-style or clue-based questions."}
+          {category === "other" && "Other puzzle can accept any puzzle question format."}
         </div>
         <label className="block">
           <span className="text-xs font-medium text-gray-500 uppercase">Question</span>
@@ -384,7 +384,7 @@ const CognitiveTestEditor: React.FC = () => {
             <select
               className="rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
               value={difficulty}
-              onChange={(e) => setDifficulty(e.target.value as QuestionDifficulty)}
+              onChange={(e) => setDifficulty(e.target.value as ProblemQuestionDifficulty)}
             >
               <option value="easy">Easy</option>
               <option value="medium">Medium</option>
@@ -398,13 +398,7 @@ const CognitiveTestEditor: React.FC = () => {
           onClick={editingQuestionId ? handleSaveEditedQuestion : handleAddQuestion}
           className="px-4 py-2 rounded-xl bg-gray-900 dark:bg-white dark:text-gray-900 text-white text-sm font-medium disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
         >
-          {editingQuestionId
-            ? updatingQ
-              ? "Saving…"
-              : "Save question"
-            : addingQ
-            ? "Adding…"
-            : "Add question"}
+          {editingQuestionId ? (updatingQ ? "Saving..." : "Save question") : addingQ ? "Adding..." : "Add question"}
         </button>
         {editingQuestionId && (
           <button
@@ -418,9 +412,7 @@ const CognitiveTestEditor: React.FC = () => {
       </div>
 
       <div className="space-y-3">
-        <h2 className="font-semibold text-gray-900 dark:text-white">
-          Questions ({sortedQuestions.length})
-        </h2>
+        <h2 className="font-semibold text-gray-900 dark:text-white">Questions ({sortedQuestions.length})</h2>
         {sortedQuestions.length === 0 ? (
           <p className="text-sm text-gray-500">No questions yet. Add at least one before publishing.</p>
         ) : (
@@ -432,8 +424,7 @@ const CognitiveTestEditor: React.FC = () => {
               >
                 <div>
                   <p className="text-xs text-gray-400 mb-1">
-                    Q{idx + 1} ·{" "}
-                    <span className="capitalize">{q.difficulty}</span> · correct:{" "}
+                    Q{idx + 1} · <span className="capitalize">{q.difficulty}</span> · correct:{" "}
                     {String.fromCharCode(65 + q.correct_index)}
                   </p>
                   <p className="text-sm text-gray-900 dark:text-white font-medium">{q.prompt}</p>
@@ -473,4 +464,4 @@ const CognitiveTestEditor: React.FC = () => {
   );
 };
 
-export default CognitiveTestEditor;
+export default ProblemMetricEditor;
