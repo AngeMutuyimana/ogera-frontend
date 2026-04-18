@@ -137,8 +137,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   const employerSettingsSubmenu = [
     { key: "company-profile", label: "Company Profile", path: "/dashboard/profile", icon: BuildingOfficeIcon },
-    { key: "account", label: "Account", path: "/dashboard/profile?tab=account", icon: UserGroupIcon },
-    { key: "security", label: "Security", path: "/dashboard/profile?tab=security", icon: ShieldCheckIcon },
+    { key: "account", label: "Account", path: "/dashboard/settings/account", icon: UserGroupIcon },
+    { key: "security", label: "Security", path: "/dashboard/settings/security", icon: ShieldCheckIcon },
   ];
 
   const activeEmployerJobsItem =
