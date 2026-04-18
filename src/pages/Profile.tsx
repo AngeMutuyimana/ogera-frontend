@@ -1,10 +1,8 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useSelector, useDispatch } from "react-redux";
-import { setCredentials } from "../features/auth/authSlice";
+import { useSelector } from "react-redux";
 import { getUserProfile, updateUserProfile } from "../services/api/profileApi";
 import { uploadResume } from "../services/api/resumeApi";
-import { uploadProfileImage } from "../services/api/profileImageApi";
 import type { UserProfile } from "../services/api/profileApi";
 import { useGetMyTrustScoreQuery } from "../services/api/trustScoreApi";
 import { useGetDashboardMetricsQuery } from "../services/api/dashboardApi";
@@ -42,7 +40,8 @@ import PhoneVerificationModal from "../components/PhoneVerificationModal";
 import PermissionsManagement from "../components/PermissionsManagement";
 import PlatformStatistics from "../components/PlatformStatistics";
 import ActiveSessions from "../components/ActiveSessions";
-import { useResendVerificationEmailMutation } from "../services/api/authApi";
+import ProfileHeaderCard from "../components/Profile/ProfileHeaderCard";
+import EmployerProfile from "../components/Profile/EmployerProfile";
 import { useNavigate } from "react-router-dom";
 import {
   PencilIcon,
@@ -50,10 +49,8 @@ import {
   ArrowDownTrayIcon,
   TrashIcon,
   CheckCircleIcon,
-  MapPinIcon,
   BriefcaseIcon,
   CurrencyDollarIcon,
-  PhoneIcon,
   EnvelopeIcon,
   CalendarIcon,
   PlusIcon,
@@ -67,7 +64,6 @@ import {
   UserIcon,
   TrophyIcon,
   ExclamationTriangleIcon,
-  CameraIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
@@ -93,16 +89,13 @@ interface SuperAdminNavItem {
 
 const Profile: React.FC = () => {
   const { t } = useTranslation();
-  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const user = useSelector((state: any) => state.auth.user);
-  const accessToken = useSelector((state: any) => state.auth.accessToken);
   const role = useSelector((state: any) => state.auth.role);
 
   const [profileData, setProfileData] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const profileImageInputRef = useRef<HTMLInputElement>(null);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
   const [isPhoneVerificationModalOpen, setIsPhoneVerificationModalOpen] = useState(false);
@@ -128,7 +121,7 @@ const Profile: React.FC = () => {
   const [itSkillsInput, setItSkillsInput] = useState("");
 
   // RTK Query hooks
-  const { data: fullProfileData, isLoading: isFullProfileLoading, refetch: refetchFullProfile } = useGetFullProfileQuery();
+  const { data: fullProfileData, refetch: refetchFullProfile } = useGetFullProfileQuery();
   const [updateExtendedProfile] = useUpdateExtendedProfileMutation();
   const [addBulkSkills] = useAddBulkSkillsMutation();
   const [addEmployment] = useAddEmploymentMutation();
@@ -142,8 +135,8 @@ const Profile: React.FC = () => {
   const [deleteProject] = useDeleteProjectMutation();
   const [addAccomplishment] = useAddAccomplishmentMutation();
   const [deleteAccomplishment] = useDeleteAccomplishmentMutation();
-  const [resendVerificationEmail] = useResendVerificationEmailMutation();
-  const navigate = useNavigate();
+  const { data: profileCompletionData } = useGetProfileCompletionQuery();
+  const profileCompletion = profileCompletionData?.data?.profile_completion_percentage || 0;
 
   // Determine user role early for conditional hooks
   const userData = profileData || user;
@@ -235,25 +228,8 @@ const Profile: React.FC = () => {
     refetchTrustScore();
   };
 
-  const shouldShowVerifyAccountButton =
-    normalizedUserRole !== "admin" && normalizedUserRole !== "superadmin";
-
-  const isEmailVerified = Boolean(profileData?.email_verified);
-  const isPhoneVerified = Boolean(profileData?.phone_verified);
-  const isAccountVerified = isEmailVerified && isPhoneVerified;
-  const isVerifyAccountButtonDisabled = loading || !profileData;
-  const verificationEmail = userData?.email || "";
-
-  const handleVerifyAccountClick = () => {
-    if (isAccountVerified) return;
-    if (!verificationEmail) return;
-    localStorage.setItem("pendingVerificationEmail", verificationEmail);
-    navigate("/auth/verification");
-  };
-
   // Get data from full profile
   const currentProfileData = fullProfileData?.data;
-  const extendedProfile = currentProfileData?.extendedProfile;
   const skills = currentProfileData?.skills || [];
   const keySkills = skills.filter(s => s.skill_type === "key_skill");
   const itSkills = skills.filter(s => s.skill_type === "it_skill");
@@ -261,9 +237,6 @@ const Profile: React.FC = () => {
   const educations = currentProfileData?.educations || [];
   const projects = currentProfileData?.projects || [];
   const accomplishments = currentProfileData?.accomplishments || [];
-
-  // Get current employment (is_current = true) or most recent employment
-  const currentEmployment = employments.find(emp => emp.is_current) || employments[0];
 
   // Handle resume upload
   const handleResumeUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -284,12 +257,12 @@ const Profile: React.FC = () => {
     try {
       setIsUploadingResume(true);
       const response = await uploadResume(file);
-      
+
       // Update user profile with the resume URL
       if (response.data?.resume_url) {
         await updateUserProfile({ resume_url: response.data.resume_url });
       }
-      
+
       toast.success(t("profile.resumeUploadSuccess"));
       // Refetch profile data to get updated resume URL
       await fetchProfile();
@@ -306,38 +279,6 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleProfileImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-    if (!allowedTypes.includes(file.type)) { toast.error("Please upload a valid image (JPEG, PNG, GIF, WEBP)"); return; }
-    if (file.size > 5 * 1024 * 1024) { toast.error("Image must be less than 5MB"); return; }
-    try {
-      setIsUploadingImage(true);
-      await uploadProfileImage(file);
-      const response = await getUserProfile();
-      const updatedData = response.data;
-      let newImageUrl = updatedData?.profile_image_url;
-      if (newImageUrl && newImageUrl.startsWith("/")) {
-        const baseUrl = (import.meta.env.VITE_API_URL || "https://api.ogera.sybellasystems.co.rw/api").replace("/api", "");
-        newImageUrl = `${baseUrl}${newImageUrl}`;
-      }
-      if (newImageUrl) {
-        newImageUrl = `${newImageUrl}${newImageUrl.includes("?") ? "&" : "?"}t=${Date.now()}`;
-      }
-      setProfileData(updatedData ? { ...updatedData, profile_image_url: newImageUrl || updatedData.profile_image_url } : updatedData);
-      if (user && accessToken && role) {
-        dispatch(setCredentials({ user: { ...user, profile_image_url: newImageUrl || user.profile_image_url }, accessToken, role }));
-      }
-      toast.success("Profile picture updated!");
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Failed to upload image");
-    } finally {
-      setIsUploadingImage(false);
-      if (profileImageInputRef.current) profileImageInputRef.current.value = "";
-    }
-  };
-
   // Handle resume download
   const handleResumeDownload = () => {
     if (profileData?.resume_url) {
@@ -345,90 +286,113 @@ const Profile: React.FC = () => {
     }
   };
 
-  // Handle resume headline save
   const handleSaveHeadline = async () => {
     try {
       await updateExtendedProfile({ resume_headline: resumeHeadline });
-      toast.success(t("profile.headlineUpdated"));
+      toast.success(t("profile.saveSuccess", { defaultValue: "Profile updated successfully" }));
       setIsEditingHeadline(false);
       refetchFullProfile();
     } catch (error: any) {
-      toast.error(error?.data?.message || t("profile.headlineUpdateFailed"));
+      toast.error(error?.response?.data?.message || t("profile.profileUpdateFailed"));
     }
   };
 
-  // Handle profile summary save
-  const handleSaveSummary = async () => {
-    try {
-      await updateExtendedProfile({ profile_summary: profileSummary });
-      toast.success(t("profile.summaryUpdated"));
-      setIsEditingSummary(false);
-      refetchFullProfile();
-    } catch (error: any) {
-      toast.error(error?.data?.message || t("profile.summaryUpdateFailed"));
-    }
-  };
-
-  // Handle skills save
   const handleSaveSkills = async () => {
     try {
-      const skillNames = skillsInput.split(",").map(s => s.trim()).filter(s => s);
-      const skillsData = skillNames.map(name => ({
-        skill_name: name,
-        skill_type: "key_skill" as const,
-      }));
-      await addBulkSkills({ skills: skillsData });
-      toast.success(t("profile.skillsUpdated"));
+      const parsedSkills = skillsInput.split(",").map((skill) => skill.trim()).filter(Boolean);
+      if (parsedSkills.length > 0) {
+        await addBulkSkills({
+          skills: parsedSkills.map((skillName) => ({
+            skill_name: skillName,
+            skill_type: "key_skill",
+          })),
+        });
+      }
+      toast.success(t("profile.saveSuccess", { defaultValue: "Profile updated successfully" }));
       setIsEditingSkills(false);
       refetchFullProfile();
     } catch (error: any) {
-      toast.error(error?.data?.message || t("profile.skillsUpdateFailed"));
+      toast.error(error?.response?.data?.message || t("profile.profileUpdateFailed"));
     }
   };
 
   const handleSaveItSkills = async () => {
     try {
-      const skillNames = itSkillsInput.split(",").map(s => s.trim()).filter(s => s);
-      const skillsData = skillNames.map(name => ({
-        skill_name: name,
-        skill_type: "it_skill" as const,
-      }));
-      await addBulkSkills({ skills: skillsData });
-      toast.success(t("profile.skillsUpdated"));
+      const parsedSkills = itSkillsInput.split(",").map((skill) => skill.trim()).filter(Boolean);
+      if (parsedSkills.length > 0) {
+        await addBulkSkills({
+          skills: parsedSkills.map((skillName) => ({
+            skill_name: skillName,
+            skill_type: "it_skill",
+          })),
+        });
+      }
+      toast.success(t("profile.saveSuccess", { defaultValue: "Profile updated successfully" }));
       setIsEditingItSkills(false);
-      setItSkillsInput("");
       refetchFullProfile();
     } catch (error: any) {
-      toast.error(error?.data?.message || t("profile.skillsUpdateFailed"));
+      toast.error(error?.response?.data?.message || t("profile.profileUpdateFailed"));
     }
   };
 
-  // Use the same source as the Dashboard so both stay in sync
-  const { data: profileCompletionData } = useGetProfileCompletionQuery();
-  const profileCompletion = profileCompletionData?.data?.profile_completion_percentage ?? 0;
-
-  // Format duration
-  const formatDuration = (startDate: string, endDate?: string | null, isCurrent?: boolean) => {
-    const start = new Date(startDate);
-    const end = endDate ? new Date(endDate) : new Date();
-    const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-    const years = Math.floor(months / 12);
-    const remainingMonths = months % 12;
-
-    let duration = "";
-    if (years > 0) duration += `${years} ${years > 1 ? t("profile.years") : t("profile.year")}`;
-    if (remainingMonths > 0) duration += ` ${remainingMonths} ${remainingMonths > 1 ? t("profile.months") : t("profile.month")}`;
-
-    const startStr = start.toLocaleDateString("en-US", { month: "short", year: "numeric" });
-    const endStr = isCurrent ? t("profile.present") : (endDate ? new Date(endDate).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : t("profile.present"));
-
-    return `${startStr} to ${endStr} (${duration.trim()})`;
+  const handleSaveSummary = async () => {
+    try {
+      await updateExtendedProfile({ profile_summary: profileSummary });
+      toast.success(t("profile.saveSuccess", { defaultValue: "Profile updated successfully" }));
+      setIsEditingSummary(false);
+      refetchFullProfile();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || t("profile.profileUpdateFailed"));
+    }
   };
 
-  if (loading || isFullProfileLoading) {
+  const formatDuration = (startDate: string, endDate?: string | null, isCurrent?: boolean) => {
+    const start = new Date(startDate);
+    const end = isCurrent || !endDate ? new Date() : new Date(endDate);
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      return "";
+    }
+
+    const startLabel = start.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    const endLabel = isCurrent ? t("profile.present") : end.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    return `${startLabel} - ${endLabel}`;
+  };
+
+  if (loading && !profileData) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-[#7f56d9]"></div>
+      </div>
+    );
+  }
+
+  if (normalizedUserRole === "employer") {
+    return (
+      <div className="min-h-screen bg-gray-50 animate-fadeIn pb-8">
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 mx-4 mt-4">
+            <p className="font-medium"><ExclamationTriangleIcon className="w-5 h-5 inline" /> {error}</p>
+          </div>
+        )}
+
+        <ProfileHeaderCard
+          profileData={profileData}
+          fullProfileData={currentProfileData}
+          profileCompletion={profileCompletion}
+          onEditProfileClick={() => setIsEditProfileModalOpen(true)}
+          onPhoneVerificationClick={() => setIsPhoneVerificationModalOpen(true)}
+          onAcademicVerificationClick={() => navigate("/dashboard/academic/pending")}
+          onProfileDataRefresh={handleProfileUpdateSuccess}
+        />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 py-8">
+            <div className="lg:col-span-4">
+              <EmployerProfile profileData={profileData} fullProfileData={currentProfileData || null} />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -442,187 +406,15 @@ const Profile: React.FC = () => {
         </div>
       )}
 
-      {/* Main Profile Card */}
-      <div className="bg-white shadow-sm border-b border-gray-200 mb-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col md:flex-row gap-6 items-start">
-            {/* Profile Picture */}
-            <div className="relative">
-              <div className="relative w-32 h-32">
-                <svg className="absolute inset-0 w-32 h-32 transform -rotate-90 pointer-events-none" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="48" fill="none" stroke="#e5e7eb" strokeWidth="4" />
-                  <circle cx="50" cy="50" r="48" fill="none" stroke="#7f56d9" strokeWidth="4"
-                    strokeDasharray={`${2 * Math.PI * 48}`}
-                    strokeDashoffset={`${2 * Math.PI * 48 * (1 - profileCompletion / 100)}`}
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <div className="absolute inset-[6px] rounded-full overflow-hidden cursor-pointer group shadow-lg" onClick={() => profileImageInputRef.current?.click()}>
-                  <div className="absolute inset-0 bg-[#7f56d9] flex items-center justify-center">
-                    <span className="text-white text-3xl font-bold select-none">
-                      {(userData?.full_name || "U").split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
-                    </span>
-                  </div>
-                  {(user?.profile_image_url || profileData?.profile_image_url) && (() => {
-                    const imgUrl = user?.profile_image_url || profileData?.profile_image_url;
-                    const baseUrl = (import.meta.env.VITE_API_URL || "https://api.ogera.sybellasystems.co.rw/api").replace("/api", "");
-                    const resolvedUrl = imgUrl.startsWith("/") ? `${baseUrl}${imgUrl}` : imgUrl;
-                    return (
-                    <img src={resolvedUrl} alt={userData?.full_name || t("profile.user")}
-                      className="absolute inset-0 w-full h-full object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                    />
-                    );
-                  })()}
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center rounded-full z-10">
-                    {isUploadingImage ? (
-                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <CameraIcon className="w-7 h-7 text-white" />
-                        <span className="text-white text-[10px] font-medium mt-1">Change</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <input type="file" ref={profileImageInputRef} onChange={handleProfileImageUpload} accept="image/*" className="hidden" />
-                <div className="absolute bottom-0 right-0 bg-[#7f56d9] text-white text-[10px] font-bold rounded-full w-9 h-9 flex items-center justify-center border-2 border-white z-10">
-                  {profileCompletion}%
-                </div>
-              </div>
-            </div>
-
-            {/* Profile Info */}
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {userData?.full_name || "User Name"}
-                </h1>
-                <button
-                  onClick={() => setIsEditProfileModalOpen(true)}
-                  className="cursor-pointer text-gray-400 hover:text-[#7f56d9] transition-colors"
-                >
-                  <PencilIcon className="w-5 h-5" />
-                </button>
-          </div>
-              <div className="flex flex-wrap items-center gap-3 mb-1">
-                <p className="text-lg text-gray-700">
-                  {currentEmployment
-                    ? currentEmployment.job_title
-                    : role === "student"
-                      ? t("profile.softwareDeveloper")
-                      : t("profile.professional")}
-                  {currentEmployment && (
-                    <span className="text-gray-600">
-                      {" "}
-                      {t("profile.at")} {currentEmployment.company_name}
-                    </span>
-                  )}
-                </p>
-
-                {shouldShowVerifyAccountButton && (
-                  <button
-                    type="button"
-                    onClick={handleVerifyAccountClick}
-                    disabled={isVerifyAccountButtonDisabled || !verificationEmail}
-                    className={`cursor-pointer text-xs text-[#7f56d9] hover:text-[#5b3ba5] font-medium underline transition-all ${
-                      isAccountVerified
-                        ? "opacity-60 cursor-not-allowed hover:text-[#7f56d9]"
-                        : isVerifyAccountButtonDisabled || !verificationEmail
-                          ? "opacity-50 cursor-not-allowed"
-                          : ""
-                    }`}
-                    title={isAccountVerified ? "Account verified" : "Verify account"}
-                  >
-                    Verify account
-                  </button>
-                )}
-              </div>
-
-              <div className="flex flex-wrap gap-4 mt-4 text-sm text-gray-600">
-                <div className="flex items-center gap-2">
-                  <MapPinIcon className="w-5 h-5 text-gray-400" />
-                  <span>{userData?.preferred_location || t("profile.location")}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <BriefcaseIcon className="w-5 h-5 text-gray-400" />
-                  <span>
-                    {extendedProfile?.total_experience_years || 0} {(extendedProfile?.total_experience_years || 0) !== 1 ? t("profile.years") : t("profile.year")}{" "}
-                    {extendedProfile?.total_experience_months || 0} {(extendedProfile?.total_experience_months || 0) !== 1 ? t("profile.months") : t("profile.month")}
-                  </span>
-                </div>
-                {role === "student" && extendedProfile?.current_salary && (
-                  <div className="flex items-center gap-2">
-                    <CurrencyDollarIcon className="w-5 h-5 text-gray-400" />
-                    <span>₹ {extendedProfile.current_salary.toLocaleString()}</span>
-                  </div>
-                )}
-        </div>
-
-              <div className="flex flex-wrap gap-4 mt-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <PhoneIcon className="w-5 h-5 text-gray-400" />
-                  <span className="text-gray-700">{userData?.mobile_number || "N/A"}</span>
-                  {profileData?.phone_verified ? (
-                    <CheckCircleIcon className="w-5 h-5 text-green-500" title={t("profile.phoneVerified")} />
-                  ) : (
-                    <button
-                      onClick={() => setIsPhoneVerificationModalOpen(true)}
-                      className="cursor-pointer text-xs text-[#7f56d9] hover:text-[#5b3ba5] font-medium underline"
-                      title={t("profile.verifyPhone")}
-                    >
-                      {t("profile.verify")}
-                    </button>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <EnvelopeIcon className="w-5 h-5 text-gray-400" />
-                  <span className="text-gray-700">{userData?.email || "N/A"}</span>
-                  {profileData?.email_verified ? (
-                    <CheckCircleIcon className="w-5 h-5 text-green-500" title={t("profile.emailVerified")} />
-                  ) : (
-                    <button
-                      onClick={async () => {
-                        try {
-                          await resendVerificationEmail(userData?.email || "").unwrap();
-                          toast.success(t("profile.verificationEmailSent"));
-                        } catch (error: any) {
-                          toast.error(error?.data?.message || t("profile.verificationEmailFailed"));
-                        }
-                      }}
-                      className="cursor-pointer text-xs text-[#7f56d9] hover:text-[#5b3ba5] font-medium underline"
-                      title={t("profile.verifyEmail")}
-                    >
-                      {t("profile.verify")}
-                    </button>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <CalendarIcon className="w-5 h-5 text-gray-400" />
-                  <span className="text-gray-700">{extendedProfile?.notice_period || t("profile.noticePeriodDefault")}</span>
-                </div>
-                {role === "student" && (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => navigate("/dashboard/academic/pending")}
-                      className="cursor-pointer text-xs text-[#7f56d9] hover:text-[#5b3ba5] font-medium underline"
-                      title={t("profile.academicVerification")}
-                    >
-                      {t("profile.academicVerification")}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <p className="text-xs text-gray-500 mt-4">
-                {t("profile.profileLastUpdated")} - {profileData?.updated_at
-                  ? new Date(profileData.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " - " + new Date(profileData.updated_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })
-                  : t("profile.recently")}
-              </p>
-            </div>
-          </div>
-        </div>
-            </div>
+      <ProfileHeaderCard
+        profileData={profileData}
+        fullProfileData={currentProfileData}
+        profileCompletion={profileCompletion}
+        onEditProfileClick={() => setIsEditProfileModalOpen(true)}
+        onPhoneVerificationClick={() => setIsPhoneVerificationModalOpen(true)}
+        onAcademicVerificationClick={() => navigate("/dashboard/academic/pending")}
+        onProfileDataRefresh={handleProfileUpdateSuccess}
+      />
 
       {/* Main Content Layout */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
