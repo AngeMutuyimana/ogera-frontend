@@ -11,6 +11,7 @@ import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
 } from "@heroicons/react/24/outline";
+import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 import {
   BarChart,
   Bar,
@@ -20,6 +21,12 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import TrustScoreCard from "../components/TrustScoreCard";
+import {
+  useGetMyTrustScoreQuery,
+  useCalculateTrustScoreMutation,
+  useGetStudentLeaderboardQuery,
+} from "../services/api/trustScoreApi";
 
 interface DashboardMetrics {
   totalUsers: number;
@@ -91,7 +98,21 @@ const Dashboard: React.FC = () => {
   const user = useSelector((state: any) => state.auth.user);
   const roleRaw = useSelector((state: any) => state.auth.role);
   const accessToken = useSelector((state: any) => state.auth.accessToken);
+  const authUserId = user?.user_id as string | undefined;
   const role = roleRaw ? String(roleRaw).toLowerCase().trim() : undefined;
+
+  const {
+    data: trustScoreRes,
+    isLoading: trustLoading,
+    refetch: refetchTrust,
+  } = useGetMyTrustScoreQuery(undefined, {
+    skip: role !== "student" || !authUserId,
+  });
+  const [recalcTrust] = useCalculateTrustScoreMutation();
+  const { data: leaderboardRes, isLoading: leaderboardLoading } =
+    useGetStudentLeaderboardQuery(10, {
+      skip: role !== "employer" && role !== "superadmin",
+    });
   const isAdminDashboardRole = role === "superadmin" || Boolean(role?.includes("admin"));
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const showProfileCompletion = role === "student" || role === "employer";
@@ -127,6 +148,21 @@ const Dashboard: React.FC = () => {
   // Superadmin recent activity from notifications
   const [adminActivities, setAdminActivities] = useState<EmployerNotificationItem[]>([]);
   const [adminActivitiesLoading, setAdminActivitiesLoading] = useState(false);
+
+  // Students: persist TrustScore when opening the dashboard (keeps breakdown in sync)
+  useEffect(() => {
+    if (role !== "student" || !authUserId) return;
+    let cancelled = false;
+    recalcTrust(authUserId)
+      .unwrap()
+      .then(() => {
+        if (!cancelled) refetchTrust();
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [role, authUserId, recalcTrust, refetchTrust]);
 
   const parseApiErrorMessage = (status: number, payload?: ApiErrorPayload) => {
     const backendMessage = payload?.message?.trim();
@@ -617,6 +653,98 @@ const Dashboard: React.FC = () => {
           onClose={() => setIsWizardOpen(false)}
           onComplete={() => setIsWizardOpen(false)}
         />
+      )}
+
+      {role === "student" && authUserId && trustScoreRes?.data && (
+        <TrustScoreCard
+          trustScore={trustScoreRes.data}
+          isLoading={trustLoading}
+        />
+      )}
+
+      {(role === "employer" || role === "superadmin") && (
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">
+                {t("dashboard.topCandidatesTrust")}
+              </h2>
+              <p className="text-xs text-gray-500 mt-1">
+                Top 10 students ranked by TrustScore
+              </p>
+            </div>
+            <div className="flex items-center gap-1 rounded-full bg-purple-50 text-purple-700 px-3 py-1 text-xs font-semibold">
+              <StarIconSolid className="h-3.5 w-3.5" />
+              TrustScore
+            </div>
+          </div>
+          {leaderboardLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="animate-pulse flex items-center justify-between rounded-xl border border-gray-100 px-3 py-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-gray-200" />
+                    <div>
+                      <div className="h-3 w-24 rounded bg-gray-200 mb-2" />
+                      <div className="h-2.5 w-16 rounded bg-gray-100" />
+                    </div>
+                  </div>
+                  <div className="h-8 w-14 rounded-full bg-gray-200" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <ul className="space-y-2.5">
+              {(leaderboardRes?.data?.leaderboard || []).map((row) => (
+                <li
+                  key={row.user_id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gradient-to-r from-white to-purple-50/40 px-3 py-3 transition-all hover:border-purple-200 hover:shadow-sm"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                        row.rank === 1
+                          ? "bg-yellow-100 text-yellow-700"
+                          : row.rank === 2
+                          ? "bg-slate-100 text-slate-700"
+                          : row.rank === 3
+                          ? "bg-orange-100 text-orange-700"
+                          : "bg-purple-100 text-purple-700"
+                      }`}
+                    >
+                      #{row.rank}
+                    </div>
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-sm font-semibold text-white">
+                      {(row.full_name || "S").trim().charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-gray-900">
+                        {row.full_name}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {row.rank <= 3 ? "Top performer" : "Promising candidate"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <div className="inline-flex min-w-[58px] items-center justify-center rounded-full bg-purple-600 px-3 py-1 text-sm font-bold text-white shadow-sm">
+                      {row.trust_score != null ? row.trust_score.toFixed(0) : "—"}
+                    </div>
+                    <p className="mt-1 text-[11px] text-gray-400">score</p>
+                  </div>
+                </li>
+              ))}
+              {!leaderboardRes?.data?.leaderboard?.length && (
+                <li className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500">
+                  {t("common.noData")}
+                </li>
+              )}
+            </ul>
+          )}
+        </div>
       )}
 
       {/* Stats Cards */}

@@ -96,6 +96,17 @@ import AddCourse from "./pages/Courses/AddCourse";
 import ViewCourse from "./pages/Courses/ViewCourse";
 import CourseDetail from "./pages/Courses/CourseDetail";
 import CourseAnalytics from "./pages/Courses/CourseAnalytics";
+import CognitiveTestsHub from "./pages/CognitiveTests/CognitiveTestsHub";
+import CognitiveTestEditor from "./pages/CognitiveTests/CognitiveTestEditor";
+import StudentCognitiveTests from "./pages/CognitiveTests/StudentCognitiveTests";
+import TakeCognitiveTest from "./pages/CognitiveTests/TakeCognitiveTest";
+import ProblemMetricsHub from "./pages/ProblemMetrics/ProblemMetricsHub";
+import ProblemMetricEditor from "./pages/ProblemMetrics/ProblemMetricEditor";
+import StudentProblemMetrics from "./pages/ProblemMetrics/StudentProblemMetrics";
+import TakeProblemMetric from "./pages/ProblemMetrics/TakeProblemMetric";
+import AcademicRecords from "./pages/AcademicRecords";
+import "./services/api/cognitiveTestApi";
+import "./services/api/problemMetricApi";
 
 function App() {
   const { t } = useTranslation();
@@ -547,6 +558,84 @@ function App() {
             {
               path: "courses/:id",
               Component: CourseDetail,
+            },
+            {
+              path: "cognitive-tests",
+              element: <ProtectedRoute allowedRoles={["superadmin", "admin"]} />,
+              children: [
+                {
+                  index: true,
+                  Component: CognitiveTestsHub,
+                },
+                {
+                  path: "edit/:id",
+                  Component: CognitiveTestEditor,
+                },
+              ],
+            },
+            {
+              path: "cognitive-tests/available",
+              element: <ProtectedRoute allowedRoles={["student"]} />,
+              children: [
+                {
+                  index: true,
+                  Component: StudentCognitiveTests,
+                },
+              ],
+            },
+            {
+              path: "cognitive-tests/attempt/:id",
+              element: <ProtectedRoute allowedRoles={["student"]} />,
+              children: [
+                {
+                  index: true,
+                  Component: TakeCognitiveTest,
+                },
+              ],
+            },
+            {
+              path: "academic-records",
+              element: <ProtectedRoute allowedRoles={["student", "superadmin"]} />,
+              children: [
+                {
+                  index: true,
+                  Component: AcademicRecords,
+                },
+              ],
+            },
+            {
+              path: "problem-metrics",
+              element: <ProtectedRoute allowedRoles={["superadmin", "admin"]} />,
+              children: [
+                {
+                  index: true,
+                  Component: ProblemMetricsHub,
+                },
+                {
+                  path: "edit/:id",
+                  Component: ProblemMetricEditor,
+                },
+              ],
+            },
+            {
+              path: "problem-metrics/available",
+              element: <ProtectedRoute allowedRoles={["student"]} />,
+              children: [
+                {
+                  index: true,
+                  Component: StudentProblemMetrics,
+                },
+              ],
+            },
+            {
+              path: "problem-metrics/attempt/:id",
+              element: <ProtectedRoute allowedRoles={["student"]} />,
+              children: [
+                {
+                  index: true,
+                  Component: TakeProblemMetric,
+                },
+              ],
             },
           ],
         },
