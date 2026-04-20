@@ -1,10 +1,9 @@
-import React, { useEffect, useState, useRef, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 
 import { useTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
 import { getUserProfile, updateUserProfile } from "../services/api/profileApi";
 import { uploadResume } from "../services/api/resumeApi";
-import { uploadProfileImage } from "../services/api/profileImageApi";
 import api from "../services/api/axiosInstance";
 import type { UserProfile } from "../services/api/profileApi";
 import { useGetMyTrustScoreQuery, useCalculateTrustScoreMutation } from "../services/api/trustScoreApi";
@@ -110,7 +109,6 @@ const Profile: React.FC = () => {
   const [showViewer, setShowViewer] = useState(false);
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [viewerContentType, setViewerContentType] = useState<string | null>(null);
-  const [superAdminActiveTab, setSuperAdminActiveTab] = useState<"overview" | "account" | "permissions" | "stats" | "security">("overview");
   const [superAdminActiveTab, setSuperAdminActiveTab] = useState<SuperAdminTab>("overview");
 
   // Modal states
@@ -246,8 +244,8 @@ const Profile: React.FC = () => {
 
   // Get data from full profile
   const currentProfileData = fullProfileData?.data;
+  const extendedProfile = currentProfileData?.extendedProfile;
   const skills = currentProfileData?.skills || [];
-  const keySkills = skills.filter(s => s.skill_type === "key_skill");
   const itSkills = skills.filter(s => s.skill_type === "it_skill");
   const employments = currentProfileData?.employments || [];
   const educations = currentProfileData?.educations || [];
@@ -359,38 +357,6 @@ const Profile: React.FC = () => {
       // Reset file input
       const fileInput = document.getElementById("resume-upload") as HTMLInputElement;
       if (fileInput) fileInput.value = "";
-    }
-  };
-
-  const handleProfileImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-    if (!allowedTypes.includes(file.type)) { toast.error("Please upload a valid image (JPEG, PNG, GIF, WEBP)"); return; }
-    if (file.size > 5 * 1024 * 1024) { toast.error("Image must be less than 5MB"); return; }
-    try {
-      setIsUploadingImage(true);
-      await uploadProfileImage(file);
-      const response = await getUserProfile();
-      const updatedData = response.data;
-      let newImageUrl = updatedData?.profile_image_url;
-      if (newImageUrl && newImageUrl.startsWith("/")) {
-        const baseUrl = (import.meta.env.VITE_API_URL || "https://api.ogera.sybellasystems.co.rw/api").replace("/api", "");
-        newImageUrl = `${baseUrl}${newImageUrl}`;
-      }
-      if (newImageUrl) {
-        newImageUrl = `${newImageUrl}${newImageUrl.includes("?") ? "&" : "?"}t=${Date.now()}`;
-      }
-      setProfileData(updatedData ? { ...updatedData, profile_image_url: newImageUrl || updatedData.profile_image_url } : updatedData);
-      if (user && accessToken && role) {
-        dispatch(setCredentials({ user: { ...user, profile_image_url: newImageUrl || user.profile_image_url }, accessToken, role }));
-      }
-      toast.success("Profile picture updated!");
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Failed to upload image");
-    } finally {
-      setIsUploadingImage(false);
-      if (profileImageInputRef.current) profileImageInputRef.current.value = "";
     }
   };
 
@@ -563,25 +529,6 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleSaveSkills = async () => {
-    try {
-      const parsedSkills = skillsInput.split(",").map((skill) => skill.trim()).filter(Boolean);
-      if (parsedSkills.length > 0) {
-        await addBulkSkills({
-          skills: parsedSkills.map((skillName) => ({
-            skill_name: skillName,
-            skill_type: "key_skill",
-          })),
-        });
-      }
-      toast.success(t("profile.saveSuccess", { defaultValue: "Profile updated successfully" }));
-      setIsEditingSkills(false);
-      refetchFullProfile();
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || t("profile.profileUpdateFailed"));
-    }
-  };
-
   const handleSaveWorkExperience = async () => {
     const parsedYears = Math.max(0, Number(totalExperienceYears) || 0);
 
@@ -595,6 +542,15 @@ const Profile: React.FC = () => {
       setProfileSummary(workExperienceDetails);
       setTotalExperienceYears(String(parsedYears));
       setIsEditingWorkExperience(false);
+      refetchFullProfile();
+      refetchTrustScore();
+    } catch (error: any) {
+      toast.error(error?.data?.message || t("profile.workExperienceUpdateFailed"));
+    } finally {
+      setIsSavingWorkExperience(false);
+    }
+  };
+
   const handleSaveItSkills = async () => {
     try {
       const parsedSkills = itSkillsInput.split(",").map((skill) => skill.trim()).filter(Boolean);
@@ -612,8 +568,6 @@ const Profile: React.FC = () => {
       refetchTrustScore();
     } catch (error: any) {
       toast.error(error?.data?.message || t("profile.workExperienceUpdateFailed"));
-    } finally {
-      setIsSavingWorkExperience(false);
     }
   };
 
@@ -641,7 +595,6 @@ const Profile: React.FC = () => {
       toast.error(error?.data?.message || t("profile.workExperienceDeleteFailed"));
     } finally {
       setIsSavingWorkExperience(false);
-      toast.error(error?.response?.data?.message || t("profile.profileUpdateFailed"));
     }
   };
 
