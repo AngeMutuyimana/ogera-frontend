@@ -12,11 +12,13 @@ import Button from "../../components/button";
 import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import * as Yup from "yup";
 import { useSelector } from "react-redux";
+import { SUPPORTED_CURRENCIES } from "../../constants/currencies";
 
 interface CreateJobFormValues {
   job_title: string;
   category: string;
   budget: string;
+  currency: string;
   duration: string;
   duration_start: string;
   duration_end: string;
@@ -66,6 +68,7 @@ const CreateJob: React.FC = () => {
         const n = Number(value);
         return Number.isFinite(n) && n > 0;
       }),
+    currency: Yup.string().required(t("pages.jobs.validationCurrencyRequired")),
     duration_start: Yup.string().required(t("pages.jobs.validationDurationStartRequired")),
     duration_end: Yup.string()
       .required(t("pages.jobs.validationDurationEndRequired"))
@@ -117,6 +120,7 @@ const CreateJob: React.FC = () => {
     job_title: job?.job_title || "",
     category: job?.category || "",
     budget: job?.budget != null ? String(job.budget) : "",
+    currency: job?.currency || "USD",
     duration: job?.duration || "",
     duration_start: "",
     duration_end: "",
@@ -161,6 +165,7 @@ const CreateJob: React.FC = () => {
           job_title: values.job_title.trim(),
           category: values.category.trim(),
           budget: Number(values.budget),
+          currency: values.currency,
           duration: values.duration.trim(),
           location: values.location.trim(),
           status: values.status || "Pending",
@@ -219,6 +224,7 @@ const CreateJob: React.FC = () => {
         job_title: job.job_title || "",
         category: job.category || "",
         budget: job.budget != null ? String(job.budget) : "",
+        currency: job.currency || "USD",
         duration: job.duration || "",
         duration_start: "",
         duration_end: "",
@@ -453,6 +459,26 @@ const CreateJob: React.FC = () => {
             )}
           </FormGroup>
         </InputRow>
+
+        <FormGroup>
+          <Label htmlFor="currency">{renderLabel(t("pages.jobs.currencyLabel"))}</Label>
+          <Select
+            id="currency"
+            name="currency"
+            value={formik.values.currency}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+          >
+            {SUPPORTED_CURRENCIES.map((currency) => (
+              <option key={currency.code} value={currency.code}>
+                {currency.code} - {currency.label}
+              </option>
+            ))}
+          </Select>
+          {formik.touched.currency && formik.errors.currency && (
+            <ErrorText>{formik.errors.currency}</ErrorText>
+          )}
+        </FormGroup>
 
         {/* Duration (moved below Category+Budget) */}
         <FormGroup>

@@ -3,25 +3,36 @@ import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useTranslation } from "react-i18next";
 import { ClockIcon } from "@heroicons/react/24/outline";
-import { useGetPendingJobsQuery, useToggleJobStatusMutation } from "../../services/api/jobsApi";
+import { useGetPendingJobsQuery, useReviewJobMutation } from "../../services/api/jobsApi";
 import Loader from "../../components/Loader";
 import { formatRelativeTime } from "../../utils/timeUtils";
+import { formatBudgetWithCurrency } from "../../constants/currencies";
 
 const PendingApproval: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const role = useSelector((state: any) => state.auth.role);
   const { data, isLoading, error, refetch } = useGetPendingJobsQuery();
-  const [toggleStatus, { isLoading: isToggling }] = useToggleJobStatusMutation();
+  const [reviewJob, { isLoading: isReviewing }] = useReviewJobMutation();
 
   const pendingJobs = data?.data || [];
 
   const handleApprove = async (jobId: string) => {
     try {
-      await toggleStatus(jobId).unwrap();
+      await reviewJob({ id: jobId, status: "Active" }).unwrap();
       refetch();
     } catch (error: any) {
       console.error("Failed to approve job:", error);
+      alert(t("pages.jobs.failedToApprove"));
+    }
+  };
+
+  const handleDisapprove = async (jobId: string) => {
+    try {
+      await reviewJob({ id: jobId, status: "Inactive" }).unwrap();
+      refetch();
+    } catch (error: any) {
+      console.error("Failed to disapprove job:", error);
       alert(t("pages.jobs.failedToApprove"));
     }
   };
@@ -84,7 +95,7 @@ const PendingApproval: React.FC = () => {
                     </div>
                     <p className="text-gray-600 font-medium mb-3">{employerName}</p>
                     <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                      <span>💰 ${job.budget?.toLocaleString() || t("common.na")}</span>
+                      <span>💰 {formatBudgetWithCurrency(job.budget, job.currency || "USD")}</span>
                       <span>📍 {job.location}</span>
                       {employerEmail && <span>📧 {employerEmail}</span>}
                       {job.created_at && (
@@ -103,10 +114,17 @@ const PendingApproval: React.FC = () => {
                       <>
                         <button
                           onClick={() => handleApprove(job.job_id)}
-                          disabled={isToggling}
+                          disabled={isReviewing}
                           className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition shadow-md whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {isToggling ? t("pages.jobs.approving") : t("pages.jobs.approve")}
+                          {isReviewing ? t("pages.jobs.approving") : t("pages.jobs.approve")}
+                        </button>
+                        <button
+                          onClick={() => handleDisapprove(job.job_id)}
+                          disabled={isReviewing}
+                          className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition shadow-md whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Disapprove
                         </button>
                       </>
                     )}
