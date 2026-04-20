@@ -22,6 +22,8 @@ import ChangePassword from "./pages/ChangePassword";
 import TestRefresh from "./pages/TestRefresh";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
+import EmployerSettingsAccount from "./pages/EmployerSettingsAccount";
+import EmployerSettingsSecurity from "./pages/EmployerSettingsSecurity";
 
 // User Pages
 import AllUsers from "./pages/Users/AllUsers";
@@ -184,6 +186,22 @@ function App() {
               element: (
                 <FeatureGate feature="SETTINGS">
                   <Profile />
+                </FeatureGate>
+              ),
+            },
+            {
+              path: "settings/account",
+              element: (
+                <FeatureGate feature="SETTINGS">
+                  <EmployerSettingsAccount />
+                </FeatureGate>
+              ),
+            },
+            {
+              path: "settings/security",
+              element: (
+                <FeatureGate feature="SETTINGS">
+                  <EmployerSettingsSecurity />
                 </FeatureGate>
               ),
             },

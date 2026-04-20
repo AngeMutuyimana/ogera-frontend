@@ -1720,5 +1720,57 @@
       "Competent": "Good standing with most verifications complete. You have access to core platform features.",
       "Exceptional": "Fully verified and in excellent standing. You have full access to all platform features."
     }
+  },
+  "settings": {
+    "account": "Account",
+    "accountDescription": "Manage your account settings, business operations, preferences, and team members",
+    "accountOverview": "Account Overview",
+    "fullName": "Full Name",
+    "enterFullName": "Enter your full name",
+    "email": "Email",
+    "emailCannotChange": "Email address cannot be changed",
+    "phoneNumber": "Phone Number",
+    "enterPhoneNumber": "Enter your phone number",
+    "save": "Save Changes",
+    "savedSuccessfully": "Changes saved successfully!",
+    "saveFailed": "Failed to save changes",
+    "businessOperations": "Business Operations",
+    "companyName": "Company Name",
+    "subscriptionPlan": "Subscription Plan",
+    "plans": {
+      "basic": "Basic",
+      "pro": "Pro",
+      "enterprise": "Enterprise"
+    },
+    "jobPostingUsage": "Job Posting Usage",
+    "activeJobs": "Active Jobs",
+    "slots": "slots",
+    "outOf": "out of",
+    "billingStatus": "Billing Status",
+    "active": "Active",
+    "nextBillingDate": "Next Billing",
+    "paymentMethod": "Payment Method",
+    "mobileMoney": "Mobile Money",
+    "preferences": "Preferences",
+    "language": "Language",
+    "languages": {
+      "english": "English",
+      "french": "Français",
+      "swahili": "Kiswahili"
+    },
+    "notificationSettings": "Notification Settings",
+    "emailNotifications": "Email Notifications",
+    "emailNotificationsDesc": "Receive email updates about your jobs and applications",
+    "inAppNotifications": "In-App Notifications",
+    "inAppNotificationsDesc": "Receive notifications within the platform",
+    "teamManagement": "Team Management",
+    "addTeamMember": "Add Team Member",
+    "noTeamMembers": "No team members yet. Add your team to get started.",
+    "name": "Name",
+    "role": "Role",
+    "joinDate": "Join Date",
+    "actions": "Actions",
+    "remove": "Remove",
+    "notSet": "Not set"
   }
 }

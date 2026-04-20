@@ -91,6 +91,8 @@ type StatItem = {
 
 const Dashboard: React.FC = () => {
   const ACTIVITY_LIMIT = 5;
+  const apiBaseUrl = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
+  const getApiUrl = (path: string) => `${apiBaseUrl}${path.startsWith("/") ? path : `/${path}`}`;
   const { t } = useTranslation();
   const user = useSelector((state: any) => state.auth.user);
   const roleRaw = useSelector((state: any) => state.auth.role);
@@ -173,7 +175,7 @@ const Dashboard: React.FC = () => {
       setMetricsLoading(true);
       setMetricsError(null);
       console.log("[Dashboard] Fetching metrics for admin-type role...");
-      fetch("/api/dashboard/metrics", {
+      fetch(getApiUrl("/dashboard/metrics"), {
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       })
         .then(async (res) => {
@@ -212,7 +214,7 @@ const Dashboard: React.FC = () => {
     if (role === 'student') {
       setStudentLoading(true);
       setStudentError(null);
-      fetch('/api/dashboard/student', {
+      fetch(getApiUrl("/dashboard/student"), {
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       })
         .then((res) => res.json())
@@ -238,7 +240,7 @@ const Dashboard: React.FC = () => {
     if (role === "employer") {
       setEmployerLoading(true);
       setEmployerError(null);
-      fetch("/api/dashboard/employer", {
+      fetch(getApiUrl("/dashboard/employer"), {
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       })
         .then((res) => res.json())
@@ -263,7 +265,7 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     if (role === "student") {
       setStudentActivitiesLoading(true);
-      fetch(`/api/notifications?limit=${ACTIVITY_LIMIT}`, {
+      fetch(getApiUrl(`/notifications?limit=${ACTIVITY_LIMIT}`), {
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       })
         .then((res) => res.json())
@@ -286,7 +288,7 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     if (role === "employer") {
       setEmployerActivitiesLoading(true);
-      fetch(`/api/notifications?limit=${ACTIVITY_LIMIT}`, {
+      fetch(getApiUrl(`/notifications?limit=${ACTIVITY_LIMIT}`), {
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       })
         .then((res) => res.json())
@@ -309,7 +311,7 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     if (isAdminDashboardRole) {
       setAdminActivitiesLoading(true);
-      fetch(`/api/notifications?limit=${ACTIVITY_LIMIT}`, {
+      fetch(getApiUrl(`/notifications?limit=${ACTIVITY_LIMIT}`), {
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       })
         .then((res) => res.json())
