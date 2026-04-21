@@ -15,8 +15,9 @@ interface CategoryFormData {
 
 const JobCategories: React.FC = () => {
   const { t } = useTranslation();
-  const role = useSelector((state: any) => state.auth.role);
-  const isSuperAdmin = role === "superadmin";
+  const roleRaw = useSelector((state: any) => state.auth.role);
+  const role = roleRaw ? String(roleRaw).toLowerCase().trim() : "";
+  const isSuperAdmin = role === "superadmin" || role === "admin";
 
   const { data: categoriesResponse, isLoading, refetch } = useGetAllCategoriesQuery();
   const [createCategory, { isLoading: isCreating }] = useCreateCategoryMutation();

@@ -11,7 +11,7 @@ import {
   BookmarkIcon,
 } from "@heroicons/react/24/outline";
 import { BookmarkIcon as BookmarkSolidIcon } from "@heroicons/react/24/solid";
-import { useGetJobByIdQuery } from "../../services/api/jobsApi";
+import { useGetJobByIdQuery, useReviewJobMutation } from "../../services/api/jobsApi";
 import { useGetUserProfileQuery } from "../../services/api/authApi";
 import { useCheckStudentApplicationQuery } from "../../services/api/jobApplicationApi";
 import { useFundJobMutation, useLazyGetMoMoStatusQuery, useApproveWorkAndPayMutation } from "../../services/api/momoApi";
@@ -20,6 +20,8 @@ import ApplyJobModal from "../../components/ApplyJobModal";
 import Loader from "../../components/Loader";
 import { formatRelativeTime } from "../../utils/timeUtils";
 import Button from "../../components/button";
+import { formatBudgetWithCurrency } from "../../constants/currencies";
+import toast from "react-hot-toast";
 
 const JobDetails: React.FC = () => {
   const { t } = useTranslation();
@@ -28,6 +30,7 @@ const JobDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const role = useSelector((state: any) => state.auth.role);
+  const normalizedRole = role ? String(role).toLowerCase().trim() : "";
   const { data, isLoading, error, refetch } = useGetJobByIdQuery(id || "");
   const { data: profileData } = useGetUserProfileQuery(undefined);
   const { data: applicationCheck, refetch: refetchApplicationCheck } = useCheckStudentApplicationQuery(id || "", {
@@ -41,6 +44,7 @@ const JobDetails: React.FC = () => {
   const [fundJob, { isLoading: isFunding }] = useFundJobMutation();
   const [getMoMoStatus] = useLazyGetMoMoStatusQuery();
   const [approveWorkAndPay, { isLoading: isPaying }] = useApproveWorkAndPayMutation();
+  const [reviewJob, { isLoading: isUpdatingJob }] = useReviewJobMutation();
 
    const job = data?.data;
   const currentUserId = profileData?.data?.user_id;
@@ -64,6 +68,8 @@ const JobDetails: React.FC = () => {
   }, [searchParams, role, job, hasApplied, isCompletedJob]);
   const fundingStatus = job?.funding_status || "Unfunded";
   const isEmployerView = (role === "employer" || role === "superadmin") && currentUserId && job?.employer_id === currentUserId;
+  const isAlreadyApproved = job?.status === "Active";
+  const isAlreadyDisapproved = job?.status === "Inactive";
 
   const feeInfo = useMemo(() => {
     const budget = Number(job?.budget ?? 0) || 0;
@@ -232,7 +238,7 @@ const JobDetails: React.FC = () => {
             )}
           </div>
         )}
-        {(role === "employer" || role === "superadmin") && (
+        {(normalizedRole === "employer" || normalizedRole === "superadmin") && (
           <div className="flex flex-col sm:flex-row gap-2">
             <Button
               backgroundcolor="#7f56d9"
@@ -243,6 +249,46 @@ const JobDetails: React.FC = () => {
               backgroundcolor="#6b7280"
               text={t("pages.jobs.editJob")}
               onClick={() => navigate(`/dashboard/jobs/${id}/edit`)}
+            />
+          </div>
+        )}
+        {(normalizedRole === "admin" || normalizedRole === "superadmin") && (
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button
+              backgroundcolor="#059669"
+              text={isAlreadyApproved ? "Approved" : isUpdatingJob ? "Approving..." : "Approve"}
+              onClick={async () => {
+                if (!id) return;
+                if (isAlreadyApproved) return;
+                try {
+                  await reviewJob({ id, status: "Active" }).unwrap();
+                  toast.success("Job approved successfully.");
+                  refetch();
+                } catch (error) {
+                  console.error("Failed to approve job:", error);
+                  const err = error as { data?: { message?: string }; message?: string };
+                  toast.error(err?.data?.message || err?.message || "Failed to approve job. Please try again.");
+                }
+              }}
+              disabled={isUpdatingJob || isAlreadyApproved}
+            />
+            <Button
+              backgroundcolor="#dc2626"
+              text={isAlreadyDisapproved ? "Disapproved" : isUpdatingJob ? "Updating..." : "Disapprove"}
+              onClick={async () => {
+                if (!id) return;
+                if (isAlreadyDisapproved) return;
+                try {
+                  await reviewJob({ id, status: "Inactive" }).unwrap();
+                  toast.success("Job disapproved successfully.");
+                  refetch();
+                } catch (error) {
+                  console.error("Failed to disapprove job:", error);
+                  const err = error as { data?: { message?: string }; message?: string };
+                  toast.error(err?.data?.message || err?.message || "Failed to disapprove job. Please try again.");
+                }
+              }}
+              disabled={isUpdatingJob || isAlreadyDisapproved}
             />
           </div>
         )}
@@ -281,7 +327,7 @@ const JobDetails: React.FC = () => {
               <div className="flex items-center gap-2 text-gray-700">
                 <CurrencyDollarIcon className="h-5 w-5 text-gray-500" />
                 <span className="text-sm md:text-base">
-                  <strong>{t("pages.jobs.budget")}:</strong> ${job.budget?.toLocaleString() || t("pages.jobs.notSpecified")}
+                  <strong>{t("pages.jobs.budget")}:</strong> {formatBudgetWithCurrency(job.budget, job.currency || "USD")}
                 </span>
               </div>
               <div className="flex items-center gap-2 text-gray-700">

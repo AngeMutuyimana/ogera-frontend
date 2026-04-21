@@ -34,7 +34,12 @@ import {
   DocumentTextIcon,
   BanknotesIcon,
   ListBulletIcon,
+  CpuChipIcon,
+  ClipboardDocumentListIcon,
+  PuzzlePieceIcon,
 } from "@heroicons/react/24/outline";
+import { useListCognitiveTestsAdminQuery } from "../../services/api/cognitiveTestApi";
+import { useListProblemMetricsAdminQuery } from "../../services/api/problemMetricApi";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -96,6 +101,45 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       console.log('  - Permission routes:', permissions.map(p => p.route));
     }
   }, [role, permissions, visibleMenuItems, isBuiltInAdmin, isCustomAdmin]);
+
+  const showCognitiveAdmin =
+    isBuiltInAdmin || hasAnyPermission(permissions, "/cognitive-tests", role);
+  const showCognitiveStudent = role === "student";
+  const showCognitiveSection =
+    (showCognitiveAdmin || showCognitiveStudent) &&
+    role !== "verifyDocAdmin" &&
+    role !== "employer";
+
+  const skipCognitiveAdminList =
+    !showCognitiveAdmin || openMenu !== "cognitive";
+  const { data: cognitiveAdminList } = useListCognitiveTestsAdminQuery(undefined, {
+    skip: skipCognitiveAdminList,
+  });
+  const cognitiveTestsForMenu = cognitiveAdminList?.data ?? [];
+
+  const showProblemMetricAdmin =
+    isBuiltInAdmin || hasAnyPermission(permissions, "/problem-metrics", role);
+  const showProblemMetricStudent = role === "student";
+  const showProblemMetricSection =
+    (showProblemMetricAdmin || showProblemMetricStudent) &&
+    role !== "verifyDocAdmin" &&
+    role !== "employer";
+
+  const skipProblemMetricAdminList =
+    !showProblemMetricAdmin || openMenu !== "problemMetrics";
+  const { data: problemMetricAdminList } = useListProblemMetricsAdminQuery(undefined, {
+    skip: skipProblemMetricAdminList,
+  });
+  const problemMetricsForMenu = problemMetricAdminList?.data ?? [];
+
+  React.useEffect(() => {
+    if (location.pathname.startsWith("/dashboard/cognitive-tests")) {
+      setOpenMenu("cognitive");
+    }
+    if (location.pathname.startsWith("/dashboard/problem-metrics")) {
+      setOpenMenu("problemMetrics");
+    }
+  }, [location.pathname]);
 
   const toggleMenu = (menu: string) => {
     setOpenMenu(openMenu === menu ? null : menu);
@@ -1311,6 +1355,36 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </div>
           )}
 
+          {/* Jobs - Student, Employer, Admin, or users with permission (not verifyDocAdmin) */}
+          {(role === "student" || role === "superadmin") && (
+            <div
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 group ${
+                isActive("/dashboard/academic-records")
+                  ? "bg-[#9F7AEA]/15 text-white border-l-2 border-[#9F7AEA]"
+                  : "hover:bg-[#9F7AEA]/10"
+              }`}
+              onClick={() => handleNavigation("/dashboard/academic-records")}
+            >
+              <ClipboardDocumentListIcon
+                className={`h-5 w-5 transition-colors ${
+                  isActive("/dashboard/academic-records")
+                    ? "text-white"
+                    : "text-white/70 group-hover:text-white"
+                }`}
+              />
+              <span
+                className={`font-medium transition-colors ${
+                  isActive("/dashboard/academic-records")
+                    ? "text-white"
+                    : "group-hover:text-white"
+                }`}
+              >
+                Academic Records
+              </span>
+            </div>
+          )}
+
+          {/* Jobs - Student, Employer, Admin, or users with permission (not verifyDocAdmin) */}
           {/* Jobs - Student, Admin, or users with permission (not verifyDocAdmin).
               Employers use their own dedicated Jobs menu rendered above. */}
           {(() => {
@@ -1504,6 +1578,208 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 )}
               </div>
             )}
+
+          {showCognitiveSection && (
+            <div>
+              <div
+                className={`flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 group ${
+                  isActiveGroup("/dashboard/cognitive-tests")
+                    ? "bg-[#9F7AEA]/15 border-l-2 border-[#9F7AEA]"
+                    : "hover:bg-[#9F7AEA]/10"
+                }`}
+                onClick={() => toggleMenu("cognitive")}
+              >
+                <div className="flex items-center gap-3">
+                  <CpuChipIcon className="h-5 w-5 text-white/70 group-hover:text-white transition-colors" />
+                  <span className="font-medium group-hover:text-white transition-colors">
+                    {t("sidebar.cognitiveTests", { defaultValue: "Cognitive tests" })}
+                  </span>
+                </div>
+                <ChevronDownIcon
+                  className={`h-4 w-4 transition-transform duration-200 text-white/50 group-hover:text-white ${
+                    openMenu === "cognitive" ? "rotate-180 text-white" : ""
+                  }`}
+                />
+              </div>
+
+              {openMenu === "cognitive" && (
+                <ul className="pl-11 space-y-1 text-sm mt-2 animate-fadeIn max-h-64 overflow-y-auto scrollbar-hide">
+                  {showCognitiveStudent && (
+                    <li
+                      className={`flex items-center gap-2 cursor-pointer py-2 px-2 rounded-md transition-all duration-200 group/item ${
+                        isActive("/dashboard/cognitive-tests/available")
+                          ? "bg-[#9F7AEA]/20 text-[#9F7AEA]"
+                          : "hover:text-purple-300 hover:bg-[#9F7AEA]/10 text-white/60"
+                      }`}
+                      onClick={() => handleNavigation("/dashboard/cognitive-tests/available")}
+                    >
+                      <CpuChipIcon
+                        className={`h-4 w-4 ${
+                          isActive("/dashboard/cognitive-tests/available")
+                            ? "text-[#9F7AEA]"
+                            : "text-white/40 group-hover/item:text-[#9F7AEA]"
+                        }`}
+                      />
+                      <span
+                        className={
+                          isActive("/dashboard/cognitive-tests/available")
+                            ? "text-white font-medium"
+                            : "group-hover/item:text-white"
+                        }
+                      >
+                        {t("sidebar.cognitivePractice", { defaultValue: "Practice tests" })}
+                      </span>
+                    </li>
+                  )}
+                  {showCognitiveAdmin && (
+                    <li
+                      className={`flex items-center gap-2 cursor-pointer py-2 px-2 rounded-md transition-all duration-200 group/item ${
+                        isActive("/dashboard/cognitive-tests") &&
+                        !location.pathname.includes("/edit/") &&
+                        !location.pathname.includes("/available") &&
+                        !location.pathname.includes("/attempt/")
+                          ? "bg-[#9F7AEA]/20 text-[#9F7AEA]"
+                          : "hover:text-purple-300 hover:bg-[#9F7AEA]/10 text-white/60"
+                      }`}
+                      onClick={() => handleNavigation("/dashboard/cognitive-tests")}
+                    >
+                      <PlusIcon className="h-4 w-4 text-white/40 group-hover/item:text-[#9F7AEA]" />
+                      <span className="group-hover/item:text-white">
+                        {t("sidebar.cognitiveManage", { defaultValue: "Manage tests" })}
+                      </span>
+                    </li>
+                  )}
+                  {showCognitiveAdmin &&
+                    cognitiveTestsForMenu.map((ct) => (
+                      <li
+                        key={ct.cognitive_test_id}
+                        className={`flex items-center gap-2 cursor-pointer py-2 px-2 rounded-md transition-all duration-200 group/item ${
+                          location.pathname === `/dashboard/cognitive-tests/edit/${ct.cognitive_test_id}`
+                            ? "bg-[#9F7AEA]/20 text-[#9F7AEA]"
+                            : "hover:text-purple-300 hover:bg-[#9F7AEA]/10 text-white/60"
+                        }`}
+                        onClick={() =>
+                          handleNavigation(`/dashboard/cognitive-tests/edit/${ct.cognitive_test_id}`)
+                        }
+                      >
+                        <DocumentTextIcon className="h-4 w-4 text-white/40 group-hover/item:text-[#9F7AEA]" />
+                        <span
+                          className={`truncate max-w-[11rem] ${
+                            location.pathname === `/dashboard/cognitive-tests/edit/${ct.cognitive_test_id}`
+                              ? "text-white font-medium"
+                              : "group-hover/item:text-white"
+                          }`}
+                          title={ct.title}
+                        >
+                          {ct.title}
+                        </span>
+                      </li>
+                    ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          {showProblemMetricSection && (
+            <div>
+              <div
+                className={`flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 group ${
+                  isActiveGroup("/dashboard/problem-metrics")
+                    ? "bg-[#9F7AEA]/15 border-l-2 border-[#9F7AEA]"
+                    : "hover:bg-[#9F7AEA]/10"
+                }`}
+                onClick={() => toggleMenu("problemMetrics")}
+              >
+                <div className="flex items-center gap-3">
+                  <PuzzlePieceIcon className="h-5 w-5 text-white/70 group-hover:text-white transition-colors" />
+                  <span className="font-medium group-hover:text-white transition-colors">
+                    {t("sidebar.problemMetrics", { defaultValue: "Problem metrics" })}
+                  </span>
+                </div>
+                <ChevronDownIcon
+                  className={`h-4 w-4 transition-transform duration-200 text-white/50 group-hover:text-white ${
+                    openMenu === "problemMetrics" ? "rotate-180 text-white" : ""
+                  }`}
+                />
+              </div>
+
+              {openMenu === "problemMetrics" && (
+                <ul className="pl-11 space-y-1 text-sm mt-2 animate-fadeIn max-h-64 overflow-y-auto scrollbar-hide">
+                  {showProblemMetricStudent && (
+                    <li
+                      className={`flex items-center gap-2 cursor-pointer py-2 px-2 rounded-md transition-all duration-200 group/item ${
+                        isActive("/dashboard/problem-metrics/available")
+                          ? "bg-[#9F7AEA]/20 text-[#9F7AEA]"
+                          : "hover:text-purple-300 hover:bg-[#9F7AEA]/10 text-white/60"
+                      }`}
+                      onClick={() => handleNavigation("/dashboard/problem-metrics/available")}
+                    >
+                      <PuzzlePieceIcon
+                        className={`h-4 w-4 ${
+                          isActive("/dashboard/problem-metrics/available")
+                            ? "text-[#9F7AEA]"
+                            : "text-white/40 group-hover/item:text-[#9F7AEA]"
+                        }`}
+                      />
+                      <span
+                        className={
+                          isActive("/dashboard/problem-metrics/available")
+                            ? "text-white font-medium"
+                            : "group-hover/item:text-white"
+                        }
+                      >
+                        {t("sidebar.problemMetricsPractice", { defaultValue: "Practice puzzles" })}
+                      </span>
+                    </li>
+                  )}
+                  {showProblemMetricAdmin && (
+                    <li
+                      className={`flex items-center gap-2 cursor-pointer py-2 px-2 rounded-md transition-all duration-200 group/item ${
+                        isActive("/dashboard/problem-metrics") &&
+                        !location.pathname.includes("/edit/") &&
+                        !location.pathname.includes("/available") &&
+                        !location.pathname.includes("/attempt/")
+                          ? "bg-[#9F7AEA]/20 text-[#9F7AEA]"
+                          : "hover:text-purple-300 hover:bg-[#9F7AEA]/10 text-white/60"
+                      }`}
+                      onClick={() => handleNavigation("/dashboard/problem-metrics")}
+                    >
+                      <PlusIcon className="h-4 w-4 text-white/40 group-hover/item:text-[#9F7AEA]" />
+                      <span className="group-hover/item:text-white">
+                        {t("sidebar.problemMetricsManage", { defaultValue: "Manage puzzles" })}
+                      </span>
+                    </li>
+                  )}
+                  {showProblemMetricAdmin &&
+                    problemMetricsForMenu.map((metric) => (
+                      <li
+                        key={metric.problem_metric_id}
+                        className={`flex items-center gap-2 cursor-pointer py-2 px-2 rounded-md transition-all duration-200 group/item ${
+                          location.pathname === `/dashboard/problem-metrics/edit/${metric.problem_metric_id}`
+                            ? "bg-[#9F7AEA]/20 text-[#9F7AEA]"
+                            : "hover:text-purple-300 hover:bg-[#9F7AEA]/10 text-white/60"
+                        }`}
+                        onClick={() =>
+                          handleNavigation(`/dashboard/problem-metrics/edit/${metric.problem_metric_id}`)
+                        }
+                      >
+                        <DocumentTextIcon className="h-4 w-4 text-white/40 group-hover/item:text-[#9F7AEA]" />
+                        <span
+                          className={`truncate max-w-[11rem] ${
+                            location.pathname === `/dashboard/problem-metrics/edit/${metric.problem_metric_id}`
+                              ? "text-white font-medium"
+                              : "group-hover/item:text-white"
+                          }`}
+                          title={metric.title}
+                        >
+                          {metric.title}
+                        </span>
+                      </li>
+                    ))}
+                </ul>
+              )}
+            </div>
+          )}
 
           {/* Disputes - Student, Admin (not verifyDocAdmin, not employer) */}
           {/* {((role === "student" || isBuiltInAdmin) &&
@@ -1761,6 +2037,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 "disputes",       // Hardcoded Disputes menu
                 "analytics",      // Hardcoded Analytics menu
                 "transactions",   // Hardcoded Transaction menu
+                "cognitive",      // Hardcoded Cognitive tests menu
+                "problemMetrics", // Hardcoded Problem metrics menu
                 "notifications",  // Hardcoded above (visible to all users)
                 "interviews",     // Hardcoded above (students only)
               ];
