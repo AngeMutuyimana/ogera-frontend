@@ -11,12 +11,17 @@ import {
   BookmarkIcon,
 } from "@heroicons/react/24/outline";
 import { BookmarkIcon as BookmarkSolidIcon } from "@heroicons/react/24/solid";
-import { useGetAllJobsQuery, useToggleJobStatusMutation } from "../../services/api/jobsApi";
+import {
+  useGetAllJobsQuery,
+  useToggleJobStatusMutation,
+  useReviewJobMutation,
+} from "../../services/api/jobsApi";
 import { useGetUserProfileQuery } from "../../services/api/authApi";
 import { useGetStudentApplicationsQuery } from "../../services/api/jobApplicationApi";
 import ApplyJobModal from "../../components/ApplyJobModal";
 import Loader from "../../components/Loader";
 import { formatRelativeTime } from "../../utils/timeUtils";
+import { formatBudgetWithCurrency } from "../../constants/currencies";
 
 const AllJobs: React.FC = () => {
   const { t } = useTranslation();
@@ -26,12 +31,10 @@ const AllJobs: React.FC = () => {
   const role = roleRaw ? String(roleRaw).toLowerCase().trim() : "";
   const isUnfundedRoute = location.pathname === "/dashboard/jobs/unfunded";
   const jobsQueryParams =
-    role === "student"
-      ? { funded: true }
-      : role === "employer" && isUnfundedRoute
+    role === "employer" && isUnfundedRoute
       ? { funded: false }
       : role === "employer"
-      ? { funded: true }
+      ? undefined
       : undefined;
   const { data, isLoading, error, refetch } = useGetAllJobsQuery(jobsQueryParams);
   const { data: profileData } = useGetUserProfileQuery(undefined);
@@ -44,7 +47,11 @@ const AllJobs: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedCurrency, setSelectedCurrency] = useState("");
+  const [selectedPaymentRange, setSelectedPaymentRange] = useState("");
   const [savedJobs, setSavedJobs] = useState<Set<string>>(new Set());
+  const [reviewJob, { isLoading: isReviewingJob }] = useReviewJobMutation();
   
   // Create a Set of job IDs the student has applied to
   const appliedJobIds = new Set(
@@ -68,13 +75,12 @@ const AllJobs: React.FC = () => {
       return false;
     }
 
-    // Employer my-jobs page: only funded jobs.
-    if (role === "employer" && !isUnfundedRoute && !isFundedJob(job.funding_status)) {
+    if ((role === "superadmin" || role === "admin") && isUnfundedRoute && isFundedJob(job.funding_status)) {
       return false;
     }
 
-    // Students should never see unfunded jobs.
-    if (role === "student" && !isFundedJob(job.funding_status)) {
+    // Students should only see admin-approved published jobs.
+    if (role === "student" && job.status !== "Active") {
       return false;
     }
     
@@ -91,7 +97,28 @@ const AllJobs: React.FC = () => {
     const matchesStatus =
       !selectedStatus || job.status === selectedStatus;
 
-    return matchesSearch && matchesLocation && matchesStatus;
+    const matchesCategory =
+      !selectedCategory || job.category === selectedCategory;
+
+    const matchesCurrency =
+      !selectedCurrency || (job.currency || "USD") === selectedCurrency;
+
+    const budget = Number(job.budget || 0);
+    const matchesPayment =
+      !selectedPaymentRange ||
+      (selectedPaymentRange === "under-500" && budget < 500) ||
+      (selectedPaymentRange === "500-2000" && budget >= 500 && budget <= 2000) ||
+      (selectedPaymentRange === "2000-5000" && budget > 2000 && budget <= 5000) ||
+      (selectedPaymentRange === "5000-plus" && budget > 5000);
+
+    return (
+      matchesSearch &&
+      matchesLocation &&
+      matchesStatus &&
+      matchesCategory &&
+      matchesCurrency &&
+      matchesPayment
+    );
   });
 
   // Get unique locations and statuses for filters
@@ -99,6 +126,12 @@ const AllJobs: React.FC = () => {
     new Set(jobs.map((job: any) => job.location).filter(Boolean))
   );
   const statuses = ["Active", "Pending", "Inactive", "Completed"];
+  const categories = Array.from(
+    new Set(jobs.map((job: any) => job.category).filter(Boolean))
+  );
+  const currencies = Array.from(
+    new Set(jobs.map((job: any) => job.currency || "USD").filter(Boolean))
+  );
 
   // Calculate statistics
   const totalJobs = filteredJobs.length;
@@ -158,6 +191,15 @@ const AllJobs: React.FC = () => {
       refetch();
     } catch (error: any) {
       console.error("Failed to toggle job status:", error);
+    }
+  };
+
+  const handleAdminReview = async (jobId: string, status: "Active" | "Inactive") => {
+    try {
+      await reviewJob({ id: jobId, status }).unwrap();
+      refetch();
+    } catch (error) {
+      console.error("Failed to review unfunded job:", error);
     }
   };
 
@@ -257,6 +299,50 @@ className="w-full pl-9 pr-8 py-1.5 md:py-2 text-xs md:text-sm border border-gray
               ))}
             </select>
           </div>
+
+          <div className="relative sm:w-48">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full pl-3 pr-8 py-1.5 md:py-2 text-xs md:text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none bg-white cursor-pointer transition-all outline-none"
+            >
+              <option value="">All Categories</option>
+              {categories.map((category: string) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="relative sm:w-48">
+            <select
+              value={selectedCurrency}
+              onChange={(e) => setSelectedCurrency(e.target.value)}
+              className="w-full pl-3 pr-8 py-1.5 md:py-2 text-xs md:text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none bg-white cursor-pointer transition-all outline-none"
+            >
+              <option value="">All Currencies</option>
+              {currencies.map((currency: string) => (
+                <option key={currency} value={currency}>
+                  {currency}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="relative sm:w-48">
+            <select
+              value={selectedPaymentRange}
+              onChange={(e) => setSelectedPaymentRange(e.target.value)}
+              className="w-full pl-3 pr-8 py-1.5 md:py-2 text-xs md:text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none bg-white cursor-pointer transition-all outline-none"
+            >
+              <option value="">All Payments</option>
+              <option value="under-500">Under 500</option>
+              <option value="500-2000">500 - 2,000</option>
+              <option value="2000-5000">2,000 - 5,000</option>
+              <option value="5000-plus">Above 5,000</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -264,12 +350,12 @@ className="w-full pl-9 pr-8 py-1.5 md:py-2 text-xs md:text-sm border border-gray
         <div className="bg-white rounded-xl p-12 shadow-md border border-gray-100 text-center">
           <BriefcaseIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            {searchQuery || selectedLocation || selectedStatus
+            {searchQuery || selectedLocation || selectedStatus || selectedCategory || selectedCurrency || selectedPaymentRange
               ? t("pages.jobs.noJobsMatching")
               : t("pages.jobs.noJobsAvailable")}
           </h3>
           <p className="text-gray-600">
-            {searchQuery || selectedLocation || selectedStatus
+            {searchQuery || selectedLocation || selectedStatus || selectedCategory || selectedCurrency || selectedPaymentRange
               ? t("pages.jobs.tryAdjusting")
               : t("pages.jobs.noPostingsCheckBack")}
           </p>
@@ -346,7 +432,7 @@ className="w-full pl-9 pr-8 py-1.5 md:py-2 text-xs md:text-sm border border-gray
                         </span>
                         <span className="flex items-center gap-1">
                           <CurrencyDollarIcon className="h-3 w-3 md:h-4 md:w-4" />
-                          <span className="truncate">${job.budget?.toLocaleString() || t("pages.jobs.notSpecified")}</span>
+                          <span className="truncate">{formatBudgetWithCurrency(job.budget, job.currency || "USD")}</span>
                         </span>
                         {job.duration && (
                           <span className="flex items-center gap-1">
@@ -426,7 +512,7 @@ className={`w-full px-3 md:px-4 py-1.5 md:py-2 rounded-md font-medium transition
 className="px-3 md:px-4 py-1.5 md:py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition shadow-sm whitespace-nowrap text-xs md:text-sm flex-1 sm:flex-none cursor-pointer"                        >
                           {t("pages.jobs.viewDetails")}
                         </button>
-                        {(role === "employer" || role === "superadmin") && (
+                        {(role === "employer" || (role === "superadmin" && !isUnfundedRoute)) && (
                           <>
                             <button
                               onClick={() =>
@@ -442,7 +528,7 @@ className="px-3 md:px-4 py-1.5 md:py-2 bg-indigo-600 hover:bg-indigo-700 text-wh
 className="px-3 md:px-4 py-1.5 md:py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-medium transition shadow-sm whitespace-nowrap text-xs md:text-sm flex-1 sm:flex-none cursor-pointer"                            >
                               {t("pages.jobs.manage")} ({job.applications || 0})
                             </button>
-                            {(job.status === "Active" || job.status === "Inactive" || job.status === "Pending") && (
+                            {(job.status === "Active" || job.status === "Inactive") && (
                               <button
                                 onClick={() => handleToggleStatus(job.job_id, job.status)}
                                 disabled={isToggling}
@@ -466,6 +552,24 @@ className={`px-3 md:px-4 py-1.5 md:py-2 rounded-md font-medium transition shadow
                               }
 className="px-3 md:px-4 py-1.5 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md font-medium transition shadow-sm whitespace-nowrap text-xs md:text-sm flex-1 sm:flex-none border border-gray-200 cursor-pointer"                            >
                               {t("common.edit")}
+                            </button>
+                          </>
+                        )}
+                        {(role === "admin" || role === "superadmin") && isUnfundedRoute && (
+                          <>
+                            <button
+                              onClick={() => handleAdminReview(job.job_id, "Active")}
+                              disabled={isReviewingJob}
+                              className="px-3 md:px-4 py-1.5 md:py-2 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium transition shadow-sm whitespace-nowrap text-xs md:text-sm flex-1 sm:flex-none disabled:opacity-50"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleAdminReview(job.job_id, "Inactive")}
+                              disabled={isReviewingJob}
+                              className="px-3 md:px-4 py-1.5 md:py-2 bg-red-600 hover:bg-red-700 text-white rounded-md font-medium transition shadow-sm whitespace-nowrap text-xs md:text-sm flex-1 sm:flex-none disabled:opacity-50"
+                            >
+                              Disapprove
                             </button>
                           </>
                         )}

@@ -16,6 +16,7 @@ export interface Job {
   applications: number;
   category: string;
   budget: number;
+  currency?: string;
   duration: string;
   location: string;
   description?: string;
@@ -46,6 +47,7 @@ export interface CreateJobRequest {
   job_title: string;
   category: string;
   budget: number;
+  currency?: string;
   duration: string;
   location: string;
   description?: string;
@@ -61,6 +63,7 @@ export interface UpdateJobRequest {
   job_title?: string;
   category?: string;
   budget?: number;
+  currency?: string;
   duration?: string;
   location?: string;
   description?: string;
@@ -186,6 +189,16 @@ export const jobsApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: (_result, _error, id) => [{ type: "Job", id }, "Job"],
     }),
+
+    // Admin/Superadmin review job (Approve/Disapprove)
+    reviewJob: builder.mutation<JobResponse, { id: string; status: "Active" | "Inactive" }>({
+      query: ({ id, status }) => ({
+        url: `/jobs/${id}/review`,
+        method: "PATCH",
+        body: { status },
+      }),
+      invalidatesTags: (_result, _error, { id }) => [{ type: "Job", id }, "Job"],
+    }),
   }),
 });
 
@@ -199,5 +212,6 @@ export const {
   useUpdateJobMutation,
   useDeleteJobMutation,
   useToggleJobStatusMutation,
+  useReviewJobMutation,
 } = jobsApi;
 
