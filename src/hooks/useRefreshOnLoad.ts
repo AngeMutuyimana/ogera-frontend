@@ -22,12 +22,20 @@ const useRefreshOnLoad = () => {
   const [isLoading, setIsLoading] = useState(true);
   const currentRole = useSelector((state: any) => state.auth.role);
   const currentUser = useSelector((state: any) => state.auth.user);
+  const currentAccessToken = useSelector((state: any) => state.auth.accessToken);
 
   const BASE_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     const refreshAndFetchUser = async () => {
       const hasPersistedAuth = Boolean(currentRole && currentUser);
+
+      // Fresh login already placed a valid token in redux.
+      // Skipping refresh here prevents a race that can bounce users to login.
+      if (currentAccessToken) {
+        setIsLoading(false);
+        return;
+      }
 
       try {
         // Always attempt refresh once on app load.
@@ -77,7 +85,7 @@ const useRefreshOnLoad = () => {
     };
 
     refreshAndFetchUser();
-  }, [dispatch, currentRole, currentUser, BASE_URL]);
+  }, [dispatch, BASE_URL]);
 
   return isLoading;
 };
