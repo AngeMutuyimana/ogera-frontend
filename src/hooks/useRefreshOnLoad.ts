@@ -27,25 +27,12 @@ const useRefreshOnLoad = () => {
 
   useEffect(() => {
     const refreshAndFetchUser = async () => {
-      // Backend session hint cookie for dashboard app auth bootstrap.
-      // Do not use landing-page shared cookies for this decision.
-      const hasBackendSessionHint = document.cookie
-        .split(";")
-        .some((item) => {
-          const key = item.trim().split("=")[0];
-          return key === "isLoggedIn";
-        });
       const hasPersistedAuth = Boolean(currentRole && currentUser);
 
-      // Only attempt refresh when we likely have an app session
-      // (backend hint) or persisted auth state from a prior login.
-      if (!hasBackendSessionHint && !hasPersistedAuth) {
-        setIsLoading(false);
-        return;
-      }
-
       try {
-        // Step 1: Refresh the access token
+        // Always attempt refresh once on app load.
+        // In production, auth cookies can be non-readable from JS due to
+        // domain/security rules, so cookie-gated refresh causes false logouts.
         const refreshRes = await axios.get<RefreshResponse>(
           `${BASE_URL}/auth/refresh`,
           { withCredentials: true }
@@ -76,18 +63,14 @@ const useRefreshOnLoad = () => {
 
         setIsLoading(false);
       } catch (err: any) {
-        // If refresh fails and backend hinted there is a session, clear stale hint
-        // and logout. If we only had persisted client state, avoid forced bounce.
+        // If refresh fails:
+        // - clear stale client auth only when we had persisted auth in redux/localStorage
+        // - otherwise treat as normal guest session
         if (err?.response?.status === 401) {
-          if (hasBackendSessionHint) {
-            console.warn("⚠️ Session hint was present but session is invalid.");
-            document.cookie = "isLoggedIn=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-          }
+          if (hasPersistedAuth) dispatch(logout());
         } else {
           console.error("❌ Refresh failed unexpectedly:", err);
-        }
-        if (hasBackendSessionHint) {
-          dispatch(logout());
+          if (hasPersistedAuth) dispatch(logout());
         }
         setIsLoading(false);
       }
