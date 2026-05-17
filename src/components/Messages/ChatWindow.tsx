@@ -109,34 +109,6 @@ const MessageStatus: React.FC<{ status: string | null }> = ({ status }) => {
   );
 };
 
-const TypingIndicator: React.FC<{ name?: string }> = ({ name }) => (
-  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 7, padding: '4px 0 8px' }}>
-    <div style={{ width: 28, height: 28, borderRadius: 9, background: '#f3f4f6', flexShrink: 0 }} />
-    <div style={{
-      background: '#f9fafb',
-      border: '1px solid #e5e7eb',
-      borderRadius: '16px 16px 16px 4px',
-      padding: '10px 14px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: 4,
-    }}>
-      <style>{`
-        @keyframes typing-bounce {
-          0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
-          40% { transform: translateY(-5px); opacity: 1; }
-        }
-        .tdot { width: 5px; height: 5px; border-radius: 50%; background: #9ca3af; animation: typing-bounce 1.2s ease-in-out infinite; }
-        .tdot:nth-child(2) { animation-delay: 0.15s; }
-        .tdot:nth-child(3) { animation-delay: 0.3s; }
-      `}</style>
-      <span className="tdot" />
-      <span className="tdot" />
-      <span className="tdot" />
-    </div>
-  </div>
-);
-
 const MessageSkeleton: React.FC<{ align: 'left' | 'right' }> = ({ align }) => (
   <div style={{ display: 'flex', justifyContent: align === 'right' ? 'flex-end' : 'flex-start', marginBottom: 12 }}>
     <style>{`
@@ -148,6 +120,65 @@ const MessageSkeleton: React.FC<{ align: 'left' | 'right' }> = ({ align }) => (
       <div style={{ height: 38, borderRadius: align === 'right' ? '14px 14px 4px 14px' : '14px 14px 14px 4px', background: '#f1f5f9', marginBottom: 4 }} className="sk" />
       <div style={{ height: 10, width: '40%', background: '#f1f5f9', borderRadius: 4, marginLeft: align === 'right' ? 'auto' : 0 }} className="sk" />
     </div>
+  </div>
+);
+
+// TypingIndicator Component
+const TypingIndicator: React.FC<{ name?: string }> = ({ name }) => (
+  <div style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '8px 12px',
+    marginBottom: 10,
+  }}>
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 4,
+    }}>
+      <div style={{
+        width: 6,
+        height: 6,
+        borderRadius: '50%',
+        backgroundColor: '#9ca3af',
+        animation: 'typingBounce 1.4s infinite ease-in-out',
+        animationDelay: '0s',
+      }} />
+      <div style={{
+        width: 6,
+        height: 6,
+        borderRadius: '50%',
+        backgroundColor: '#9ca3af',
+        animation: 'typingBounce 1.4s infinite ease-in-out',
+        animationDelay: '0.2s',
+      }} />
+      <div style={{
+        width: 6,
+        height: 6,
+        borderRadius: '50%',
+        backgroundColor: '#9ca3af',
+        animation: 'typingBounce 1.4s infinite ease-in-out',
+        animationDelay: '0.4s',
+      }} />
+    </div>
+    <span style={{
+      fontSize: 13,
+      color: '#6b7280',
+      fontWeight: 500,
+    }}>
+      {name ? `${name} is typing...` : 'Someone is typing...'}
+    </span>
+    <style>{`
+      @keyframes typingBounce {
+        0%, 60%, 100% {
+          transform: translateY(0);
+        }
+        30% {
+          transform: translateY(-6px);
+        }
+      }
+    `}</style>
   </div>
 );
 
