@@ -6,6 +6,11 @@ import {
   BriefcaseIcon,
   CheckCircleIcon,
   ClockIcon,
+  EnvelopeIcon,
+  MapPinIcon,
+  CurrencyDollarIcon,
+  DocumentTextIcon,
+  ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
 import Loader from "../../components/Loader";
 import api from "../../services/api/axiosInstance";
@@ -86,143 +91,228 @@ const EmployerAcceptedApplications: React.FC = () => {
   }
 
   return (
-    <div className="theme-page-bg space-y-6 animate-fadeIn min-h-full p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-extrabold text-gray-900 dark:text-[var(--theme-text-primary)] flex items-center gap-3">
-            <CheckCircleIcon className="h-10 w-10 text-green-600 dark:text-green-400" />
-            {t("pages.jobs.acceptedApplicationsTitle")}
-          </h1>
-          <p className="text-gray-500 dark:text-[var(--theme-text-secondary)] mt-2">
-            {t("pages.jobs.acceptedApplicationsSubtitle")}
-          </p>
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 animate-fadeIn">
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="px-6 py-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="h-12 w-12 rounded-lg bg-linear-to-br from-green-600 to-emerald-600 flex items-center justify-center">
+                  <CheckCircleIcon className="h-7 w-7 text-white" />
+                </div>
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+                  {t("pages.jobs.acceptedApplicationsTitle")}
+                </h1>
+              </div>
+              <p className="text-gray-600 text-sm md:text-base">
+                {t("pages.jobs.acceptedApplicationsSubtitle")}
+              </p>
+            </div>
+            <button
+              onClick={() => navigate("/dashboard/jobs/applications")}
+              className="inline-flex items-center gap-2 bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-all shadow-md hover:shadow-lg whitespace-nowrap"
+            >
+              <ArrowLeftIcon className="h-5 w-5" />
+              {t("pages.jobs.viewAllApplications")}
+            </button>
+          </div>
         </div>
-        <button
-          onClick={() => navigate("/dashboard/jobs/applications")}
-          className=" text-sm font-medium bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg font-semibold transition shadow-sm cursor-pointer"
-        >
-          {t("pages.jobs.viewAllApplications")}
-        </button>
       </div>
 
-      {/* Statistics */}
-      <div className="bg-green-50 rounded-xl p-4 border border-green-200">
-        <p className="text-sm text-green-700 font-medium">
-          {t("pages.jobs.totalAccepted")}
-        </p>
-        <p className="text-3xl font-bold text-green-900 mt-2">
-          {acceptedApplications.length}
-        </p>
-      </div>
+      {/* Statistics Section */}
+      {acceptedApplications.length > 0 && (
+        <div className="px-6 py-8 max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Total Accepted */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md hover:border-green-200 transition-all">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    {t("pages.jobs.totalAccepted")}
+                  </p>
+                  <p className="text-3xl font-bold text-green-600">
+                    {acceptedApplications.length}
+                  </p>
+                </div>
+                <div className="h-14 w-14 rounded-lg bg-green-100 flex items-center justify-center hover:bg-green-200 transition-colors">
+                  <CheckCircleIcon className="h-7 w-7 text-green-600" />
+                </div>
+              </div>
+            </div>
+
+            {/* Acceptance Rate */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-200 transition-all">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    Successful
+                  </p>
+                  <p className="text-3xl font-bold text-blue-600">
+                    100%
+                  </p>
+                </div>
+                <div className="h-14 w-14 rounded-lg bg-blue-100 flex items-center justify-center hover:bg-blue-200 transition-colors">
+                  <BriefcaseIcon className="h-7 w-7 text-blue-600" />
+                </div>
+              </div>
+            </div>
+
+            {/* Status Info */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md hover:border-emerald-200 transition-all">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    Status
+                  </p>
+                  <p className="text-lg font-bold text-emerald-600">
+                    Approved
+                  </p>
+                </div>
+                <div className="h-14 w-14 rounded-lg bg-emerald-100 flex items-center justify-center hover:bg-emerald-200 transition-colors">
+                  <CheckCircleIcon className="h-7 w-7 text-emerald-600" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {acceptedApplications.length === 0 ? (
-        <div className="bg-white rounded-xl p-12 shadow-md border border-gray-100 text-center">
-          <CheckCircleIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            {t("pages.jobs.noAcceptedYet")}
-          </h3>
-          <p className="text-gray-600">{t("pages.jobs.noAcceptedMessage")}</p>
+        <div className="px-6 py-16">
+          <div className="max-w-md mx-auto bg-white rounded-xl p-12 shadow-sm border border-gray-200 text-center">
+            <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+              <CheckCircleIcon className="h-8 w-8 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              {t("pages.jobs.noAcceptedYet")}
+            </h3>
+            <p className="text-gray-600 text-sm">
+              {t("pages.jobs.noAcceptedMessage")}
+            </p>
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {acceptedApplications.map((application) => (
-            <div
-              key={application.application_id}
-              className="bg-white rounded-xl p-6 shadow-md border border-gray-100 hover:shadow-lg transition-shadow"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold text-lg">
+        <div className="px-6 py-8 max-w-7xl mx-auto">
+          {/* Result Count */}
+          <div className="mb-6 text-sm text-gray-600">
+            Showing <span className="font-semibold text-gray-900">{acceptedApplications.length}</span> accepted application{acceptedApplications.length !== 1 ? "s" : ""}
+          </div>
+
+          {/* Applications Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {acceptedApplications.map((application) => (
+              <div
+                key={application.application_id}
+                className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md hover:border-green-300 transition-all overflow-hidden group"
+              >
+                {/* Status Bar */}
+                <div className="h-1.5 bg-green-500"></div>
+
+                <div className="p-4">
+                  {/* Student Info Section */}
+                  <div className="flex gap-3 mb-4 pb-4 border-b border-gray-100">
+                    <div className="h-11 w-11 rounded-lg bg-linear-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold text-sm shrink-0 group-hover:shadow-md transition-shadow">
                       {application.student?.full_name?.charAt(0) || "S"}
                     </div>
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base font-semibold text-gray-900 truncate">
                         {application.student?.full_name ||
                           t("pages.jobs.unknownStudent")}
                       </h3>
-                      <p className="text-sm text-gray-600">
-                        {application.student?.email ||
-                          t("pages.jobs.noEmail")}
-                      </p>
+                      <div className="flex items-center gap-1 text-gray-600 text-xs mb-1">
+                        <EnvelopeIcon className="h-3 w-3 text-gray-400 shrink-0" />
+                        <span className="truncate">
+                          {application.student?.email ||
+                            t("pages.jobs.noEmail")}
+                        </span>
+                      </div>
                       {application.student?.mobile_number && (
-                        <p className="text-sm text-gray-500">
+                        <p className="text-xs text-gray-600">
                           📞 {application.student.mobile_number}
                         </p>
                       )}
                     </div>
                   </div>
 
-                  <div className="ml-16 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <BriefcaseIcon className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-700 font-medium">
-                        {application.job?.job_title ||
-                          t("pages.jobs.unknownJob")}
-                      </span>
+                  {/* Job Details Section */}
+                  <div className="space-y-3 mb-4 pb-4 border-b border-gray-100">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <BriefcaseIcon className="h-4 w-4 text-green-600 shrink-0" />
+                        <span className="text-gray-700 font-semibold text-sm">
+                          {application.job?.job_title ||
+                            t("pages.jobs.unknownJob")}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span>
-                        📍 {application.job?.location || "N/A"}
-                      </span>
-                      <span>
-                        💰 $
-                        {application.job?.budget?.toLocaleString() || "N/A"}
-                      </span>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <MapPinIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                        <span className="text-gray-600 truncate">
+                          {application.job?.location || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CurrencyDollarIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                        <span className="text-gray-600">
+                          ${application.job?.budget?.toLocaleString() || "N/A"}
+                        </span>
+                      </div>
                     </div>
+
                     {application.cover_letter && (
-                      <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                        <p className="text-sm font-medium text-gray-700 mb-1">
+                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <p className="text-xs font-semibold text-gray-700 mb-1 uppercase tracking-wide">
                           {t("pages.jobs.coverLetter")}
                         </p>
-                        <p className="text-sm text-gray-600 line-clamp-3">
+                        <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
                           {application.cover_letter}
                         </p>
                       </div>
                     )}
+
                     {application.resume_url && (
-                      <div className="mt-3">
-                        <button
-                          onClick={() =>
-                            handleViewResume(application.resume_url!)
-                          }
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg font-medium transition text-sm"
-                        >
-                          <BriefcaseIcon className="h-4 w-4" />
-                          {t("pages.jobs.viewResume")}
-                        </button>
-                      </div>
+                      <button
+                        onClick={() =>
+                          handleViewResume(application.resume_url!)
+                        }
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold rounded-lg transition-colors text-xs border border-blue-200"
+                      >
+                        <DocumentTextIcon className="h-4 w-4" />
+                        {t("pages.jobs.viewResume")}
+                      </button>
                     )}
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <ClockIcon className="h-4 w-4" />
+                  </div>
+
+                  {/* Footer Section */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircleIcon className="h-4 w-4 text-green-600" />
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                        {t("pages.jobs.acceptedLabel")}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <ClockIcon className="h-3 w-3" />
                       <span>
-                        {t("pages.jobs.appliedLabel")}:{" "}
-                        {formatDate(application.applied_at)}
+                        Applied: {formatDate(application.applied_at)}
                       </span>
                     </div>
                     {application.reviewed_at && (
-                      <div className="flex items-center gap-2 text-sm text-green-600 font-medium">
-                        <CheckCircleIcon className="h-4 w-4" />
+                      <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                        <CheckCircleIcon className="h-3 w-3" />
                         <span>
-                          {t("pages.jobs.acceptedAtLabel")}:{" "}
-                          {formatDate(application.reviewed_at)}
+                          Accepted: {formatDate(application.reviewed_at)}
                         </span>
                       </div>
                     )}
                   </div>
                 </div>
-
-                <div className="flex flex-col items-end gap-3 ml-6">
-                  <div className="flex items-center gap-2">
-                    <CheckCircleIcon className="h-5 w-5 text-green-600" />
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-                      {t("pages.jobs.acceptedLabel")}
-                    </span>
-                  </div>
-                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>
