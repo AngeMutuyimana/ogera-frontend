@@ -7,8 +7,13 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   ClockIcon,
+  MapPinIcon,
+  CurrencyDollarIcon,
+  ArrowRightIcon,
+  CalendarIcon,
 } from "@heroicons/react/24/outline";
 import Loader from "../../components/Loader";
+import { formatRelativeTime } from "../../utils/timeUtils";
 
 const MyApplications: React.FC = () => {
   const { t } = useTranslation();
@@ -17,18 +22,20 @@ const MyApplications: React.FC = () => {
 
   const applications = data?.data || [];
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Accepted":
+        return "from-green-500 to-emerald-500";
+      case "Rejected":
+        return "from-red-500 to-pink-500";
+      case "Pending":
+        return "from-amber-500 to-orange-500";
+      default:
+        return "from-gray-500 to-slate-500";
+    }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case "Accepted":
         return "bg-green-100 text-green-700";
@@ -71,143 +78,212 @@ const MyApplications: React.FC = () => {
 
   if (error) {
     return (
-      <div className="space-y-6 animate-fadeIn">
-        <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-          <p className="text-red-800 font-medium">
-            {t("pages.myApplications.failedToLoad")}
-          </p>
+      <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 animate-fadeIn">
+        <div className="px-6 py-16 max-w-7xl mx-auto">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+            <p className="text-red-800 font-medium">
+              {t("pages.myApplications.failedToLoad")}
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-extrabold text-gray-900 flex items-center gap-3">
-            <BriefcaseIcon className="h-10 w-10 text-purple-600" />
-            {t("pages.myApplications.title")}
-          </h1>
-          <p className="text-gray-500 mt-2">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 animate-fadeIn">
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="px-6 py-8 max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-linear-to-br from-purple-600 to-indigo-600 flex items-center justify-center">
+                <BriefcaseIcon className="h-7 w-7 text-white" />
+              </div>
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+                {t("pages.myApplications.title")}
+              </h1>
+            </div>
+            <button
+              onClick={() => navigate("/dashboard/jobs/all")}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition shadow-sm text-sm cursor-pointer"
+            >
+              {t("pages.myApplications.browseJobs")}
+            </button>
+          </div>
+          <p className="text-gray-600 text-sm">
             {t("pages.myApplications.subtitle")}
           </p>
         </div>
-        <button
-          onClick={() => navigate("/dashboard/jobs/all")}
-                        className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white rounded-lg font-semibold transition text-sm whitespace-nowrap cursor-pointer"
-        >
-          {t("pages.myApplications.browseJobs")}
-        </button>
       </div>
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-2"> 
-  <div className="bg-purple-50 rounded-xl p-4 border border-purple-200 hover:shadow-sm transition-shadow">
-    <p className="text-xs uppercase tracking-wider text-purple-700 font-semibold">{t("pages.myApplications.totalApplications")}</p>
-    <p className="text-2xl font-bold text-purple-900 mt-1">
-            {applications.length}
-          </p>
-        </div>
-  <div className="bg-orange-50 rounded-xl p-4 border border-orange-200 hover:shadow-sm transition-shadow">
-    <p className="text-xs uppercase tracking-wider text-orange-700 font-semibold">{t("pages.jobs.pendingReview")}</p>
-    <p className="text-2xl font-bold text-orange-900 mt-1">{pendingCount}</p>
-        </div>
-  <div className="bg-green-50 rounded-xl p-4 border border-green-200 hover:shadow-sm transition-shadow">
-    <p className="text-xs uppercase tracking-wider text-green-700 font-semibold">{t("pages.myApplications.accepted")}</p>
-    <p className="text-2xl font-bold text-green-900 mt-1">{acceptedCount}</p>
-        </div>
-  <div className="bg-red-50 rounded-xl p-4 border border-red-200 hover:shadow-sm transition-shadow">
-    <p className="text-xs uppercase tracking-wider text-red-700 font-semibold">{t("pages.myApplications.rejected")}</p>
-    <p className="text-2xl font-bold text-red-900 mt-1">{rejectedCount}</p>
-        </div>
-      </div>
-
-      {applications.length === 0 ? (
-        <div className="bg-white rounded-xl p-12 shadow-md border border-gray-100 text-center">
-          <BriefcaseIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            {t("pages.myApplications.noApplicationsYet")}
-          </h3>
-          <p className="text-gray-600 mb-4">
-            {t("pages.myApplications.startBrowsing")}
-          </p>
-          <button
-            onClick={() => navigate("/dashboard/jobs/all")}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition shadow-md"
-          >
-            {t("pages.myApplications.browseJobs")}
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {applications.map((application) => (
-            <div
-              key={application.application_id}
-              className="bg-white rounded-xl p-6 shadow-md border border-gray-100 hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => navigate(`/dashboard/jobs/${application.job_id}`)}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
-                      {application.job?.job_title?.charAt(0) || "J"}
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900">
-                        {application.job?.job_title || "Unknown Job"}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {application.job?.location || "N/A"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="ml-16 space-y-2">
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span>💰 ${application.job?.budget?.toLocaleString() || "N/A"}</span>
-                      <span>📍 {application.job?.location || "N/A"}</span>
-                    </div>
-                    {application.cover_letter && (
-                      <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                        <p className="text-sm font-medium text-gray-700 mb-1">
-                          Your Cover Letter:
-                        </p>
-                        <p className="text-sm text-gray-600 line-clamp-3">
-                          {application.cover_letter}
-                        </p>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <ClockIcon className="h-4 w-4" />
-                      <span>Applied: {formatDate(application.applied_at)}</span>
-                    </div>
-                    {application.reviewed_at && (
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <ClockIcon className="h-4 w-4" />
-                        <span>Reviewed: {formatDate(application.reviewed_at)}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex flex-col items-end gap-3 ml-6">
-                  <div className="flex items-center gap-2">
-                    {getStatusIcon(application.status)}
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
-                        application.status
-                      )}`}
-                    >
-                      {application.status}
-                    </span>
-                  </div>
-                </div>
-              </div>
+      {applications.length > 0 && (
+        <div className="px-6 py-8 max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+              <p className="text-xs uppercase tracking-wider text-gray-600 font-semibold">
+                {t("pages.myApplications.totalApplications")}
+              </p>
+              <p className="text-3xl font-bold text-gray-900 mt-2">
+                {applications.length}
+              </p>
             </div>
-          ))}
+            <div className="bg-white rounded-xl p-5 shadow-sm border border-orange-200 hover:shadow-md transition-shadow">
+              <p className="text-xs uppercase tracking-wider text-orange-700 font-semibold">
+                {t("pages.jobs.pendingReview")}
+              </p>
+              <p className="text-3xl font-bold text-orange-900 mt-2">
+                {pendingCount}
+              </p>
+            </div>
+            <div className="bg-white rounded-xl p-5 shadow-sm border border-green-200 hover:shadow-md transition-shadow">
+              <p className="text-xs uppercase tracking-wider text-green-700 font-semibold">
+                {t("pages.myApplications.accepted")}
+              </p>
+              <p className="text-3xl font-bold text-green-900 mt-2">
+                {acceptedCount}
+              </p>
+            </div>
+            <div className="bg-white rounded-xl p-5 shadow-sm border border-red-200 hover:shadow-md transition-shadow">
+              <p className="text-xs uppercase tracking-wider text-red-700 font-semibold">
+                {t("pages.myApplications.rejected")}
+              </p>
+              <p className="text-3xl font-bold text-red-900 mt-2">
+                {rejectedCount}
+              </p>
+            </div>
+          </div>
         </div>
       )}
+
+      {/* Applications List */}
+      <div className="px-6 py-8 max-w-7xl mx-auto">
+        {applications.length === 0 ? (
+          <div className="bg-white rounded-xl p-12 shadow-sm border border-gray-200 text-center">
+            <BriefcaseIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              {t("pages.myApplications.noApplicationsYet")}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              {t("pages.myApplications.startBrowsing")}
+            </p>
+            <button
+              onClick={() => navigate("/dashboard/jobs/all")}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition shadow-md cursor-pointer"
+            >
+              {t("pages.myApplications.browseJobs")}
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4">
+            {applications.map((application: any) => {
+              const employerName =
+                application.job?.employer?.full_name || "Unknown Employer";
+              const companyInitial = employerName.charAt(0).toUpperCase();
+              const statusGradient = getStatusColor(application.status);
+
+              return (
+                <div
+                  key={application.application_id}
+                  className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md hover:border-purple-300 transition-all duration-200 overflow-hidden group cursor-pointer"
+                  onClick={() => navigate(`/dashboard/jobs/${application.job_id}`)}
+                >
+                  {/* Top colored bar */}
+                  <div
+                    className={`h-1.5 bg-linear-to-r ${statusGradient}`}
+                  ></div>
+
+                  <div className="p-5">
+                    <div className="flex gap-4">
+                      {/* Company Logo */}
+                      <div className="flex-shrink-0">
+                        <div
+                          className={`h-12 w-12 rounded-lg bg-linear-to-br ${statusGradient} flex items-center justify-center text-white font-bold text-sm shadow-md group-hover:shadow-lg transition-shadow`}
+                        >
+                          {companyInitial}
+                        </div>
+                      </div>
+
+                      {/* Job Details */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between mb-2 gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="text-base font-semibold text-purple-600 hover:text-purple-800 truncate">
+                                {application.job?.job_title || "Unknown Job"}
+                              </h3>
+                              <span
+                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 whitespace-nowrap flex-shrink-0 ${getStatusBadgeColor(
+                                  application.status
+                                )}`}
+                              >
+                                {getStatusIcon(application.status)}
+                                {application.status}
+                              </span>
+                            </div>
+                            <p className="text-gray-700 font-medium text-sm">
+                              {employerName}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Job Info Row */}
+                        <div className="flex flex-wrap gap-3 text-xs text-gray-600 mb-3">
+                          <span className="flex items-center gap-1">
+                            <MapPinIcon className="h-3.5 w-3.5" />
+                            {application.job?.location || "N/A"}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <CurrencyDollarIcon className="h-3.5 w-3.5" />
+                            ${application.job?.budget?.toLocaleString() || "N/A"}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <CalendarIcon className="h-3.5 w-3.5" />
+                            Applied {formatRelativeTime(application.applied_at)}
+                          </span>
+                          {application.reviewed_at && (
+                            <span className="flex items-center gap-1">
+                              <ClockIcon className="h-3.5 w-3.5" />
+                              Reviewed {formatRelativeTime(application.reviewed_at)}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Cover Letter Preview */}
+                        {application.cover_letter && (
+                          <div className="p-3 bg-gray-50 rounded-lg mb-3 border border-gray-200">
+                            <p className="text-xs font-semibold text-gray-700 mb-1">
+                              Your Cover Letter:
+                            </p>
+                            <p className="text-xs text-gray-600 line-clamp-2">
+                              {application.cover_letter}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Action Button */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/dashboard/jobs/${application.job_id}`);
+                            }}
+                            className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition shadow-sm text-xs flex items-center justify-center gap-2 cursor-pointer"
+                          >
+                            <ArrowRightIcon className="h-4 w-4" />
+                            View Details
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
